@@ -1,0 +1,73 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  :root {
+    --ueab-primary: #0B2A6F;
+    --ueab-dark: #071B4A;
+    --ueab-gold: #F2B705;
+    --ueab-gold-hover: #DDA704;
+    --ueab-bg: #F7F9FC;
+    --ueab-card: #FFFFFF;
+    --ueab-border: #E3E8F0;
+    --ueab-text: #0F172A;
+    --ueab-muted: #5B6475;
+  }
+
+  html {
+    font-family: 'Inter', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0F172A;
+    background-color: #F7F9FC;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html.dark {
+    color: #F8FAFC;
+    background-color: #050E24;
+  }
+
+  /* Low data text mode toggle */
+  html.low-data img:not(.keep-image),
+  html.low-data video {
+    display: none !important;
+  }
+
+  /* Numeric tabular fonts for schedules, times, codes */
+  .tabular-nums {
+    font-feature-settings: 'tnum' on, 'cv05' on;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 9999px;
+}
+.dark ::-webkit-scrollbar-thumb {
+  background: #1E293B;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}
+
+/* Touch targets */
+.touch-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+/* Leaflet container fixes */
+.leaflet-container {
+  font-family: inherit;
+  width: 100%;
+  height: 100%;
+  border-radius: 0.75rem;
+  z-index: 10;
+}

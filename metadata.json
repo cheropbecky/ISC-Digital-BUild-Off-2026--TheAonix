@@ -1,0 +1,11 @@
+{
+  "name": "Kampas - UEAB Student Platform",
+  "description": "The campus, in one place. Official student platform for the University of Eastern Africa, Baraton (UEAB), Kenya.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
