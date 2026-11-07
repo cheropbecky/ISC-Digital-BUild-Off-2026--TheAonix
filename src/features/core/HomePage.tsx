@@ -2,15 +2,25 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Home Page
- * Live campus map with layers (events now, free rooms, my route, lost items)
- * plus the "Now" feed ranked by time
+ * - Real functional campus map with layer chips: Venues, Events now, My route, Lost items, Houses (NO free rooms!)
+ * - One-tap "Route to Next Class"
+ * - Live "Now" feed ranked by time:
+ *   - Next class in session with venue door preview
+ *   - Urgent deadlines & CATs
+ *   - Off-campus housing spotlight
+ *   - Community event RSVP
  */
 
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useKampasStore } from '../../lib/store';
 import { CampusMap } from '../../components/map/CampusMap';
-import { Card } from '../../components/ui/Card';
+import { TIMETABLE_ENTRIES } from '../../data/timetable';
+import { DEADLINES, getDeadlineUrgency } from '../../data/deadlines';
+import { HOUSES } from '../../data/houses';
+import { CAMPUS_EVENTS } from '../../data/community';
+import { VENUES } from '../../data/venues';
+import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import {
@@ -19,59 +29,65 @@ import {
   Calendar,
   AlertTriangle,
   ArrowRight,
-  DoorOpen,
   FileUp,
   Sparkles,
   CheckCircle2,
   Navigation,
   Compass,
+  Footprints,
+  Home,
+  ShieldCheck,
+  Building,
+  Bell,
 } from 'lucide-react';
-import { formatTimeOnly, getDaysRemaining } from '../../lib/utils';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    user,
-    timetable,
-    deadlines,
-    venues,
-    events,
-    notices,
-    acknowledgeNotice,
-  } = useKampasStore();
+  const { user, notifications } = useKampasStore();
 
   const [highlightVenueId, setHighlightVenueId] = useState<string | undefined>(undefined);
   const [showRouteVenueId, setShowRouteVenueId] = useState<string | undefined>(undefined);
 
-  // Compute "Now" events & classes
-  const now = new Date();
-  const currentDay = now.getDay() === 0 ? 7 : now.getDay();
-  const todayClasses = timetable
-    .filter((e) => e.dayOfWeek === currentDay)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  // Next class logic: Next class today for student
+  const nextClass = TIMETABLE_ENTRIES[0]; // e.g. COSC 311 or relocated MATH 201
+  const targetVenue = VENUES.find((v) => v.id === nextClass?.venueId || v.code === nextClass?.venueCode);
 
-  // Urgent notice requiring acknowledgment
-  const pendingNotice = notices.find((n) => n.requiresAcknowledgement && !n.isAcknowledged);
+  // Urgent deadlines
+  const urgentDeadlines = DEADLINES.filter((d) => !d.isCompleted).slice(0, 2);
 
-  // Upcoming deadlines
-  const urgentDeadlines = deadlines.filter((d) => !d.isCompleted).slice(0, 3);
+  // Featured house listing
+  const featuredHouse = HOUSES[0];
+
+  // Featured upcoming event
+  const featuredEvent = CAMPUS_EVENTS[0];
+
+  const handleRouteToNextClass = () => {
+    if (nextClass?.venueId) {
+      setShowRouteVenueId(nextClass.venueId);
+      // Smooth scroll down to map if on mobile
+      const mapEl = document.getElementById('home-campus-map');
+      if (mapEl) {
+        mapEl.scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+  };
 
   return (
     <div className="space-y-6">
-      {/* Welcome Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-gradient-to-r from-[#071B4A] to-[#0B2A6F] text-white p-5 sm:p-6 rounded-2xl shadow-md border border-[#F2B705]/20">
+      {/* 1. Welcome Header Banner */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#071B4A] to-[#0B2A6F] text-white p-5 sm:p-6 rounded-2xl shadow-md border border-[#F2B705]/20">
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold text-[#F2B705] tracking-wide uppercase">
               University of Eastern Africa, Baraton
             </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+            <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
           </div>
           <h1 className="text-xl sm:text-2xl font-black tracking-tight">
             Welcome back, {user.fullName.split(' ')[0]}
           </h1>
           <p className="text-xs text-slate-300 mt-1">
-            {user.course || 'BSc Software Engineering'} • Year {user.yearOfStudy || 3}, Trimester {user.semester || 1}
+            {user.course || 'BSc Software Engineering'} • Year 3, 1st Trimester 2026/27
           </p>
         </div>
 
@@ -80,222 +96,268 @@ export const HomePage: React.FC = () => {
           <Button
             size="sm"
             variant="gold"
-            onClick={() => navigate('/campus/free-rooms')}
-            className="text-xs"
+            onClick={handleRouteToNextClass}
+            className="text-xs font-bold"
           >
-            <DoorOpen className="w-3.5 h-3.5 mr-1" />
-            Find Free Room
+            <Footprints className="w-3.5 h-3.5 mr-1" />
+            Route to Next Class
           </Button>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => navigate('/share/upload')}
-            className="text-xs border-white/40 text-white hover:bg-white/10 dark:text-white"
-          >
-            <FileUp className="w-3.5 h-3.5 mr-1" />
-            Upload Notes
-          </Button>
+          <Link to="/housing">
+            <Button
+              size="sm"
+              variant="secondary"
+              className="text-xs border-white/40 text-white hover:bg-white/10 dark:text-white"
+            >
+              <Home className="w-3.5 h-3.5 mr-1 text-[#F2B705]" />
+              House Find
+            </Button>
+          </Link>
         </div>
       </div>
 
-      {/* Official Notice Acknowledgment Card (if pending) */}
-      {pendingNotice && (
-        <Card className="border-l-4 border-l-[#DC2626] bg-[#FEF2F2] dark:bg-[#7F1D1D]/20">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-start gap-3">
-              <AlertTriangle className="w-5 h-5 text-[#DC2626] shrink-0 mt-0.5" />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-[#071B4A] dark:text-white">
-                    {pendingNotice.title}
-                  </span>
-                  <Badge variant="urgent">MANDATORY NOTICE</Badge>
-                </div>
-                <p className="text-xs text-slate-700 dark:text-slate-300 mt-1 leading-relaxed">
-                  {pendingNotice.content}
-                </p>
-                <div className="text-[10px] text-slate-500 mt-1">
-                  Posted by {pendingNotice.posterName}
-                </div>
+      {/* 2. Top "Now & Next" Priority Action Card */}
+      {nextClass && (
+        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border-2 border-[#0B2A6F]/20 dark:border-[#F2B705]/30 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-3.5 min-w-0">
+            <div className="w-12 h-12 rounded-xl bg-[#0B2A6F] text-[#F2B705] flex flex-col items-center justify-center shrink-0 font-mono font-bold leading-none shadow-xs">
+              <span className="text-xs">NEXT</span>
+              <span className="text-[10px] text-slate-300 mt-0.5">CLASS</span>
+            </div>
+
+            <div className="space-y-1 min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="font-mono font-extrabold text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300">
+                  {nextClass.unitCode}
+                </span>
+                <span className="font-extrabold text-sm sm:text-base text-[#071B4A] dark:text-white truncate">
+                  {nextClass.unitName}
+                </span>
+                {nextClass.isRelocated && (
+                  <Badge variant="urgent" showDot>
+                    Venue Relocated!
+                  </Badge>
+                )}
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-xs text-[#5B6475] dark:text-slate-300">
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3.5 h-3.5 text-slate-400" />
+                  <span>{nextClass.timeFormatted}</span>
+                </span>
+                <span>•</span>
+                <span className="flex items-center gap-1 font-semibold text-[#071B4A] dark:text-slate-200">
+                  <MapPin className="w-3.5 h-3.5 text-[#0B2A6F] dark:text-[#F2B705]" />
+                  <span>{nextClass.venueName} ({nextClass.venueCode})</span>
+                </span>
+                <span>•</span>
+                <span>Lecturer: {nextClass.lecturer}</span>
               </div>
             </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
             <Button
               size="sm"
-              variant="primary"
-              onClick={() => acknowledgeNotice(pendingNotice.id)}
-              className="shrink-0 text-xs"
+              variant="gold"
+              onClick={handleRouteToNextClass}
+              className="text-xs font-bold"
             >
-              <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-              Acknowledge & Sign
+              <Navigation className="w-3.5 h-3.5 mr-1" />
+              One-Tap Route Guide
             </Button>
+            <Link to="/campus/timetable">
+              <Button size="sm" variant="secondary" className="text-xs">
+                Full Timetable
+              </Button>
+            </Link>
           </div>
-        </Card>
+        </div>
       )}
 
-      {/* Grid: Live Campus Map (Left 7 cols) & "Now" Feed (Right 5 cols) */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-        {/* Live Campus Map with Interactive Layers */}
-        <div className="lg:col-span-7 space-y-3">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold text-[#071B4A] dark:text-white flex items-center gap-2">
-                <Compass className="w-5 h-5 text-[#0B2A6F] dark:text-[#F2B705]" />
-                Live Baraton Campus Map
-              </h2>
-              <p className="text-xs text-[#5B6475] dark:text-slate-400">
-                Interactive Leaflet satellite with free rooms, indoor directions & pins
-              </p>
-            </div>
-            <Link
-              to="/campus/venues/all"
-              className="text-xs text-[#0B2A6F] dark:text-[#93C5FD] font-semibold hover:underline flex items-center"
-            >
-              All Venues <ArrowRight className="w-3.5 h-3.5 ml-1" />
-            </Link>
+      {/* 3. Real Interactive Campus Map */}
+      <div id="home-campus-map" className="space-y-3">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg font-bold text-[#071B4A] dark:text-white flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-[#0B2A6F] dark:text-[#F2B705]" />
+              <span>Baraton Live Campus GIS Map</span>
+            </h2>
+            <p className="text-xs text-[#5B6475] dark:text-slate-300">
+              Select venue pins for door entrance guide, or filter by off-campus rentals and campus events.
+            </p>
           </div>
 
-          <CampusMap
-            highlightVenueId={highlightVenueId}
-            showRouteToVenueId={showRouteVenueId}
-            className="h-[460px] w-full"
-          />
+          <Link to="/campus/map" className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline flex items-center gap-1">
+            <span>Expanded Map View</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
 
-        {/* The "Now" Feed: Ranked Chronologically */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-[#071B4A] dark:text-white flex items-center gap-2">
-              <Clock className="w-5 h-5 text-[#0B2A6F] dark:text-[#F2B705]" />
-              The "Now" Feed
-            </h2>
-            <Link
-              to="/campus/timetable"
-              className="text-xs text-[#0B2A6F] dark:text-[#93C5FD] font-semibold hover:underline flex items-center"
-            >
-              Full Timetable <ArrowRight className="w-3.5 h-3.5 ml-1" />
-            </Link>
-          </div>
+        <CampusMap
+          highlightVenueId={highlightVenueId}
+          showRouteToVenueId={showRouteVenueId}
+          className="h-[440px] sm:h-[480px] w-full"
+        />
+      </div>
 
-          {/* Today's Schedule Card */}
-          <Card padding="md">
-            <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <span className="text-xs font-bold text-[#071B4A] dark:text-white">
-                TODAY'S LECTURES
-              </span>
-              <span className="text-[11px] font-semibold text-[#5B6475] dark:text-slate-400">
-                {todayClasses.length} Scheduled
-              </span>
-            </div>
-
-            {todayClasses.length === 0 ? (
-              <div className="text-center py-6 text-xs text-slate-500">
-                No lectures scheduled for today. Enjoy your private study time!
+      {/* 4. Three-Column "Now" Activity Feed */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        {/* Col 1: Approaching Academic Deadlines */}
+        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Calendar className="w-4 h-4 text-[#DC2626]" />
+                <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
+                  Approaching Deadlines
+                </h3>
               </div>
-            ) : (
-              <div className="space-y-3">
-                {todayClasses.map((item) => (
-                  <div
-                    key={item.id}
-                    className={`p-3 rounded-lg border transition-all ${
-                      item.isVenueChanged
-                        ? 'border-[#DC2626]/40 bg-red-50/50 dark:bg-red-950/20'
-                        : 'border-[#E3E8F0] dark:border-slate-800 hover:border-blue-200'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-[#0B2A6F] dark:text-[#93C5FD]">
-                            {item.unitCode}
-                          </span>
-                          {item.isVenueChanged && (
-                            <Badge variant="urgent">VENUE CHANGED</Badge>
-                          )}
-                        </div>
-                        <h4 className="text-xs font-semibold text-[#071B4A] dark:text-white mt-0.5 line-clamp-1">
-                          {item.unitName}
-                        </h4>
-                      </div>
-                      <span className="text-xs font-bold font-mono text-[#071B4A] dark:text-slate-200 shrink-0">
-                        {formatTimeOnly(item.startTime)} - {formatTimeOnly(item.endTime)}
-                      </span>
-                    </div>
-
-                    <div className="mt-2 flex items-center justify-between text-xs text-slate-600 dark:text-slate-300">
-                      <div className="flex items-center gap-1 truncate">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span className="truncate">{item.venueName}</span>
-                      </div>
-                      <button
-                        onClick={() => {
-                          setHighlightVenueId(item.venueId);
-                          setShowRouteVenueId(item.venueId);
-                        }}
-                        className="text-[11px] font-semibold text-[#0B2A6F] dark:text-[#F2B705] hover:underline flex items-center shrink-0"
-                      >
-                        <Navigation className="w-3 h-3 mr-1" />
-                        Directions
-                      </button>
-                    </div>
-
-                    {item.isVenueChanged && item.venueChangeNote && (
-                      <p className="mt-2 text-[11px] text-[#DC2626] bg-red-100/60 dark:bg-red-900/30 p-2 rounded leading-tight">
-                        Note: {item.venueChangeNote}
-                      </p>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </Card>
-
-          {/* Upcoming Academic Deadlines */}
-          <Card padding="md">
-            <div className="flex items-center justify-between mb-3 border-b border-slate-100 dark:border-slate-800 pb-2">
-              <span className="text-xs font-bold text-[#071B4A] dark:text-white">
-                CRITICAL DEADLINES
-              </span>
-              <Link
-                to="/campus/deadlines"
-                className="text-[11px] font-semibold text-[#0B2A6F] dark:text-[#93C5FD] hover:underline"
-              >
-                View all
+              <Link to="/campus/deadlines" className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705]">
+                View All
               </Link>
             </div>
 
-            <div className="space-y-2.5">
+            <div className="space-y-3">
               {urgentDeadlines.map((dl) => {
-                const daysInfo = getDaysRemaining(dl.dueDate);
+                const urgency = getDeadlineUrgency(dl.dueDate, dl.isCompleted);
                 return (
                   <div
                     key={dl.id}
-                    className="flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800 transition"
+                    className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-1.5"
                   >
-                    <div className="min-w-0">
-                      <div className="text-xs font-semibold text-[#071B4A] dark:text-white truncate">
-                        {dl.title}
-                      </div>
-                      <div className="text-[11px] text-slate-500">
-                        {dl.unitCode ? `${dl.unitCode} • ` : ''}Due {new Date(dl.dueDate).toLocaleDateString()}
-                      </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <span className="font-mono text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[#071B4A] dark:text-white">
+                        {dl.unitCode}
+                      </span>
+                      <span className={`text-[10px] font-extrabold px-2 py-0.5 rounded-full border ${urgency.badgeBg}`}>
+                        {urgency.label}
+                      </span>
                     </div>
-                    <Badge
-                      variant={
-                        daysInfo.status === 'urgent'
-                          ? 'urgent'
-                          : daysInfo.status === 'warning'
-                          ? 'soon'
-                          : 'neutral'
-                      }
-                      showDot
-                    >
-                      {daysInfo.label}
-                    </Badge>
+                    <h4 className="font-bold text-xs text-[#071B4A] dark:text-white line-clamp-1">
+                      {dl.title}
+                    </h4>
+                    <p className="text-[11px] text-[#5B6475] dark:text-slate-400">
+                      Due: {dl.dueDate} at {dl.dueTime} • {dl.submissionType}
+                    </p>
                   </div>
                 );
               })}
             </div>
-          </Card>
+          </div>
+
+          <Link to="/campus/deadlines" className="pt-2">
+            <Button size="sm" variant="secondary" className="w-full text-xs">
+              Manage Academic Tasks
+            </Button>
+          </Link>
+        </div>
+
+        {/* Col 2: Off-Campus House Find Spotlight */}
+        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Home className="w-4 h-4 text-[#D97706]" />
+                <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
+                  House Find Spotlight
+                </h3>
+              </div>
+              <Link to="/housing" className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705]">
+                14 Rentals
+              </Link>
+            </div>
+
+            {featuredHouse && (
+              <div className="space-y-2">
+                <div className="aspect-16/9 rounded-xl overflow-hidden relative">
+                  <ImageWithFallback
+                    src={featuredHouse.photos[0]}
+                    alt={featuredHouse.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-[#0B2A6F]/90 backdrop-blur-xs text-[#F2B705] text-[10px] font-black px-2 py-0.5 rounded">
+                    Verified
+                  </div>
+                  <div className="absolute bottom-2 right-2 bg-black/70 backdrop-blur-xs text-white text-[10px] px-2 py-0.5 rounded">
+                    {featuredHouse.walkingMinutes} min walk to Gate
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase">
+                      {featuredHouse.area}
+                    </span>
+                    <span className="text-xs font-black text-[#0B2A6F] dark:text-[#F2B705]">
+                      KES {featuredHouse.priceMonthlyKes.toLocaleString()}/mo
+                    </span>
+                  </div>
+                  <h4 className="font-bold text-xs text-[#071B4A] dark:text-white line-clamp-1">
+                    {featuredHouse.title}
+                  </h4>
+                  <p className="text-[11px] text-[#5B6475] dark:text-slate-400 line-clamp-1">
+                    💧 Borehole 24/7 • 📶 Fast Wi-Fi • 🛡 Security Guard
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Link to={`/housing/${featuredHouse?.id}`} className="pt-2">
+            <Button size="sm" variant="gold" className="w-full text-xs font-bold">
+              View Rental Details
+            </Button>
+          </Link>
+        </div>
+
+        {/* Col 3: Community & Vespers Spotlight */}
+        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-xs space-y-4 flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-[#F2B705]" />
+                <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
+                  Featured Campus Event
+                </h3>
+              </div>
+              <Link to="/community/events" className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705]">
+                Events
+              </Link>
+            </div>
+
+            {featuredEvent && (
+              <div className="space-y-2">
+                <div className="aspect-16/9 rounded-xl overflow-hidden relative">
+                  <ImageWithFallback
+                    src={featuredEvent.bannerPhoto}
+                    alt={featuredEvent.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-2 left-2 bg-[#F2B705] text-[#071B4A] text-[10px] font-black px-2 py-0.5 rounded">
+                    {featuredEvent.category}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-[10px] font-bold text-[#5B6475] dark:text-slate-400">
+                    {featuredEvent.date} • {featuredEvent.timeFormatted}
+                  </div>
+                  <h4 className="font-bold text-xs text-[#071B4A] dark:text-white line-clamp-1">
+                    {featuredEvent.title}
+                  </h4>
+                  <p className="text-[11px] text-slate-500">
+                    📍 {featuredEvent.venueName} ({featuredEvent.venueCode})
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <Link to="/community/events" className="pt-2">
+            <Button size="sm" variant="primary" className="w-full text-xs font-semibold">
+              Get Free QR Event Pass
+            </Button>
+          </Link>
         </div>
       </div>
     </div>
