@@ -2,8 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Home Page
- * - Real functional campus map with layer chips: Venues, Events now, My route, Lost items, Houses (NO free rooms!)
- * - One-tap "Route to Next Class"
+ * - One-tap navigation to the next class on the dedicated Campus GIS Map
  * - Live "Now" feed ranked by time:
  *   - Next class in session with venue door preview
  *   - Urgent deadlines & CATs
@@ -11,71 +10,99 @@
  *   - Community event RSVP
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
-import { CampusMap } from '../../components/map/CampusMap';
-import { TIMETABLE_ENTRIES } from '../../data/timetable';
-import { DEADLINES, getDeadlineUrgency } from '../../data/deadlines';
+import { getDeadlineUrgency } from '../../data/deadlines';
 import { HOUSES } from '../../data/houses';
-import { CAMPUS_EVENTS } from '../../data/community';
-import { VENUES } from '../../data/venues';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { formatTimeOnly } from '../../lib/utils';
 import {
   Clock,
   MapPin,
   Calendar,
   AlertTriangle,
   ArrowRight,
-  FileUp,
   Sparkles,
-  CheckCircle2,
   Navigation,
-  Compass,
   Footprints,
   Home,
-  ShieldCheck,
-  Building,
   Bell,
 } from 'lucide-react';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
-  const { user, notifications } = useKampasStore();
+  const {
+    user,
+    notifications,
+    timetable,
+    timetableLoading,
+    deadlines,
+    events,
+  } = useKampasStore();
 
-  const [highlightVenueId, setHighlightVenueId] = useState<string | undefined>(undefined);
-  const [showRouteVenueId, setShowRouteVenueId] = useState<string | undefined>(undefined);
+  // Select the next scheduled class from the same data source as the timetable page.
+  const now = new Date();
+  const currentDay = now.getDay() >= 1 && now.getDay() <= 5 ? now.getDay() : 1;
+  const currentMinutes = now.getHours() * 60 + now.getMinutes();
+  const nextClass = [...timetable]
+    .filter((entry) => entry.dayOfWeek === currentDay && entry.endTime > `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`)
+    .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
+    ?? [...timetable]
+      .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))[0];
 
-  // Next class logic: Next class today for student
-  const nextClass = TIMETABLE_ENTRIES[0]; // e.g. COSC 311 or relocated MATH 201
-  const targetVenue = VENUES.find((v) => v.id === nextClass?.venueId || v.code === nextClass?.venueCode);
-
-  // Urgent deadlines
-  const urgentDeadlines = DEADLINES.filter((d) => !d.isCompleted).slice(0, 2);
+  const urgentDeadlines = useMemo(
+    () => deadlines
+      .filter((deadline) => !deadline.isCompleted)
+      .sort((a, b) => a.dueDate.localeCompare(b.dueDate))
+      .slice(0, 2),
+    [deadlines]
+  );
 
   // Featured house listing
   const featuredHouse = HOUSES[0];
 
   // Featured upcoming event
-  const featuredEvent = CAMPUS_EVENTS[0];
+  const featuredEvent = useMemo(
+    () => [...events]
+      .filter((event) => event.isPublished && new Date(event.startTime).getTime() >= Date.now())
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0],
+    [events]
+  );
+
+  const todayClasses = timetable.filter((entry) => entry.dayOfWeek === currentDay);
+  const unreadNotifications = notifications.filter((notification) => !notification.isRead).length;
+  const dashboardStats = [
+    { label: 'Classes today', value: todayClasses.length, icon: Calendar, href: '/campus/timetable', color: 'text-[#0B2A6F] dark:text-blue-300' },
+    { label: 'Open tasks', value: urgentDeadlines.length, icon: AlertTriangle, href: '/campus/deadlines', color: 'text-amber-600 dark:text-amber-300' },
+    { label: 'Unread updates', value: unreadNotifications, icon: Bell, href: '/notifications', color: 'text-rose-600 dark:text-rose-300' },
+  ];
 
   const handleRouteToNextClass = () => {
     if (nextClass?.venueId) {
-      setShowRouteVenueId(nextClass.venueId);
-      // Smooth scroll down to map if on mobile
-      const mapEl = document.getElementById('home-campus-map');
-      if (mapEl) {
-        mapEl.scrollIntoView({ behavior: 'smooth' });
-      }
+      navigate(`/campus/map?venue=${encodeURIComponent(nextClass.venueId)}`);
     }
   };
 
   return (
-    <div className="space-y-6">
+    <motion.div
+      className="space-y-6"
+      initial="hidden"
+      animate="visible"
+      variants={{
+        hidden: {},
+        visible: { transition: { staggerChildren: 0.06 } },
+      }}
+    >
       {/* 1. Welcome Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#071B4A] to-[#0B2A6F] text-white p-5 sm:p-6 rounded-2xl shadow-md border border-[#F2B705]/20">
+      <motion.div
+        variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+        transition={{ duration: 0.35 }}
+        className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-gradient-to-r from-[#071B4A] to-[#0B2A6F] text-white p-5 sm:p-6 rounded-2xl shadow-md border border-[#F2B705]/20"
+      >
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-bold text-[#F2B705] tracking-wide uppercase">
@@ -113,11 +140,38 @@ export const HomePage: React.FC = () => {
             </Button>
           </Link>
         </div>
-      </div>
+      </motion.div>
+
+      <motion.div
+        variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
+      >
+        {dashboardStats.map(({ label, value, icon: Icon, href, color }) => (
+          <Link
+            key={label}
+            to={href}
+            className="group flex items-center justify-between rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] px-4 py-3 transition-all hover:-translate-y-0.5 hover:border-[#F2B705] hover:shadow-md"
+          >
+            <span className="flex items-center gap-3">
+              <span className={`rounded-lg bg-slate-100 dark:bg-slate-800 p-2 ${color}`}>
+                <Icon className="h-4 w-4" />
+              </span>
+              <span className="text-xs font-semibold text-[#5B6475] dark:text-slate-300">{label}</span>
+            </span>
+            <span className="flex items-center gap-2 text-lg font-black text-[#071B4A] dark:text-white">
+              {value}
+              <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1" />
+            </span>
+          </Link>
+        ))}
+      </motion.div>
 
       {/* 2. Top "Now & Next" Priority Action Card */}
-      {nextClass && (
-        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border-2 border-[#0B2A6F]/20 dark:border-[#F2B705]/30 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+      {nextClass && !timetableLoading && (
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+          className="bg-white dark:bg-[#0C1D3D] rounded-2xl border-2 border-[#0B2A6F]/20 dark:border-[#F2B705]/30 p-4 sm:p-5 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        >
           <div className="flex items-start gap-3.5 min-w-0">
             <div className="w-12 h-12 rounded-xl bg-[#0B2A6F] text-[#F2B705] flex flex-col items-center justify-center shrink-0 font-mono font-bold leading-none shadow-xs">
               <span className="text-xs">NEXT</span>
@@ -132,7 +186,7 @@ export const HomePage: React.FC = () => {
                 <span className="font-extrabold text-sm sm:text-base text-[#071B4A] dark:text-white truncate">
                   {nextClass.unitName}
                 </span>
-                {nextClass.isRelocated && (
+                {nextClass.isVenueChanged && (
                   <Badge variant="urgent" showDot>
                     Venue Relocated!
                   </Badge>
@@ -142,15 +196,15 @@ export const HomePage: React.FC = () => {
               <div className="flex flex-wrap items-center gap-3 text-xs text-[#5B6475] dark:text-slate-300">
                 <span className="flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{nextClass.timeFormatted}</span>
+                  <span>{formatTimeOnly(nextClass.startTime)} – {formatTimeOnly(nextClass.endTime)}</span>
                 </span>
                 <span>•</span>
                 <span className="flex items-center gap-1 font-semibold text-[#071B4A] dark:text-slate-200">
                   <MapPin className="w-3.5 h-3.5 text-[#0B2A6F] dark:text-[#F2B705]" />
-                  <span>{nextClass.venueName} ({nextClass.venueCode})</span>
+                  <span>{nextClass.venueName}</span>
                 </span>
                 <span>•</span>
-                <span>Lecturer: {nextClass.lecturer}</span>
+                <span>Lecturer: {nextClass.lecturerName}</span>
               </div>
             </div>
           </div>
@@ -171,37 +225,14 @@ export const HomePage: React.FC = () => {
               </Button>
             </Link>
           </div>
-        </div>
+        </motion.div>
       )}
 
-      {/* 3. Real Interactive Campus Map */}
-      <div id="home-campus-map" className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-bold text-[#071B4A] dark:text-white flex items-center gap-2">
-              <MapPin className="w-5 h-5 text-[#0B2A6F] dark:text-[#F2B705]" />
-              <span>Baraton Live Campus GIS Map</span>
-            </h2>
-            <p className="text-xs text-[#5B6475] dark:text-slate-300">
-              Select venue pins for door entrance guide, or filter by off-campus rentals and campus events.
-            </p>
-          </div>
-
-          <Link to="/campus/map" className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline flex items-center gap-1">
-            <span>Expanded Map View</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
-        </div>
-
-        <CampusMap
-          highlightVenueId={highlightVenueId}
-          showRouteToVenueId={showRouteVenueId}
-          className="h-[440px] sm:h-[480px] w-full"
-        />
-      </div>
-
-      {/* 4. Three-Column "Now" Activity Feed */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+      {/* 3. Three-Column "Now" Activity Feed */}
+      <motion.div
+        variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2"
+      >
         {/* Col 1: Approaching Academic Deadlines */}
         <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-xs space-y-4 flex flex-col justify-between">
           <div className="space-y-3">
@@ -219,7 +250,7 @@ export const HomePage: React.FC = () => {
 
             <div className="space-y-3">
               {urgentDeadlines.map((dl) => {
-                const urgency = getDeadlineUrgency(dl.dueDate, dl.isCompleted);
+                const urgency = getDeadlineUrgency(dl.dueDate, dl.isCompleted ?? false);
                 return (
                   <div
                     key={dl.id}
@@ -237,7 +268,7 @@ export const HomePage: React.FC = () => {
                       {dl.title}
                     </h4>
                     <p className="text-[11px] text-[#5B6475] dark:text-slate-400">
-                      Due: {dl.dueDate} at {dl.dueTime} • {dl.submissionType}
+                      Due: {new Date(dl.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {dl.priority} priority
                     </p>
                   </div>
                 );
@@ -329,7 +360,7 @@ export const HomePage: React.FC = () => {
               <div className="space-y-2">
                 <div className="aspect-16/9 rounded-xl overflow-hidden relative">
                   <ImageWithFallback
-                    src={featuredEvent.bannerPhoto}
+                    src={featuredEvent.posterUrl || '/src/assets/images/ueab_campus_hero_1793989895358.jpg'}
                     alt={featuredEvent.title}
                     className="w-full h-full object-cover"
                   />
@@ -340,13 +371,13 @@ export const HomePage: React.FC = () => {
 
                 <div className="space-y-1">
                   <div className="text-[10px] font-bold text-[#5B6475] dark:text-slate-400">
-                    {featuredEvent.date} • {featuredEvent.timeFormatted}
+                    {new Date(featuredEvent.startTime).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} • {new Date(featuredEvent.startTime).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
                   </div>
                   <h4 className="font-bold text-xs text-[#071B4A] dark:text-white line-clamp-1">
                     {featuredEvent.title}
                   </h4>
                   <p className="text-[11px] text-slate-500">
-                    📍 {featuredEvent.venueName} ({featuredEvent.venueCode})
+                    📍 {featuredEvent.venueName}
                   </p>
                 </div>
               </div>
@@ -359,7 +390,7 @@ export const HomePage: React.FC = () => {
             </Button>
           </Link>
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   );
 };

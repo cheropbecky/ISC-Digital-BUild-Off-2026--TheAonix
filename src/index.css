@@ -71,3 +71,23 @@
   border-radius: 0.75rem;
   z-index: 10;
 }
+
+.ueab-campus-label {
+  border: 0;
+  background: rgba(255, 255, 255, 0.88);
+  color: #0b2a6f;
+  box-shadow: 0 2px 8px rgba(7, 27, 74, 0.12);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 4px 8px;
+}
+
+.ueab-campus-label::before {
+  display: none;
+}
+
+.dark .ueab-campus-label {
+  background: rgba(7, 27, 74, 0.9);
+  color: #f2b705;
+}
