@@ -6,6 +6,12 @@
  * and graceful fallback containers so real UEAB photos can be swapped in seamlessly.
  */
 
+import baratonAuditorium from '../assets/images/ueab_baraton_auditorium.jpg';
+import baratonGraduation from '../assets/images/ueab_baraton_graduation.jpg';
+import baratonNewSignage from '../assets/images/ueab_baraton_new_signage.jpg';
+import baratonResearchConference from '../assets/images/ueab_baraton_research_conference.jpg';
+import baratonRoadRace from '../assets/images/ueab_baraton_road_race.jpg';
+
 export interface RegisteredImage {
   id: string;
   url: string;
@@ -39,6 +45,41 @@ export const IMAGES = {
     url: '/src/assets/images/ueab_student_life_1793989896360.jpg',
     alt: 'Vibrant student centre courtyard and collegiate plaza under flowering pergola at Baraton',
     category: 'campus',
+  },
+  baratonResearchConference: {
+    id: 'baraton-research-conference',
+    url: baratonResearchConference,
+    alt: 'University of Eastern Africa, Baraton research conference gathering outside a campus building',
+    category: 'campus',
+    fallbackText: 'UEAB Baraton research conference',
+  },
+  baratonNewSignage: {
+    id: 'baraton-new-signage',
+    url: baratonNewSignage,
+    alt: 'New University of Eastern Africa, Baraton campus signage unveiled in front of the administration building',
+    category: 'campus',
+    fallbackText: 'New UEAB Baraton campus signage',
+  },
+  baratonGraduation: {
+    id: 'baraton-graduation',
+    url: baratonGraduation,
+    alt: 'University of Eastern Africa, Baraton graduation day gathering on campus',
+    category: 'event',
+    fallbackText: 'UEAB Baraton graduation day',
+  },
+  baratonRoadRace: {
+    id: 'baraton-road-race',
+    url: baratonRoadRace,
+    alt: 'Baraton Road Race and Fun Run taking place near the UEAB Baraton campus',
+    category: 'campus',
+    fallbackText: 'Baraton Road Race and Fun Run',
+  },
+  baratonAuditorium: {
+    id: 'baraton-auditorium',
+    url: baratonAuditorium,
+    alt: 'University of Eastern Africa, Baraton auditorium event with attendees',
+    category: 'campus',
+    fallbackText: 'UEAB Baraton auditorium',
   },
 
   // Venue Entrance Doors & Interior

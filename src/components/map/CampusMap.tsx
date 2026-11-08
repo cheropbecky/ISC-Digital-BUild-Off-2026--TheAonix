@@ -2,7 +2,8 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Interactive Campus GIS Map (Leaflet + OpenStreetMap)
- * Centered on University of Eastern Africa, Baraton (UEAB), Nandi County [0.25766, 35.08578]
+ * Centered on the OpenStreetMap feature for University of Eastern Africa, Baraton,
+ * Nandi County [0.2589343, 35.0864822].
  * Layers: Venues, Events Now, Houses (Off-Campus), Lost Items, My Route
  * NOTE: Strictly NO free rooms feature or layer anywhere.
  * Bottom sheet includes building exterior AND entrance door photos, indoor hints, and walking route.
@@ -10,6 +11,7 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
+import 'leaflet.markercluster';
 import { useKampasStore } from '../../lib/store';
 import { VENUES, VenueData } from '../../data/venues';
 import { HOUSES, HouseListing } from '../../data/houses';
@@ -44,29 +46,27 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// UEAB Baraton, Nandi County, Kenya. The venue seed coordinates are illustrative
-// campus points, so they are translated to this verified campus anchor for display.
-const UEAB_CENTER: [number, number] = [0.25766, 35.08578];
-const CAMPUS_DATA_ANCHOR: [number, number] = [0.2505, 35.0800];
-const CAMPUS_COORDINATE_OFFSET: [number, number] = [
-  UEAB_CENTER[0] - CAMPUS_DATA_ANCHOR[0],
-  UEAB_CENTER[1] - CAMPUS_DATA_ANCHOR[1],
-];
+// UEAB Baraton, Nandi County, Kenya. Coordinates sourced from OpenStreetMap.
+const UEAB_CENTER: [number, number] = [0.2589343, 35.0864822];
 const MAIN_GATE_COORDS: [number, number] = [0.2569, 35.0855];
 const UEAB_CAMPUS_BOUNDARY: [number, number][] = [
-  [0.2551, 35.0836],
-  [0.2583, 35.0832],
-  [0.2616, 35.0840],
-  [0.2623, 35.0872],
-  [0.2604, 35.0888],
-  [0.2562, 35.0884],
-  [0.2549, 35.0865],
+  [0.2493427, 35.0798875],
+  [0.2493427, 35.0916658],
+  [0.2659669, 35.0916658],
+  [0.2659669, 35.0798875],
 ];
 
-const toCampusCoordinates = (latitude: number, longitude: number): [number, number] => [
-  latitude + CAMPUS_COORDINATE_OFFSET[0],
-  longitude + CAMPUS_COORDINATE_OFFSET[1],
-];
+const getStraightLineRouteInfo = (start: [number, number], end: [number, number]) => {
+  const earthRadius = 6371000;
+  const latitudeDelta = (end[0] - start[0]) * Math.PI / 180;
+  const longitudeDelta = (end[1] - start[1]) * Math.PI / 180;
+  const a = Math.sin(latitudeDelta / 2) ** 2
+    + Math.cos(start[0] * Math.PI / 180)
+    * Math.cos(end[0] * Math.PI / 180)
+    * Math.sin(longitudeDelta / 2) ** 2;
+  const distance = 2 * earthRadius * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return { distance, duration: distance / 1.4 };
+};
 
 export type MapLayerType = 'all' | 'venues' | 'events' | 'houses' | 'lost_found' | 'my_route';
 
@@ -85,7 +85,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
-  const markerGroupRef = useRef<L.LayerGroup | null>(null);
+  const markerGroupRef = useRef<L.MarkerClusterGroup | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
   const campusBoundaryRef = useRef<L.Polygon | null>(null);
 
@@ -93,6 +93,9 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   const [selectedVenue, setSelectedVenue] = useState<VenueData | null>(null);
   const [selectedHouse, setSelectedHouse] = useState<HouseListing | null>(null);
   const [activeRouteVenue, setActiveRouteVenue] = useState<VenueData | null>(null);
+  const [mapError, setMapError] = useState<string | null>(null);
+  const [locationMessage, setLocationMessage] = useState<string | null>(null);
+  const [routeInfo, setRouteInfo] = useState<{ distance: number; duration: number } | null>(null);
 
   // Initialize Map
   useEffect(() => {
@@ -107,10 +110,10 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     });
 
     // OpenStreetMap standard tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; OpenStreetMap contributors | Baraton Campus GIS',
+    const tiles = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap contributors',
       maxZoom: 19,
-    }).addTo(map);
+    }).on('tileerror', () => setMapError('Map unavailable offline')).addTo(map);
 
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
 
@@ -141,7 +144,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       `)
       .addTo(map);
 
-    const markerGroup = L.layerGroup().addTo(map);
+    const markerGroup = L.markerClusterGroup({ chunkedLoading: true, showCoverageOnHover: false }).addTo(map);
     markerGroupRef.current = markerGroup;
     mapInstanceRef.current = map;
 
@@ -149,6 +152,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       map.remove();
       mapInstanceRef.current = null;
       campusBoundaryRef.current = null;
+      tiles.off();
     };
   }, []);
 
@@ -182,7 +186,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     // 1. Campus Venues Layer
     if (activeLayer === 'all' || activeLayer === 'venues' || activeLayer === 'my_route') {
       VENUES.forEach((v) => {
-        const marker = L.marker(toCampusCoordinates(v.latitude, v.longitude), {
+        const marker = L.marker([v.latitude, v.longitude], {
           icon: createPinIcon('#0B2A6F', '🏛'),
         });
 
@@ -199,9 +203,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     if (activeLayer === 'all' || activeLayer === 'events') {
       CAMPUS_EVENTS.forEach((evt) => {
         const venue = VENUES.find((v) => v.code === evt.venueCode || v.name === evt.venueName);
-        const [venueLat, venueLng] = venue
-          ? toCampusCoordinates(venue.latitude, venue.longitude)
-          : UEAB_CENTER;
+        const [venueLat, venueLng] = venue ? [venue.latitude, venue.longitude] : UEAB_CENTER;
         const lat = venueLat + 0.00018;
         const lng = venueLng + 0.00018;
 
@@ -224,7 +226,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     // 3. Off-Campus Housing Layer (Gold House Pins)
     if (activeLayer === 'all' || activeLayer === 'houses') {
       HOUSES.forEach((h) => {
-        const marker = L.marker(toCampusCoordinates(h.latitude, h.longitude), {
+        const marker = L.marker([h.latitude, h.longitude], {
           icon: createPinIcon('#D97706', '🏠'),
         });
 
@@ -241,9 +243,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     if (activeLayer === 'all' || activeLayer === 'lost_found') {
       LOST_FOUND_ITEMS.forEach((item) => {
         const targetVenue = VENUES.find((v) => v.code === item.venueCode);
-        const [venueLat, venueLng] = targetVenue
-          ? toCampusCoordinates(targetVenue.latitude, targetVenue.longitude)
-          : UEAB_CENTER;
+        const [venueLat, venueLng] = targetVenue ? [targetVenue.latitude, targetVenue.longitude] : UEAB_CENTER;
         const lat = venueLat - 0.00018;
         const lng = venueLng - 0.00018;
 
@@ -269,37 +269,82 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       const targetVenue = VENUES.find((v) => v.id === targetId || v.code.toLowerCase() === targetId.toLowerCase());
       if (targetVenue) {
         setSelectedVenue(targetVenue);
-        const targetCoordinates = toCampusCoordinates(targetVenue.latitude, targetVenue.longitude);
-        map.setView(targetCoordinates, 17, { animate: true });
+        const targetCoordinates: [number, number] = [targetVenue.latitude, targetVenue.longitude];
+        map.flyTo(targetCoordinates, 17, { animate: true, duration: 0.7 });
 
-        // Walking route coordinates from Baraton Main Gate to Venue
         const startPoint = MAIN_GATE_COORDS;
-        const midPoint: [number, number] = [
-          (startPoint[0] + targetCoordinates[0]) / 2,
-          (startPoint[1] + targetCoordinates[1]) / 2 + 0.0004,
-        ];
-        const routeCoords: [number, number][] = [
-          startPoint,
-          midPoint,
-          targetCoordinates,
-        ];
-
-        const polyline = L.polyline(routeCoords, {
-          color: '#F2B705',
-          weight: 6,
-          dashArray: '10, 8',
-          opacity: 0.95,
-        }).addTo(map);
-
-        routeLayerRef.current = polyline;
-        map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        const controller = new AbortController();
+        setRouteInfo(null);
+        const drawFallback = () => {
+          const polyline = L.polyline([startPoint, targetCoordinates], {
+            color: '#F2B705',
+            weight: 5,
+            dashArray: '10, 8',
+            opacity: 0.95,
+          }).addTo(map);
+          routeLayerRef.current = polyline;
+          setRouteInfo(getStraightLineRouteInfo(startPoint, targetCoordinates));
+          map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+        };
+        void fetch(
+          `https://router.project-osrm.org/route/v1/foot/${startPoint[1]},${startPoint[0]};${targetCoordinates[1]},${targetCoordinates[0]}?overview=full&geometries=geojson`,
+          { signal: controller.signal }
+        )
+          .then(async (response) => {
+            if (!response.ok) throw new Error(`OSRM returned ${response.status}`);
+            return response.json() as Promise<{ routes?: Array<{ distance: number; duration: number; geometry: { coordinates: [number, number][] } }> }>;
+          })
+          .then((data) => {
+            const route = data.routes?.[0];
+            if (!route) throw new Error('No walking route found');
+            const coordinates = route.geometry.coordinates.map(([lng, lat]) => [lat, lng] as [number, number]);
+            const polyline = L.polyline(coordinates, { color: '#F2B705', weight: 6, opacity: 0.95 }).addTo(map);
+            routeLayerRef.current = polyline;
+            setRouteInfo({ distance: route.distance, duration: route.duration });
+            map.fitBounds(polyline.getBounds(), { padding: [50, 50] });
+          })
+          .catch((error: unknown) => {
+            if (error instanceof DOMException && error.name === 'AbortError') return;
+            drawFallback();
+          });
+        return () => controller.abort();
       }
     }
   }, [activeLayer, highlightVenueId, showRouteToVenueId, activeRouteVenue]);
 
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    const map = mapInstanceRef.current;
+    if (!container || !map) return;
+    const observer = new ResizeObserver(() => map.invalidateSize());
+    observer.observe(container);
+    map.invalidateSize();
+    return () => observer.disconnect();
+  }, []);
+
   const handleStartWalkingRoute = (v: VenueData) => {
     setActiveRouteVenue(v);
     setActiveLayer('my_route');
+  };
+
+  const handleLocateMe = () => {
+    setLocationMessage(null);
+    if (!navigator.geolocation) {
+      setLocationMessage('Location is not supported by this browser.');
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => {
+        mapInstanceRef.current?.setView([coords.latitude, coords.longitude], 17, { animate: true });
+        L.circleMarker([coords.latitude, coords.longitude], {
+          radius: 8,
+          color: '#0B2A6F',
+          fillColor: '#F2B705',
+          fillOpacity: 1,
+        }).addTo(mapInstanceRef.current as L.Map);
+      },
+      () => setLocationMessage('Location permission was denied. Enable it in your browser settings to locate yourself.')
+    );
   };
 
   return (
@@ -387,17 +432,24 @@ export const CampusMap: React.FC<CampusMapProps> = ({
           <Compass className="w-5 h-5" />
         </button>
         <button
-          onClick={() => {
-            if (mapInstanceRef.current) {
-              mapInstanceRef.current.setView(MAIN_GATE_COORDS, 17, { animate: true });
-            }
-          }}
+          onClick={handleLocateMe}
           className="p-2.5 bg-white/95 dark:bg-[#071B4A]/95 backdrop-blur-md rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-md text-[#0B2A6F] dark:text-[#F2B705] hover:bg-slate-50 transition"
-          title="Locate at UEAB Main Gate"
+          title="Locate me"
         >
           <Locate className="w-5 h-5" />
         </button>
       </div>
+
+      {mapError && (
+        <div className="absolute left-3 right-3 top-20 z-20 rounded-xl border border-rose-200 bg-rose-50/95 px-3 py-2 text-xs font-semibold text-rose-800 shadow-md dark:border-rose-900 dark:bg-rose-950/90 dark:text-rose-200">
+          {mapError}. Check your connection and try again.
+        </div>
+      )}
+      {locationMessage && (
+        <div className="absolute bottom-3 left-3 z-20 max-w-xs rounded-xl border border-amber-200 bg-amber-50/95 px-3 py-2 text-xs font-semibold text-amber-900 shadow-md dark:border-amber-900 dark:bg-amber-950/90 dark:text-amber-200">
+          {locationMessage}
+        </div>
+      )}
 
       {/* Map Leaflet Container */}
       <div ref={mapContainerRef} className="h-full w-full" />
@@ -473,8 +525,13 @@ export const CampusMap: React.FC<CampusMapProps> = ({
                 className="w-full sm:w-auto font-bold text-xs"
               >
                 <Footprints className="w-3.5 h-3.5 mr-1.5" />
-                <span>Route Here</span>
+                <span>Directions</span>
               </Button>
+              {routeInfo && (
+                <span className="text-[10px] font-semibold text-[#5B6475] dark:text-slate-300">
+                  {(routeInfo.distance / 1000).toFixed(2)} km · {Math.ceil(routeInfo.duration / 60)} min walk
+                </span>
+              )}
               <button
                 onClick={() => setSelectedVenue(null)}
                 className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-white text-xs font-bold"

@@ -7,14 +7,13 @@
  * Includes House Find (/housing, /housing/:id) and Campus GIS Map (/campus/map).
  */
 
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './Layout';
 import { LandingPage } from '../features/core/LandingPage';
 import { LoginPage } from '../features/core/LoginPage';
 import { OnboardingWizard } from '../features/core/OnboardingWizard';
 import { HomePage } from '../features/core/HomePage';
-import { CampusMapPage } from '../features/navigate/CampusMapPage';
 import { TimetablePage } from '../features/navigate/TimetablePage';
 import { VenuesDirectoryPage } from '../features/navigate/VenuesDirectoryPage';
 import { DeadlinesPage } from '../features/navigate/DeadlinesPage';
@@ -33,9 +32,14 @@ import { NotificationsPage } from '../features/core/NotificationsPage';
 import { SearchResultsPage } from '../features/core/SearchResultsPage';
 import { ProfilePage } from '../features/core/ProfilePage';
 
+const CampusMapPage = lazy(() =>
+  import('../features/navigate/CampusMapPage').then(({ CampusMapPage: page }) => ({ default: page }))
+);
+
 export const AppRouter: React.FC = () => {
   return (
-    <Routes>
+    <Suspense fallback={<div className="flex min-h-[50dvh] items-center justify-center text-sm text-slate-500">Loading campus map…</div>}>
+      <Routes>
       {/* Public Institutional Landing & Auth */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
@@ -81,6 +85,7 @@ export const AppRouter: React.FC = () => {
         {/* Catch-all redirect to Home */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 };

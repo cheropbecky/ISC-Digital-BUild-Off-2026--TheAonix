@@ -39,7 +39,7 @@ export const LOST_FOUND_ITEMS: LostFoundItem[] = [
     locationFoundOrLost: 'Science Complex Auditorium (SCA-101), Row 4 under seat 18',
     venueCode: 'SCA-101',
     dateReported: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-    photoUrl: '/src/assets/images/ueab_science_complex_1793989896519.jpg',
+    photoUrl: 'https://www.tiktok.com/discover/baraton-university-hostels',
     reporterName: 'Emmanuel Kiprono',
     reporterRole: 'Student, Mathematics',
     status: 'match_suggested',
