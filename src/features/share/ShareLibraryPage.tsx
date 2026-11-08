@@ -7,7 +7,7 @@
  */
 
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -18,16 +18,65 @@ import {
   Search,
   Bookmark,
   Download,
+  Eye,
   Star,
   CheckCircle,
   Plus,
-  ShieldAlert,
   Clock,
-  Sparkles,
-  Filter,
+  X,
+  BookOpen,
+  Files,
+  SlidersHorizontal,
 } from 'lucide-react';
 import { formatBytes } from '../../lib/utils';
 import { DocumentItem } from '../../lib/types';
+import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
+import libraryImage from '../../assets/images/ueab_library_hall_1793989894699.jpg';
+import campusImage from '../../assets/images/ueab_campus_hero_1793989895358.jpg';
+import studentLifeImage from '../../assets/images/ueab_student_life_1793989896360.jpg';
+import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
+
+const getCourseCover = (unitCode: string) => {
+  const code = unitCode.toUpperCase();
+  if (code.startsWith('COSC 311')) {
+    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+  }
+  if (code.startsWith('COSC 330')) {
+    return { src: libraryImage, label: 'Learning Commons', alt: 'UEAB library learning commons' };
+  }
+  if (code.startsWith('NURS')) {
+    return { src: studentLifeImage, label: 'Campus Community', alt: 'UEAB campus student community' };
+  }
+  if (code.startsWith('ENGR')) {
+    return { src: venueEntranceImage, label: 'Campus Facilities', alt: 'Entrance to a UEAB academic facility' };
+  }
+  if (code.startsWith('MATH')) {
+    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+  }
+  return { src: campusImage, label: 'UEAB Campus', alt: 'UEAB campus grounds' };
+};
+
+const formatUploadedAt = (value: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  }).format(new Date(value));
+
+const categoryLabels: Record<DocumentItem['category'], string> = {
+  lecture_notes: 'Lecture notes',
+  past_paper: 'Past paper',
+  assignment_solution: 'Solutions',
+  summary: 'Revision summary',
+  lab_manual: 'Lab manual',
+};
+
+const categoryStyles: Record<DocumentItem['category'], string> = {
+  lecture_notes: 'bg-blue-50 text-blue-800 dark:bg-blue-950/50 dark:text-blue-200',
+  past_paper: 'bg-rose-50 text-rose-800 dark:bg-rose-950/50 dark:text-rose-200',
+  assignment_solution: 'bg-violet-50 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200',
+  summary: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200',
+  lab_manual: 'bg-amber-50 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200',
+};
 
 export const ShareLibraryPage: React.FC = () => {
   const navigate = useNavigate();
@@ -36,6 +85,7 @@ export const ShareLibraryPage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [onlyBookmarked, setOnlyBookmarked] = useState(false);
+  const [previewDoc, setPreviewDoc] = useState<DocumentItem | null>(null);
 
   const canApprove = PERMISSIONS.canApproveDocuments(user.role);
 
@@ -43,10 +93,16 @@ export const ShareLibraryPage: React.FC = () => {
   const approvedDocs = documents.filter((d) => d.status === 'approved');
 
   const filteredDocs = approvedDocs.filter((d) => {
-    const matchesSearch =
-      d.title.toLowerCase().includes(search.toLowerCase()) ||
-      d.unitCode.toLowerCase().includes(search.toLowerCase()) ||
-      d.uploaderName.toLowerCase().includes(search.toLowerCase());
+    const query = search.trim().toLowerCase();
+    const matchesSearch = !query || [
+      d.title,
+      d.unitCode,
+      d.uploaderName,
+      d.description,
+      d.category.replaceAll('_', ' '),
+      d.fileType,
+      d.fileName || d.fileUrl.split('/').pop() || '',
+    ].some((value) => value.toLowerCase().includes(query));
 
     const matchesCat = selectedCategory === 'all' || d.category === selectedCategory;
     const matchesBookmarked = !onlyBookmarked || d.isBookmarked;
@@ -54,37 +110,26 @@ export const ShareLibraryPage: React.FC = () => {
     return matchesSearch && matchesCat && matchesBookmarked;
   });
 
-  const handleDownload = (doc: DocumentItem) => {
-    doc.downloadCount += 1;
-    // Trigger sample blob download
-    const dummyContent = `UEAB Academic Resource: ${doc.title}\nCourse: ${doc.unitCode}\nUploaded by: ${doc.uploaderName}\nVerified by Class Rep & Faculty Directorate.`;
-    const blob = new Blob([dummyContent], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${doc.unitCode}_${doc.title.replace(/\s+/g, '_')}.txt`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  };
-
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-[#071B4A] dark:text-white">
-              Academic Share Hub
-            </h1>
-            <Badge variant="academic">Peer Verified</Badge>
+    <div className="space-y-6 pb-8">
+      <section className="relative overflow-hidden rounded-xl border border-[#0B2A6F] bg-[#071B4A] text-white shadow-sm">
+        <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-gradient-to-l from-[#0B2A6F] to-transparent sm:block" />
+        <div className="relative flex flex-col gap-5 p-5 sm:flex-row sm:items-end sm:justify-between sm:p-7">
+          <div className="max-w-2xl">
+            <div className="mb-3 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.14em] text-[#F2B705]">
+              <BookOpen className="h-4 w-4" />
+              UEAB · Academic resources
+            </div>
+            <div className="flex flex-wrap items-center gap-2.5">
+              <h1 className="text-2xl font-black leading-tight sm:text-3xl">Shared Notes Library</h1>
+              <Badge variant="academic">Peer verified</Badge>
+            </div>
+            <p className="mt-2 max-w-xl text-xs leading-relaxed text-blue-100 sm:text-sm">
+              Find course notes, revision papers and practical guides shared by the Baraton community.
+            </p>
           </div>
-          <p className="text-xs text-[#5B6475] dark:text-slate-400 mt-1">
-            Lecture notes, summaries, past papers & lab manuals. Verified by Baraton Class Representatives.
-          </p>
-        </div>
 
-        <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2">
           <Button
             size="sm"
             variant="secondary"
@@ -102,8 +147,28 @@ export const ShareLibraryPage: React.FC = () => {
             <Plus className="w-3.5 h-3.5 mr-1" />
             Upload Document
           </Button>
+          </div>
         </div>
-      </div>
+      </section>
+
+      <section className="grid grid-cols-2 gap-px overflow-hidden rounded-lg border border-slate-200 bg-slate-200 dark:border-slate-700 dark:bg-slate-700 sm:grid-cols-4">
+        {[
+          { label: 'Available resources', value: approvedDocs.length, icon: Files },
+          { label: 'Course units', value: new Set(approvedDocs.map((doc) => doc.unitCode)).size, icon: BookOpen },
+          { label: 'Downloads', value: approvedDocs.reduce((total, doc) => total + doc.downloadCount, 0).toLocaleString(), icon: Download },
+          { label: 'Needs review', value: pendingDocs.length, icon: Clock },
+        ].map(({ label, value, icon: Icon }) => (
+          <div key={label} className="flex items-center gap-3 bg-white px-4 py-3 dark:bg-slate-900">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-[#F7F9FC] text-[#0B2A6F] dark:bg-slate-800 dark:text-blue-300">
+              <Icon className="h-4 w-4" />
+            </span>
+            <div>
+              <div className="text-base font-black leading-tight text-[#071B4A] dark:text-white">{value}</div>
+              <div className="mt-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400">{label}</div>
+            </div>
+          </div>
+        ))}
+      </section>
 
       {/* Class Rep / Lecturer Pending Approvals Queue (Demo Flow 4) */}
       {canApprove && pendingDocs.length > 0 && (
@@ -124,12 +189,22 @@ export const ShareLibraryPage: React.FC = () => {
                 key={doc.id}
                 className="p-3 bg-white dark:bg-[#0C1D3D] rounded-lg border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
               >
-                <div>
+                <div className="flex min-w-0 items-center gap-3">
+                  <img
+                    src={getCourseCover(doc.unitCode).src}
+                    alt={getCourseCover(doc.unitCode).alt}
+                    className="h-14 w-20 shrink-0 rounded object-cover"
+                  />
+                  <div className="min-w-0">
                   <div className="font-bold text-[#071B4A] dark:text-white">
                     [{doc.unitCode}] {doc.title}
                   </div>
                   <div className="text-[11px] text-slate-500">
-                    Uploaded by {doc.uploaderName} • {formatBytes(doc.fileSizeBytes)} • {doc.category}
+                    Uploaded by {doc.uploaderName} • {formatBytes(doc.fileSizeBytes)} • {doc.category.replaceAll('_', ' ')}
+                  </div>
+                  <div className="text-[11px] text-slate-400 mt-1">
+                    Submitted {formatUploadedAt(doc.createdAt)}
+                  </div>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -150,35 +225,40 @@ export const ShareLibraryPage: React.FC = () => {
       )}
 
       {/* Search and Filters */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3" />
+      <section className="rounded-lg border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 sm:p-4">
+        <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
+        <div className="relative min-w-0 flex-1">
+          <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search notes, course codes, topics..."
-            className="w-full h-10 pl-10 pr-3 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#F2B705]"
+            aria-label="Search notes and files"
+            placeholder="Search titles, course codes, topics, file types..."
+            className="h-10 w-full rounded-md border border-slate-200 bg-[#F7F9FC] pl-10 pr-3 text-xs text-slate-900 outline-none transition placeholder:text-slate-400 focus:border-[#0B2A6F] focus:ring-2 focus:ring-[#0B2A6F]/10 dark:border-slate-700 dark:bg-slate-950 dark:text-white"
           />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
           <button
             onClick={() => setOnlyBookmarked(!onlyBookmarked)}
-            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-1.5 transition ${
+            aria-pressed={onlyBookmarked}
+            className={`inline-flex h-10 items-center gap-2 rounded-md border px-3 text-xs font-semibold transition ${
               onlyBookmarked
-                ? 'bg-[#0B2A6F] text-white'
-                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                ? 'border-[#0B2A6F] bg-[#0B2A6F] text-white'
+                : 'border-slate-200 bg-white text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'
             }`}
           >
             <Bookmark className={`w-3.5 h-3.5 ${onlyBookmarked ? 'fill-current' : ''}`} />
-            <span>Saved Only</span>
+            <span>Saved</span>
           </button>
+          <span className="hidden items-center gap-1.5 px-2 text-[11px] text-slate-400 sm:inline-flex">
+            <SlidersHorizontal className="h-3.5 w-3.5" /> Filter by type
+          </span>
         </div>
       </div>
 
-      {/* Category Pills */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
+      <div className="mt-3 flex items-center gap-1 overflow-x-auto border-t border-slate-100 pt-3 dark:border-slate-800">
         {[
           { id: 'all', label: 'All Documents' },
           { id: 'lecture_notes', label: 'Lecture Notes' },
@@ -189,29 +269,57 @@ export const ShareLibraryPage: React.FC = () => {
           <button
             key={cat.id}
             onClick={() => setSelectedCategory(cat.id)}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition ${
+            className={`min-h-9 rounded-md px-3 text-xs font-semibold whitespace-nowrap transition ${
               selectedCategory === cat.id
-                ? 'bg-[#0B2A6F] text-white shadow-xs'
-                : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100'
+                ? 'bg-[#0B2A6F] text-white'
+                : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
             }`}
           >
             {cat.label}
           </button>
         ))}
       </div>
+      </section>
 
       {/* Documents Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+        <span className="font-semibold text-slate-700 dark:text-slate-200">{filteredDocs.length} {filteredDocs.length === 1 ? 'resource' : 'resources'}</span>
+        {search && <span className="truncate pl-3">Results for “{search}”</span>}
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredDocs.map((doc) => (
-          <Card key={doc.id} padding="md" hoverable className="flex flex-col justify-between">
+          <Card key={doc.id} padding="md" hoverable className="group flex min-h-[285px] flex-col justify-between border-slate-200 transition duration-200 hover:-translate-y-0.5 hover:border-[#9BB1D6] hover:shadow-md dark:border-slate-700">
+            <div className="relative -mx-4 -mt-4 mb-4 h-28 overflow-hidden rounded-t-lg sm:-mx-5 sm:-mt-5">
+              <img
+                src={getCourseCover(doc.unitCode).src}
+                alt={getCourseCover(doc.unitCode).alt}
+                className="h-full w-full object-cover object-center transition duration-500 group-hover:scale-[1.03]"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#071B4A]/85 via-[#071B4A]/15 to-transparent" />
+              <div className="absolute bottom-3 left-4 text-white sm:left-5">
+                <div className="text-[9px] font-bold uppercase tracking-[0.14em] text-[#F2B705]">{getCourseCover(doc.unitCode).label}</div>
+                <div className="mt-0.5 text-xs font-bold">{doc.unitCode} · Course resource</div>
+              </div>
+            </div>
             <div>
-              <div className="flex items-start justify-between gap-2 mb-2">
-                <span className="text-[10px] font-black text-[#0B2A6F] dark:text-[#93C5FD] tracking-wider uppercase">
-                  {doc.unitCode}
-                </span>
+              <div className="mb-4 flex items-start justify-between gap-3">
+                <div className="flex min-w-0 items-center gap-3">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md border border-slate-200 bg-[#F7F9FC] text-[#0B2A6F] dark:border-slate-700 dark:bg-slate-800 dark:text-blue-300">
+                    <FileText className="h-6 w-6" strokeWidth={1.7} />
+                  </span>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-black uppercase tracking-wider text-[#0B2A6F] dark:text-blue-300">{doc.unitCode}</div>
+                    <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide ${categoryStyles[doc.category]}`}>
+                      {categoryLabels[doc.category]}
+                    </span>
+                  </div>
+                </div>
                 <button
                   onClick={() => toggleBookmark(doc.id)}
-                  className="text-slate-400 hover:text-[#F2B705] p-1 transition"
+                  aria-label={doc.isBookmarked ? 'Remove bookmark' : 'Bookmark document'}
+                  aria-pressed={Boolean(doc.isBookmarked)}
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md text-slate-400 transition hover:bg-amber-50 hover:text-[#B58100] dark:hover:bg-amber-950/40"
                   title="Bookmark document"
                 >
                   <Bookmark
@@ -220,17 +328,22 @@ export const ShareLibraryPage: React.FC = () => {
                 </button>
               </div>
 
-              <h3 className="text-sm font-bold text-[#071B4A] dark:text-white line-clamp-2 mb-1.5 leading-snug">
+              <h3 className="mb-2 line-clamp-2 text-sm font-bold leading-snug text-[#071B4A] dark:text-white">
                 {doc.title}
               </h3>
 
-              <p className="text-xs text-[#5B6475] dark:text-slate-400 line-clamp-2 mb-3 leading-relaxed">
+              <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-[#5B6475] dark:text-slate-400">
                 {doc.description}
               </p>
 
-              {/* Metadata strip */}
-              <div className="flex items-center justify-between text-[11px] text-slate-500 border-t border-slate-100 dark:border-slate-800 pt-2.5 mb-4">
-                <span>By {doc.uploaderName}</span>
+              <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1.5 text-[10px] text-slate-500 dark:text-slate-400">
+                <span className="inline-flex items-center gap-1.5"><Clock className="h-3.5 w-3.5" /><time dateTime={doc.createdAt}>{formatUploadedAt(doc.createdAt)}</time></span>
+                <span className="h-1 w-1 rounded-full bg-slate-300 dark:bg-slate-600" />
+                <span className="truncate">{doc.uploaderName}</span>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 pt-2.5 text-[11px] text-slate-500 dark:border-slate-800">
+                <span>{formatBytes(doc.fileSizeBytes)} <span className="text-slate-300 dark:text-slate-600">/</span> {doc.fileType.toUpperCase()}</span>
                 <div className="flex items-center gap-1 text-amber-500 font-bold">
                   <Star className="w-3.5 h-3.5 fill-current" />
                   <span>{doc.averageRating.toFixed(1)}</span>
@@ -239,23 +352,88 @@ export const ShareLibraryPage: React.FC = () => {
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-              <span className="text-[11px] font-mono text-slate-400">
-                {formatBytes(doc.fileSizeBytes)} • {doc.downloadCount} dl
-              </span>
+            <div className="mt-4 flex items-center justify-between gap-2">
+              <span className="text-[10px] text-slate-400">{doc.downloadCount.toLocaleString()} downloads</span>
               <Button
                 size="sm"
                 variant="primary"
-                onClick={() => handleDownload(doc)}
+                onClick={() => setPreviewDoc(doc)}
                 className="text-xs"
               >
-                <Download className="w-3.5 h-3.5 mr-1" />
-                Download
+                <Eye className="mr-1.5 h-3.5 w-3.5" />
+                Preview
               </Button>
             </div>
           </Card>
         ))}
       </div>
+
+      {filteredDocs.length === 0 && (
+        <div className="border border-dashed border-slate-300 dark:border-slate-700 px-5 py-12 text-center">
+          <Search className="mx-auto mb-3 h-8 w-8 text-slate-400" />
+          <h2 className="text-sm font-bold text-[#071B4A] dark:text-white">No matching resources</h2>
+          <p className="mt-1 text-xs text-slate-500">Try another search term or select a different category.</p>
+        </div>
+      )}
+
+      {previewDoc && (
+        <div
+          className="fixed inset-0 z-[100] bg-slate-950/70 p-3 sm:p-6 flex items-center justify-center"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) setPreviewDoc(null);
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="document-preview-title"
+            className="w-full max-w-5xl h-[min(88vh,900px)] bg-white dark:bg-slate-900 rounded-lg shadow-2xl flex flex-col overflow-hidden"
+          >
+            <header className="px-4 py-3 border-b border-slate-200 dark:border-slate-700 flex items-start justify-between gap-4">
+              <div className="min-w-0">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#0B2A6F] dark:text-blue-300">{previewDoc.unitCode} · {previewDoc.fileType}</div>
+                <h2 id="document-preview-title" className="text-sm font-bold text-[#071B4A] dark:text-white mt-1 truncate">{previewDoc.title}</h2>
+                <p className="text-[11px] text-slate-500 mt-1">{previewDoc.fileName || previewDoc.fileUrl.split('/').pop()} · Uploaded by {previewDoc.uploaderName} · {formatUploadedAt(previewDoc.createdAt)}</p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <a
+                  href={previewDoc.fileUrl}
+                  download
+                  className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-[#0B2A6F] text-white text-xs font-semibold hover:bg-[#071B4A]"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  Download
+                </a>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDoc(null)}
+                  aria-label="Close file preview"
+                  className="w-9 h-9 inline-flex items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+            </header>
+            <div className="flex-1 min-h-0 bg-slate-100 dark:bg-slate-950">
+              {previewDoc.fileType === 'pdf' || previewDoc.fileType === 'html' ? (
+                <iframe
+                  title={`Preview: ${previewDoc.title}`}
+                  src={previewDoc.fileUrl}
+                  referrerPolicy="no-referrer"
+                  className="w-full h-full bg-white"
+                />
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-8">
+                  <FileText className="w-10 h-10 text-slate-400 mb-3" />
+                  <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Inline preview is unavailable for this format.</p>
+                  <p className="text-xs text-slate-500 mt-1">{previewDoc.fileType.toUpperCase()} · {formatBytes(previewDoc.fileSizeBytes)}</p>
+                  <a href={previewDoc.fileUrl} download className="mt-4 text-xs font-bold text-[#0B2A6F] dark:text-blue-300 underline">Download original file</a>
+                </div>
+              )}
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   );
 };

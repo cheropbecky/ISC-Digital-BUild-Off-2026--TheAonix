@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>COSC 311 | Compiler Design Notes</title>
+  <style>
+    body{max-width:780px;margin:48px auto;padding:0 24px;color:#192637;font:16px/1.7 Georgia,serif}header{border-bottom:3px solid #d6a515;padding-bottom:18px;margin-bottom:28px}h1,h2{font-family:Arial,sans-serif;color:#102b51}h1{font-size:30px;margin:4px 0}h2{font-size:21px;margin-top:30px}small,.tag{font:12px Arial,sans-serif;color:#64748b}.tag{display:inline-block;background:#edf3f8;padding:4px 8px;border-radius:4px}pre{overflow:auto;background:#f3f5f7;padding:16px;border-left:3px solid #d6a515}li{margin:8px 0}
+  </style>
+</head>
+<body>
+  <header><small>UEAB • SCHOOL OF SCIENCE &amp; TECHNOLOGY • COSC 311</small><h1>Compiler Design: Working Notes</h1><span class="tag">Lexing · Parsing · Semantic Analysis</span></header>
+  <p>These notes follow a source program from characters to an intermediate representation. The examples are deliberately small: trace each transformation by hand before relying on a parser generator.</p>
+  <h2>1. Compiler pipeline</h2>
+  <ol><li><b>Lexical analysis:</b> groups characters into tokens and records source locations. Whitespace is usually discarded except where it separates tokens.</li><li><b>Parsing:</b> checks token order against a grammar and builds a concrete or abstract syntax tree.</li><li><b>Semantic analysis:</b> resolves names, checks types and scope, and annotates the tree with meaning.</li><li><b>Intermediate representation:</b> lowers language constructs to a form suitable for optimization and target-code generation.</li></ol>
+  <h2>2. Tokens and regular expressions</h2>
+  <p>A token is a category plus an optional lexeme and source span. For a simple identifier, a useful pattern is <code>[A-Za-z_][A-Za-z0-9_]*</code>. Apply longest-match (maximal munch): when multiple rules match at the current position, choose the longest lexeme, then use rule priority to break ties.</p>
+  <pre>sum = value + 12;
+IDENT(sum)  ASSIGN(=)  IDENT(value)  PLUS(+)  INTEGER(12)  SEMICOLON(;)</pre>
+  <h2>3. LL(1) predictive parsing</h2>
+  <p>For a grammar to be LL(1), a parser must choose one production using one lookahead token. Left recursion prevents direct recursive descent; left factoring exposes a shared prefix.</p>
+  <pre>Expr  → Term ExprTail
+ExprTail → + Term ExprTail | ε
+Term  → Factor TermTail
+TermTail → * Factor TermTail | ε
+Factor → ( Expr ) | id</pre>
+  <p>Compute FIRST sets from terminals at the beginning of derivations. Compute FOLLOW sets from what can legally appear after a nonterminal. For an ε production, its table entries are selected using FOLLOW(lhs). A multiply expression binds more tightly here because multiplication is handled inside <code>Term</code>.</p>
+  <h2>4. Shift-reduce parsing</h2>
+  <p>Bottom-up parsers shift input symbols onto a stack and reduce a recognized handle to its production's left-hand side. A shift/reduce conflict asks whether to consume another token or reduce now; precedence and associativity declarations resolve common arithmetic conflicts.</p>
+  <h2>5. Three-address code</h2>
+  <pre>total = price * quantity + tax
+t1 = price * quantity
+t2 = t1 + tax
+total = t2</pre>
+  <p>Temporary names make evaluation order explicit. A basic block has one entry and no branches except at its end, which helps local data-flow analysis and optimization.</p>
+  <h2>Revision checklist</h2>
+  <ul><li>Trace tokenization including a malformed character and its source position.</li><li>Eliminate left recursion, then verify FIRST/FOLLOW table conflicts.</li><li>Draw a parse tree and its abstract syntax tree for the same expression.</li><li>Translate nested expressions to three-address code and identify basic blocks.</li></ul>
+</body>
+</html>

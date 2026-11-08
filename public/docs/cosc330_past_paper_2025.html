@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>COSC 330 | Database Systems Revision Paper</title>
+  <style>body{max-width:780px;margin:48px auto;padding:0 24px;color:#192637;font:16px/1.7 Georgia,serif}header{border-bottom:3px solid #d6a515;padding-bottom:18px;margin-bottom:28px}h1,h2{font-family:Arial,sans-serif;color:#102b51}h1{font-size:28px}h2{font-size:20px;margin-top:30px}small{font:12px Arial,sans-serif;color:#64748b}pre{overflow:auto;background:#f3f5f7;padding:14px}li{margin:8px 0}</style>
+</head>
+<body>
+  <header><small>UEAB • SCHOOL OF SCIENCE &amp; TECHNOLOGY • COSC 330</small><h1>Database Systems: Revision Questions and Worked Solutions</h1><small>Practice resource • Relational design, SQL, transactions, query plans</small></header>
+  <p>Use this set for retrieval practice. Try each prompt before reading its solution. The questions are original revision exercises, not a reproduction of a university examination.</p>
+  <h2>Question 1 — Functional dependencies</h2>
+  <p>For <code>ENROLMENT(StudentNo, UnitCode, StudentName, UnitTitle, Grade)</code>, assume a student has one name, a unit code determines one unit title, and each student receives one grade per unit. Identify a candidate key and explain whether the relation is in 2NF.</p>
+  <p><b>Solution:</b> The candidate key is <code>(StudentNo, UnitCode)</code>. Both key attributes are required to identify a grade. <code>StudentName</code> depends only on <code>StudentNo</code>, and <code>UnitTitle</code> depends only on <code>UnitCode</code>; these are partial dependencies on a proper subset of the composite key. The relation is not in 2NF. Decompose to <code>STUDENT(StudentNo, StudentName)</code>, <code>UNIT(UnitCode, UnitTitle)</code>, and <code>ENROLMENT(StudentNo, UnitCode, Grade)</code>.</p>
+  <h2>Question 2 — Join and grouping</h2>
+  <p>Return unit codes with at least two enrolled students. Given <code>ENROLMENT(StudentNo, UnitCode, Grade)</code>, write a query that omits units with fewer than two rows.</p>
+  <pre>SELECT UnitCode, COUNT(DISTINCT StudentNo) AS student_count
+FROM ENROLMENT
+GROUP BY UnitCode
+HAVING COUNT(DISTINCT StudentNo) &gt;= 2;</pre>
+  <p><b>Why HAVING?</b> <code>WHERE</code> filters rows before grouping; <code>HAVING</code> filters groups after aggregate values are computed.</p>
+  <h2>Question 3 — Index choice</h2>
+  <p>A table contains several million registrations. Most queries filter by <code>UnitCode</code> and then order by <code>RegisteredAt</code>. Suggest a composite B-tree index and state one cost.</p>
+  <p><b>Solution:</b> Consider <code>(UnitCode, RegisteredAt)</code> when predicates constrain the leading column and the ordering matches the second column. The index can reduce examined rows and avoid a sort, but it consumes storage and adds write work when either indexed value changes. Validate with the database's actual execution plan and representative data.</p>
+  <h2>Question 4 — Transactions</h2>
+  <p>Explain a lost update and name an isolation mechanism that can prevent it. A lost update occurs when concurrent transactions read the same old value and the later write overwrites the earlier update. Row locking or serializable isolation can prevent this, with different concurrency costs.</p>
+  <h2>Quick review</h2>
+  <ul><li>State the functional dependencies before decomposing a relation.</li><li>Check decomposition for lossless joins and dependency preservation.</li><li>Read estimated rows, actual rows, and scan type in an execution plan.</li><li>Discuss atomicity, consistency, isolation, and durability in transaction scenarios.</li></ul>
+</body>
+</html>

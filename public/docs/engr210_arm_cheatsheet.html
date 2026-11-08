@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ENGR 210 | ARM Assembly Reference</title>
+  <style>body{max-width:780px;margin:48px auto;padding:0 24px;color:#192637;font:16px/1.7 Georgia,serif}header{border-bottom:3px solid #d6a515;padding-bottom:18px;margin-bottom:28px}h1,h2{font-family:Arial,sans-serif;color:#102b51}h1{font-size:28px}h2{font-size:20px;margin-top:30px}small{font:12px Arial,sans-serif;color:#64748b}pre{overflow:auto;background:#f3f5f7;padding:14px;border-left:3px solid #d6a515}</style>
+</head>
+<body>
+  <header><small>UEAB • SCHOOL OF SCIENCE &amp; TECHNOLOGY • ENGR 210</small><h1>ARM Assembly: Quick Reference</h1><small>Instruction shape · registers · conditions · memory</small></header>
+  <p>Compact revision notes for reading basic ARM assembly. Exact syntax and available instructions depend on the target architecture and assembler mode used in class.</p>
+  <h2>1. Registers and operands</h2>
+  <p>General-purpose registers hold operands and intermediate values. The program counter tracks instruction flow; the link register stores a return address for common subroutine calls; the stack pointer identifies the active stack. Register roles and calling conventions depend on the ABI.</p>
+  <pre>MOV   R0, #7       ; immediate value (assembler syntax varies)
+ADD   R2, R0, R1   ; R2 = R0 + R1
+SUBS  R3, R3, #1   ; subtract and update condition flags</pre>
+  <h2>2. Data processing and flags</h2>
+  <p>Arithmetic and logical operations typically read register or immediate operands and write a destination register. Flag-setting forms update condition state such as zero, negative, carry, and overflow. Unsigned carry and signed overflow are different concepts; choose the appropriate condition for the value interpretation.</p>
+  <h2>3. Branching</h2>
+  <pre>CMP   R0, R1
+BEQ   equal_label     ; branch if comparison indicates equality
+B     next_block</pre>
+  <p>A conditional branch reads the flags set by an earlier instruction. Keep the compare and dependent branch together when tracing control flow.</p>
+  <h2>4. Load and store</h2>
+  <pre>LDR   R4, [R5]       ; load from address in R5
+STR   R4, [R5, #4]    ; store at an offset from R5</pre>
+  <p>Loads move values from memory to a register; stores move register values to memory. Check the operand width, alignment rules, addressing mode, and whether an instruction updates its base register.</p>
+  <h2>5. Trace method</h2>
+  <ol><li>Write initial register and memory values.</li><li>Execute one instruction at a time, noting changed registers and flags.</li><li>For a branch, evaluate its condition from the latest flags.</li><li>For memory access, compute the effective address before reading or writing.</li></ol>
+</body>
+</html>
