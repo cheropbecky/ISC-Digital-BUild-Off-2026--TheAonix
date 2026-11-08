@@ -21,6 +21,8 @@ import {
   Sparkles,
   BookOpen,
   GraduationCap,
+  ChevronDown,
+  Search,
 } from 'lucide-react';
 import { Button } from '../ui/Button';
 
@@ -30,6 +32,8 @@ interface InstitutionalHeaderProps {
 
 export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpenInfoModal }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const handleNavClick = (title: string, content: string, sectionId?: string) => {
     setIsMobileMenuOpen(false);
@@ -44,6 +48,21 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
       onOpenInfoModal(title, content);
     }
   };
+
+  const navItems = [
+    { label: 'About UEAB', sectionId: 'section-about', description: 'Our story, values, and chartered university journey.' },
+    { label: 'Academics', sectionId: 'section-modules', description: 'Explore faculties, programmes, and student resources.' },
+    { label: 'Admissions', sectionId: 'section-faq', description: 'Find intake dates, requirements, and application guidance.' },
+    { label: 'Research', description: 'Discover research and innovation at Baraton.' },
+    { label: 'Student Life', sectionId: 'section-how-it-works', description: 'Connect with clubs, events, and campus life.' },
+    { label: 'Library', description: 'Access the Learning Commons and digital resources.' },
+    { label: 'News & Events', sectionId: 'section-modules', description: 'Keep up with campus updates and events.' },
+    { label: 'Contact', description: 'Reach the UEAB team in Baraton, Kenya.' },
+  ];
+
+  const filteredItems = navItems.filter((item) =>
+    item.label.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
     <header className="sticky top-0 z-50 w-full shadow-md">
@@ -127,104 +146,70 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
           </Link>
 
           {/* Desktop Navigation Links */}
-          <nav className="hidden xl:flex items-center gap-5 text-xs font-bold text-slate-200">
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'About UEAB',
-                  'The University of Eastern Africa, Baraton is a premier Seventh-day Adventist institution of higher learning chartered in 1980, recognized for moral excellence and professional innovation.',
-                  'section-about'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              About UEAB
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'Academics',
-                  'Six faculties offering world-class degree programmes: Science & Technology, Health Sciences, Business, Theology, Education, and Humanities.',
-                  'section-modules'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Academics
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'Admissions',
-                  'Admissions open for Trimester 1, 2, and 3. Direct government placement via KUCCPS as well as private international applicants welcomed.',
-                  'section-faq'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Admissions
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'Research & Innovation',
-                  'Baraton research centres pioneer research in tropical bio-agriculture, renewable solar integration, and public health nursing epidemiology.'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Research
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'Student Life',
-                  'Vibrant spiritual fellowship, inter-collegiate athletic derbies, student clubs, and peaceful residential campus life in the scenic Nandi Hills.',
-                  'section-how-it-works'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Student Life
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'University Library',
-                  'The UEAB Learning Commons houses over 120,000 physical volumes, digital JSTOR archives, and fast fiber computing workstations.'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Library
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'News & Events',
-                  'Stay updated with upcoming Sabbath vespers, faculty seminars, sports leagues, and graduation ceremonies.',
-                  'section-modules'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              News & Events
-            </button>
-            <button
-              onClick={() =>
-                handleNavClick(
-                  'Contact Us',
-                  'Main Campus: Baraton, Nandi County, Kenya. Phone: +254 722 000 000. Email: info@ueab.ac.ke.'
-                )
-              }
-              className="hover:text-[#F2B705] transition-colors"
-            >
-              Contact
-            </button>
+          <nav className="hidden xl:flex items-center gap-3 text-xs font-bold text-slate-200">
+            {navItems.map((item) => (
+              <div key={item.label} className="relative">
+                <button
+                  onClick={() => setOpenMenu(openMenu === item.label ? null : item.label)}
+                  className="flex items-center gap-1 px-2 py-2 hover:text-[#F2B705] transition-colors"
+                  aria-expanded={openMenu === item.label}
+                >
+                  {item.label}
+                  <ChevronDown className={`w-3 h-3 transition-transform ${openMenu === item.label ? 'rotate-180' : ''}`} />
+                </button>
+                {openMenu === item.label && (
+                  <div className="absolute top-full left-0 mt-2 w-60 rounded-xl bg-white p-2 text-[#071B4A] shadow-2xl ring-1 ring-black/5">
+                    <p className="px-3 py-2 text-[11px] font-medium leading-relaxed text-[#5B6475]">{item.description}</p>
+                    <button
+                      onClick={() => {
+                        setOpenMenu(null);
+                        handleNavClick(item.label, item.description, item.sectionId);
+                      }}
+                      className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-xs font-extrabold hover:bg-[#F7F9FC] hover:text-[#0B2A6F]"
+                    >
+                      Explore {item.label}
+                      <ArrowRight className="h-3.5 w-3.5 text-[#F2B705]" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </nav>
 
           {/* Right Action: Gold "Enter Kampas" Button & Mobile Toggle */}
           <div className="flex items-center gap-3">
+            <div className="relative hidden lg:block">
+              <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/60" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' && filteredItems[0]) {
+                    handleNavClick(filteredItems[0].label, filteredItems[0].description, filteredItems[0].sectionId);
+                    setSearchQuery('');
+                  }
+                }}
+                placeholder="Search"
+                aria-label="Search navigation"
+                className="w-28 rounded-full border border-white/25 bg-white/10 py-2 pl-9 pr-3 text-xs text-white outline-none placeholder:text-white/60 focus:w-40 focus:border-[#F2B705] transition-all"
+              />
+              {searchQuery && filteredItems.length > 0 && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl bg-white p-1 shadow-xl">
+                  {filteredItems.slice(0, 4).map((item) => (
+                    <button
+                      key={item.label}
+                      onClick={() => {
+                        handleNavClick(item.label, item.description, item.sectionId);
+                        setSearchQuery('');
+                      }}
+                      className="w-full rounded-lg px-3 py-2 text-left text-xs font-bold text-[#071B4A] hover:bg-[#F7F9FC]"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             <Link to="/home">
               <Button
                 variant="gold"
