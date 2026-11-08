@@ -71,3 +71,8 @@
   border-radius: 0.75rem;
   z-index: 10;
 }
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
