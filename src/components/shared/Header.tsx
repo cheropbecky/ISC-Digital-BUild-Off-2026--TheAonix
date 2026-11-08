@@ -73,12 +73,44 @@ export const Header: React.FC<HeaderProps> = ({
 
   // User Avatar Dropdown
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isHeaderHidden, setIsHeaderHidden] = useState(false);
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
+
+  useEffect(() => {
+    let previousScrollY = window.scrollY;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      const keepHeaderVisible =
+        window.innerWidth >= 768 ||
+        currentScrollY <= 72 ||
+        isMobileMenuOpen ||
+        isUserMenuOpen;
+
+      if (keepHeaderVisible) {
+        setIsHeaderHidden(false);
+      } else if (currentScrollY > previousScrollY + 4) {
+        setIsSearchOpen(false);
+        setIsHeaderHidden(true);
+      } else if (currentScrollY < previousScrollY - 4) {
+        setIsHeaderHidden(false);
+      }
+
+      previousScrollY = currentScrollY;
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [isMobileMenuOpen, isSearchOpen, isUserMenuOpen]);
 
   // Debounce search query by 200ms
   useEffect(() => {
@@ -198,8 +230,8 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className="sticky top-0 z-40 w-full h-14 sm:h-[68px] bg-white dark:bg-[#071B4A] border-b border-[#E3E8F0] dark:border-[#1E3158] transition-colors select-none shadow-xs">
-      <div className="h-full max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
+    <header className={`sticky top-0 z-40 w-full h-14 sm:h-[68px] bg-white dark:bg-[#071B4A] border-b border-[#E3E8F0] dark:border-[#1E3158] transition-[transform,colors] duration-300 ease-in-out select-none shadow-xs ${isHeaderHidden ? '-translate-y-full md:translate-y-0' : 'translate-y-0'}`}>
+      <div className="h-full max-w-7xl mx-auto min-w-0 px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
         {/* Left: Brand Identity & Mobile Hamburger */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           {onToggleMobileMenu && (
@@ -239,7 +271,7 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center: Global Working Search Bar with Debounce & Grouped Suggestions */}
-        <div ref={searchContainerRef} className="flex-1 max-w-lg relative">
+        <div ref={searchContainerRef} className="relative hidden min-w-0 max-w-lg flex-1 sm:block">
           <div className="relative">
             <Search className="w-4 h-4 text-[#5B6475] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input

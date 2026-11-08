@@ -36,6 +36,26 @@ import campusImage from '../../assets/images/ueab_campus_hero_1793989895358.jpg'
 import studentLifeImage from '../../assets/images/ueab_student_life_1793989896360.jpg';
 import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
 
+const getCourseCover = (unitCode: string) => {
+  const code = unitCode.toUpperCase();
+  if (code.startsWith('COSC 311')) {
+    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+  }
+  if (code.startsWith('COSC 330')) {
+    return { src: libraryImage, label: 'Learning Commons', alt: 'UEAB library learning commons' };
+  }
+  if (code.startsWith('NURS')) {
+    return { src: studentLifeImage, label: 'Campus Community', alt: 'UEAB campus student community' };
+  }
+  if (code.startsWith('ENGR')) {
+    return { src: venueEntranceImage, label: 'Campus Facilities', alt: 'Entrance to a UEAB academic facility' };
+  }
+  if (code.startsWith('MATH')) {
+    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+  }
+  return { src: campusImage, label: 'UEAB Campus', alt: 'UEAB campus grounds' };
+};
+
 const formatUploadedAt = (value: string) =>
   new Intl.DateTimeFormat(undefined, {
     dateStyle: 'medium',
@@ -56,40 +76,6 @@ const categoryStyles: Record<DocumentItem['category'], string> = {
   assignment_solution: 'bg-violet-50 text-violet-800 dark:bg-violet-950/50 dark:text-violet-200',
   summary: 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-200',
   lab_manual: 'bg-amber-50 text-amber-900 dark:bg-amber-950/50 dark:text-amber-200',
-};
-
-const courseCovers: Record<string, { src: string; alt: string; label: string }> = {
-  'COSC 311': {
-    src: scienceComplexImage,
-    alt: 'UEAB Faculty of Science and Technology building',
-    label: 'Science & Technology',
-  },
-  'COSC 330': {
-    src: libraryImage,
-    alt: 'UEAB University Library and Learning Commons',
-    label: 'Library Learning Commons',
-  },
-  'NURS 215': {
-    src: studentLifeImage,
-    alt: 'UEAB campus courtyard and student commons',
-    label: 'Health Sciences',
-  },
-  'ENGR 210': {
-    src: venueEntranceImage,
-    alt: 'Academic building entrance doors at UEAB',
-    label: 'Engineering & Polytechnic',
-  },
-  'MATH 201': {
-    src: campusImage,
-    alt: 'UEAB campus grounds and administration complex',
-    label: 'Mathematics',
-  },
-};
-
-const getCourseCover = (unitCode: string) => courseCovers[unitCode] ?? {
-  src: scienceComplexImage,
-  alt: 'UEAB Faculty of Science and Technology building',
-  label: 'UEAB Academic Resources',
 };
 
 export const ShareLibraryPage: React.FC = () => {
@@ -207,7 +193,7 @@ export const ShareLibraryPage: React.FC = () => {
                   <img
                     src={getCourseCover(doc.unitCode).src}
                     alt={getCourseCover(doc.unitCode).alt}
-                    className="h-12 w-16 shrink-0 rounded object-cover"
+                    className="h-14 w-20 shrink-0 rounded object-cover"
                   />
                   <div className="min-w-0">
                   <div className="font-bold text-[#071B4A] dark:text-white">
