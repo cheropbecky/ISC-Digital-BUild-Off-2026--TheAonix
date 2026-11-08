@@ -30,30 +30,39 @@ import {
 } from 'lucide-react';
 import { formatBytes } from '../../lib/utils';
 import { DocumentItem } from '../../lib/types';
-import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
-import libraryImage from '../../assets/images/ueab_library_hall_1793989894699.jpg';
-import campusImage from '../../assets/images/ueab_campus_hero_1793989895358.jpg';
-import studentLifeImage from '../../assets/images/ueab_student_life_1793989896360.jpg';
-import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
-
 const getCourseCover = (unitCode: string) => {
   const code = unitCode.toUpperCase();
+  const photo = (id: string) =>
+    `https://images.unsplash.com/${id}?auto=format&fit=crop&w=1200&q=85`;
+
   if (code.startsWith('COSC 311')) {
-    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+    return { src: photo('photo-1461749280684-dccba630e2f6'), label: 'Compiler Design', alt: 'Computer screen displaying software code' };
   }
   if (code.startsWith('COSC 330')) {
-    return { src: libraryImage, label: 'Learning Commons', alt: 'UEAB library learning commons' };
+    return { src: photo('photo-1558494949-ef010cbdcc31'), label: 'Database Systems', alt: 'Rows of servers in a data center' };
+  }
+  if (code.startsWith('COSC 420')) {
+    return { src: photo('photo-1451187580459-43490279c0fa'), label: 'Software Architecture', alt: 'Connected digital systems viewed across the Earth' };
   }
   if (code.startsWith('NURS')) {
-    return { src: studentLifeImage, label: 'Campus Community', alt: 'UEAB campus student community' };
+    return { src: photo('photo-1576091160399-112ba8d25d1d'), label: 'Nursing & Anatomy', alt: 'Healthcare professional studying a medical image' };
   }
   if (code.startsWith('ENGR')) {
-    return { src: venueEntranceImage, label: 'Campus Facilities', alt: 'Entrance to a UEAB academic facility' };
+    return { src: photo('photo-1518770660439-4636190af475'), label: 'Digital Logic', alt: 'Electronic circuit board with microprocessor components' };
   }
   if (code.startsWith('MATH')) {
-    return { src: scienceComplexImage, label: 'Science & Technology', alt: 'UEAB Faculty of Science and Technology building' };
+    return { src: photo('photo-1509228468518-180dd4864904'), label: 'Linear Algebra', alt: 'Mathematics textbook and handwritten calculations' };
   }
-  return { src: campusImage, label: 'UEAB Campus', alt: 'UEAB campus grounds' };
+  if (code.startsWith('RELT')) {
+    return { src: photo('photo-1504052434569-70ad5836ab65'), label: 'Ethics & Theology', alt: 'Sunlight entering a quiet church interior' };
+  }
+  if (code.startsWith('BBA')) {
+    return { src: photo('photo-1460925895917-afdab827c52f'), label: 'Business Management', alt: 'Business analytics dashboard on a laptop' };
+  }
+  if (code.startsWith('COMM')) {
+    return { src: photo('photo-1455390582262-044cdead277a'), label: 'Scholarly Communication', alt: 'Student writing notes in a notebook' };
+  }
+  return { src: photo('photo-1503676260728-1c00da094a0b'), label: 'Course Study', alt: 'Students learning together in a classroom' };
 };
 
 const formatUploadedAt = (value: string) =>
