@@ -80,7 +80,7 @@ const categoryStyles: Record<DocumentItem['category'], string> = {
 
 export const ShareLibraryPage: React.FC = () => {
   const navigate = useNavigate();
-  const { documents, toggleBookmark, approveDocument, user } = useKampasStore();
+  const { documents, toggleBookmark, approveDocument, incrementDocumentDownload, user } = useKampasStore();
 
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -109,6 +109,13 @@ export const ShareLibraryPage: React.FC = () => {
 
     return matchesSearch && matchesCat && matchesBookmarked;
   });
+
+  const getDocumentFileName = (doc: DocumentItem) =>
+    doc.fileName || doc.fileUrl.split('/').pop() || `${doc.unitCode}-resource.${doc.fileType}`;
+
+  const handleDownload = (doc: DocumentItem) => {
+    incrementDocumentDownload(doc.id);
+  };
 
   return (
     <div className="space-y-6 pb-8">
@@ -290,7 +297,7 @@ export const ShareLibraryPage: React.FC = () => {
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
         {filteredDocs.map((doc) => (
           <Card key={doc.id} padding="md" hoverable className="group flex min-h-[285px] flex-col justify-between border-slate-200 transition duration-200 hover:-translate-y-0.5 hover:border-[#9BB1D6] hover:shadow-md dark:border-slate-700">
-            <div className="relative -mx-4 -mt-4 mb-4 h-28 overflow-hidden rounded-t-lg sm:-mx-5 sm:-mt-5">
+            <div className="relative -mx-4 -mt-4 mb-4 h-40 overflow-hidden rounded-t-lg sm:-mx-5 sm:-mt-5 sm:h-48">
               <img
                 src={getCourseCover(doc.unitCode).src}
                 alt={getCourseCover(doc.unitCode).alt}
@@ -398,7 +405,8 @@ export const ShareLibraryPage: React.FC = () => {
               <div className="flex items-center gap-2 shrink-0">
                 <a
                   href={previewDoc.fileUrl}
-                  download
+                  download={getDocumentFileName(previewDoc)}
+                  onClick={() => handleDownload(previewDoc)}
                   className="inline-flex items-center gap-1.5 px-3 h-9 rounded-md bg-[#0B2A6F] text-white text-xs font-semibold hover:bg-[#071B4A]"
                 >
                   <Download className="w-3.5 h-3.5" />
@@ -427,7 +435,7 @@ export const ShareLibraryPage: React.FC = () => {
                   <FileText className="w-10 h-10 text-slate-400 mb-3" />
                   <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">Inline preview is unavailable for this format.</p>
                   <p className="text-xs text-slate-500 mt-1">{previewDoc.fileType.toUpperCase()} · {formatBytes(previewDoc.fileSizeBytes)}</p>
-                  <a href={previewDoc.fileUrl} download className="mt-4 text-xs font-bold text-[#0B2A6F] dark:text-blue-300 underline">Download original file</a>
+                  <a href={previewDoc.fileUrl} download={getDocumentFileName(previewDoc)} onClick={() => handleDownload(previewDoc)} className="mt-4 text-xs font-bold text-[#0B2A6F] dark:text-blue-300 underline">Download original file</a>
                 </div>
               )}
             </div>
