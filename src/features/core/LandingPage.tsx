@@ -33,6 +33,7 @@ import {
   GraduationCap,
   Globe2,
   Award,
+  PartyPopper,
 } from 'lucide-react';
 import { InstitutionalHeader } from '../../components/shared/InstitutionalHeader';
 import { Footer } from '../../components/shared/Footer';
@@ -90,14 +91,16 @@ const HERO_SLIDES: HeroSlide[] = [
 ];
 
 const PARTNER_LOGOS = [
-  { name: 'GitHub', src: 'https://cdn.simpleicons.org/github/0B2A6F' },
-  { name: 'Google', src: 'https://cdn.simpleicons.org/google/0B2A6F' },
-  { name: 'Microsoft', src: 'https://cdn.simpleicons.org/microsoft/0B2A6F' },
-  { name: 'Anthropic', src: 'https://cdn.simpleicons.org/anthropic/0B2A6F' },
-  { name: 'OpenAI', src: 'https://cdn.simpleicons.org/openai/0B2A6F' },
-  { name: 'AWS', src: 'https://cdn.simpleicons.org/amazonaws/0B2A6F' },
-  { name: 'Vercel', src: 'https://cdn.simpleicons.org/vercel/0B2A6F' },
-  { name: 'Figma', src: 'https://cdn.simpleicons.org/figma/0B2A6F' },
+  { name: 'Google', src: 'https://api.iconify.design/logos:google-icon.svg' },
+  { name: 'OpenAI', src: 'https://api.iconify.design/logos:openai-icon.svg' },
+  { name: 'Microsoft', src: 'https://api.iconify.design/logos:microsoft-icon.svg' },
+  { name: 'GitHub', src: 'https://api.iconify.design/logos:github-icon.svg' },
+  { name: 'React', src: 'https://api.iconify.design/logos:react.svg' },
+  { name: 'Next.js', src: 'https://api.iconify.design/logos:nextjs-icon.svg' },
+  { name: 'Supabase', src: 'https://api.iconify.design/logos:supabase-icon.svg' },
+  { name: 'TypeScript', src: 'https://api.iconify.design/logos:typescript-icon.svg' },
+  { name: 'Tailwind CSS', src: 'https://api.iconify.design/logos:tailwindcss-icon.svg' },
+  { name: 'Vite', src: 'https://api.iconify.design/logos:vitejs.svg' },
 ];
 
 const MODULE_IMAGES = {
@@ -277,7 +280,6 @@ export const LandingPage: React.FC = () => {
             {
               to: '/found',
               icon: SearchCheck,
-              iconClass: 'bg-[#FDE2E2] text-[#DC2626]',
               eyebrow: 'Lost something?',
               title: 'Did you lose an item on or off campus?',
               action: 'Open Lost & Found',
@@ -285,7 +287,6 @@ export const LandingPage: React.FC = () => {
             {
               to: '/housing',
               icon: HomeIcon,
-              iconClass: 'bg-[#FEF3C7] text-[#B7791F]',
               eyebrow: 'Find your space',
               title: 'Looking for a verified place to stay?',
               action: 'Browse House Find',
@@ -293,31 +294,33 @@ export const LandingPage: React.FC = () => {
             {
               to: '/campus/timetable',
               icon: Calendar,
-              iconClass: 'bg-[#DBEAFE] text-[#2563EB]',
               eyebrow: 'Stay on track',
               title: 'Need your next class or venue?',
               action: 'View Timetable',
             },
             {
               to: '/community/events',
-              icon: Sparkles,
-              iconClass: 'bg-[#EDE9FE] text-[#7C3AED]',
+              icon: PartyPopper,
               eyebrow: 'Get involved',
               title: 'What is happening around Baraton?',
               action: 'See Campus Events',
             },
-          ].map(({ to, icon: Icon, iconClass, eyebrow, title, action }) => (
+          ].map(({ to, icon: Icon, eyebrow, title, action }) => (
             <Link
               key={to}
               to={to}
-              className="group rounded-2xl border border-[#E3E8F0] bg-white p-4 shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-[#F2B705] hover:shadow-xl dark:border-[#1E3158] dark:bg-[#0C1D3D]"
+              className="group min-h-[245px] border border-[#E3E8F0] bg-white p-7 text-center shadow-lg transition-all duration-300 hover:-translate-y-1 hover:border-[#F2B705] hover:shadow-xl dark:border-[#1E3158] dark:bg-[#0C1D3D]"
             >
-              <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-xl ${iconClass} transition-transform duration-300 group-hover:rotate-6 group-hover:scale-110`}>
-                <Icon className="h-5 w-5" />
-              </div>
+              <Icon className="mx-auto mb-5 h-8 w-8 text-[#0B2A6F] transition-transform duration-300 group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#5B6475] dark:text-slate-400">{eyebrow}</p>
-              <h3 className="mt-1 min-h-12 text-sm font-black leading-5 text-[#071B4A] dark:text-white">{title}</h3>
-              <span className="mt-3 inline-flex items-center gap-1 text-xs font-black text-[#0B2A6F] transition-all group-hover:gap-2 dark:text-[#F2B705]">
+              <h3 className="mx-auto mt-2 min-h-12 max-w-[230px] text-base font-black leading-6 text-[#071B4A] dark:text-white">{title}</h3>
+              <p className="mx-auto mt-3 max-w-[255px] text-xs leading-5 text-[#5B6475] dark:text-slate-400">
+                {to === '/found' && 'Report a lost item, browse found property, and reconnect with what belongs to you.'}
+                {to === '/housing' && 'Compare trusted rentals, check locations, and find a comfortable home near campus.'}
+                {to === '/campus/timetable' && 'Keep every class, venue change, and route close at hand throughout your day.'}
+                {to === '/community/events' && 'Discover clubs, gatherings, fellowship, and the next memorable campus moment.'}
+              </p>
+              <span className="mt-5 inline-flex items-center gap-1 text-xs font-black text-[#0B2A6F] transition-all group-hover:gap-2 dark:text-[#F2B705]">
                 {action} <ArrowRight className="h-3.5 w-3.5" />
               </span>
             </Link>
@@ -334,9 +337,20 @@ export const LandingPage: React.FC = () => {
           <div className="relative overflow-hidden" aria-label="Technology partners">
             <div className="flex w-max animate-[marquee_28s_linear_infinite] hover:[animation-play-state:paused]">
               {[...PARTNER_LOGOS, ...PARTNER_LOGOS].map((partner, index) => (
-                <span key={`${partner.name}-${index}`} className="mx-5 sm:mx-8 flex items-center gap-3 text-lg sm:text-xl font-black tracking-tight text-[#0B2A6F]/70 dark:text-white/70 whitespace-nowrap">
-                  <img src={partner.src} alt="" aria-hidden="true" className="h-6 w-6 object-contain opacity-75" />
-                  {partner.name}
+                <span
+                  key={`${partner.name}-${index}`}
+                  className="mx-5 flex items-center gap-3 whitespace-nowrap text-lg font-black tracking-tight text-[#0B2A6F]/80 sm:mx-8 sm:text-xl dark:text-white/80"
+                >
+                  <img
+                    src={partner.src}
+                    alt={`${partner.name} logo`}
+                    width="28"
+                    height="28"
+                    loading={index < PARTNER_LOGOS.length ? 'eager' : 'lazy'}
+                    decoding="async"
+                    className="h-7 w-7 shrink-0 object-contain"
+                  />
+                  <span>{partner.name}</span>
                 </span>
               ))}
             </div>
@@ -398,13 +412,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/campus/timetable"
             style={{ backgroundImage: `url(${MODULE_IMAGES.navigate})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">01</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#DBEAFE] text-[#2563EB] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <Compass className="w-6 h-6" />
-              </div>
+              <Compass className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Navigation & Schedules
               </span>
@@ -417,7 +430,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Explore Timetables & Venues →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
 
@@ -425,13 +438,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/housing"
             style={{ backgroundImage: `url(${MODULE_IMAGES.housing})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">02</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#FEF3C7] text-[#B7791F] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <HomeIcon className="w-6 h-6" />
-              </div>
+              <HomeIcon className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Off-Campus Rentals
               </span>
@@ -444,7 +456,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Browse Student Rentals →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
 
@@ -452,13 +464,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/share"
             style={{ backgroundImage: `url(${MODULE_IMAGES.share})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">03</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#D1FAE5] text-[#059669] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <FileText className="w-6 h-6" />
-              </div>
+              <FileText className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Peer Academic Exchange
               </span>
@@ -471,7 +482,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Open Notes Repository →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
 
@@ -479,13 +490,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/community/events"
             style={{ backgroundImage: `url(${MODULE_IMAGES.community})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">04</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#EDE9FE] text-[#7C3AED] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <Users className="w-6 h-6" />
-              </div>
+              <Users className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Student Life & Fellowship
               </span>
@@ -498,7 +508,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Discover Campus Events →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
 
@@ -506,13 +516,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/community/alumni"
             style={{ backgroundImage: `url(${MODULE_IMAGES.opportunities})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">05</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#FCE7F3] text-[#DB2777] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <Briefcase className="w-6 h-6" />
-              </div>
+              <Briefcase className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Career Acceleration
               </span>
@@ -525,7 +534,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Pitch for Alumni Referrals →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
 
@@ -533,13 +542,12 @@ export const LandingPage: React.FC = () => {
           <Link
             to="/found"
             style={{ backgroundImage: `url(${MODULE_IMAGES.lostFound})` }}
-            className="group relative min-h-[330px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
+            className="group relative min-h-[390px] overflow-hidden rounded-2xl border border-[#E3E8F0] bg-cover bg-center p-6 shadow-xs transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl dark:border-[#1E3158]"
           >
             <div className="absolute inset-0 bg-white/95 transition-opacity duration-500 group-hover:bg-[#071B4A]/80" />
+            <span className="relative z-10 block text-7xl font-light tracking-[-0.08em] text-[#0B2A6F]/20 transition-colors duration-500 group-hover:text-white/90">06</span>
             <div className="relative z-10 space-y-3 transition-colors duration-500 group-hover:text-white">
-              <div className="w-12 h-12 rounded-xl bg-[#FDE2E2] text-[#DC2626] flex items-center justify-center group-hover:scale-105 transition-transform shadow-sm">
-                <SearchCheck className="w-6 h-6" />
-              </div>
+              <SearchCheck className="w-7 h-7 text-[#0B2A6F] transition-transform group-hover:scale-110 group-hover:text-[#F2B705] dark:text-[#F2B705]" />
               <span className="text-[11px] font-bold text-[#0B2A6F] dark:text-[#F2B705] uppercase tracking-wider">
                 Digital Handover Desk
               </span>
@@ -552,7 +560,7 @@ export const LandingPage: React.FC = () => {
               </p>
             </div>
             <div className="relative z-10 mt-4 border-t border-slate-100 pt-4 text-[11px] font-semibold text-[#0B2A6F] transition-colors duration-500 group-hover:border-white/30 group-hover:text-[#F2B705] dark:border-slate-800">
-              Verify & Claim Items →
+              Learn more <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
             </div>
           </Link>
         </div>
