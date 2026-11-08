@@ -32,7 +32,8 @@ export const UploadNotesPage: React.FC = () => {
   const [category, setCategory] = useState<DocumentItem['category']>('lecture_notes');
   const [description, setDescription] = useState('');
   const [fileName, setFileName] = useState('');
-  const [fileSize, setFileSize] = useState(2500000); // 2.5MB default
+  const [fileSize, setFileSize] = useState(0);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isExamPaper, setIsExamPaper] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -47,6 +48,12 @@ export const UploadNotesPage: React.FC = () => {
       return;
     }
 
+    if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')) {
+      setErrorMsg('Please choose a PDF file so it can be previewed in the Share Hub.');
+      return;
+    }
+
+    setSelectedFile(file);
     setFileName(file.name);
     setFileSize(file.size);
     setErrorMsg('');
@@ -54,6 +61,11 @@ export const UploadNotesPage: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (!selectedFile) {
+      setErrorMsg('Attach a PDF file before submitting this resource.');
+      return;
+    }
 
     // Enforce Rule: Block documents marked as restricted exam papers
     if (isExamPaper && category === 'past_paper') {
@@ -71,7 +83,8 @@ export const UploadNotesPage: React.FC = () => {
         title,
         unitCode,
         description,
-        fileUrl: `/docs/${title.toLowerCase().replace(/\s+/g, '_')}.pdf`,
+        fileUrl: URL.createObjectURL(selectedFile),
+        fileName: selectedFile.name,
         fileType: 'pdf',
         fileSizeBytes: fileSize,
         uploadedByUserId: user.id,
@@ -184,12 +197,12 @@ export const UploadNotesPage: React.FC = () => {
           {/* File Picker Zone */}
           <div>
             <label className="block text-xs font-bold text-[#071B4A] dark:text-slate-200 mb-1">
-              Attach File (PDF, DOCX - Max 20MB)
+              Attach File (PDF - Max 20MB)
             </label>
             <div className="border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-xl p-6 text-center hover:border-[#0B2A6F] transition cursor-pointer relative bg-slate-50/50 dark:bg-slate-900/50">
               <input
                 type="file"
-                accept=".pdf,.docx,.pptx"
+                accept=".pdf,application/pdf"
                 onChange={handleFileChange}
                 className="absolute inset-0 opacity-0 cursor-pointer"
               />
@@ -233,7 +246,7 @@ export const UploadNotesPage: React.FC = () => {
               type="submit"
               variant="primary"
               isLoading={isUploading}
-              disabled={!title || !description}
+              disabled={!title || !description || !selectedFile}
             >
               Submit for Class Rep Verification
             </Button>

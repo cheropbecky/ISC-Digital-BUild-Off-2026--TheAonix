@@ -117,7 +117,8 @@ export interface DocumentItem {
   unitCode: string;
   description: string;
   fileUrl: string;
-  fileType: 'pdf' | 'docx' | 'pptx' | 'zip';
+  fileName?: string;
+  fileType: 'pdf' | 'docx' | 'pptx' | 'zip' | 'html';
   fileSizeBytes: number;
   uploadedByUserId: string;
   uploaderName: string;

@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MATH 201 | Linear Algebra Notes</title>
+  <style>body{max-width:780px;margin:48px auto;padding:0 24px;color:#192637;font:16px/1.7 Georgia,serif}header{border-bottom:3px solid #d6a515;padding-bottom:18px;margin-bottom:28px}h1,h2{font-family:Arial,sans-serif;color:#102b51}h1{font-size:28px}h2{font-size:20px;margin-top:30px}small{font:12px Arial,sans-serif;color:#64748b}pre{overflow:auto;background:#f3f5f7;padding:14px}</style>
+</head>
+<body>
+  <header><small>UEAB • SCHOOL OF SCIENCE &amp; TECHNOLOGY • MATH 201</small><h1>Vector Spaces and the Spectral Theorem</h1><small>Revision notes with a worked symmetric-matrix example</small></header>
+  <h2>1. Vector spaces and subspaces</h2>
+  <p>A vector space is closed under vector addition and scalar multiplication and satisfies the usual associativity, identity, inverse, and distributive axioms. A nonempty subset is a subspace when it is closed under linear combinations: for all vectors <i>u, v</i> in the subset and scalars <i>a, b</i>, the vector <i>au + bv</i> remains in the subset.</p>
+  <h2>2. Eigenvalues and diagonalization</h2>
+  <p>A nonzero vector <i>v</i> is an eigenvector of matrix <i>A</i> with eigenvalue <i>λ</i> when <i>Av = λv</i>. Eigenvalues satisfy <i>det(A − λI) = 0</i>. A matrix is diagonalizable when it has a basis of eigenvectors, so <i>A = PDP⁻¹</i>, with eigenvectors in <i>P</i> and their eigenvalues on the diagonal of <i>D</i>.</p>
+  <h2>3. Symmetric matrices</h2>
+  <p>For a real symmetric matrix, eigenvalues are real and eigenvectors for distinct eigenvalues are orthogonal. The spectral theorem gives an orthogonal matrix <i>Q</i> such that <i>A = QDQᵀ</i>. Normalize each eigenvector to unit length to construct <i>Q</i>.</p>
+  <h2>4. Worked example</h2>
+  <pre>A = [ 2  1 ]
+    [ 1  2 ]
+
+det(A − λI) = (2 − λ)² − 1
+             = (1 − λ)(3 − λ)
+Eigenvalues: 1 and 3
+
+For λ = 3: eigenvector proportional to (1, 1)
+For λ = 1: eigenvector proportional to (1, −1)
+Normalized vectors: q₁ = (1,1)/√2, q₂ = (1,−1)/√2</pre>
+  <p>Thus <i>Q</i> has columns <i>q₁, q₂</i> and <i>D = diag(3, 1)</i>. Check the result by multiplying <i>QDQᵀ</i> and confirming that it recovers <i>A</i>.</p>
+  <h2>Common checks</h2>
+  <ul><li>Verify each eigenvector by direct substitution into <i>Av = λv</i>.</li><li>For a symmetric matrix, check orthogonality before normalizing.</li><li>Keep the eigenvalue order in <i>D</i> consistent with the column order in <i>Q</i>.</li><li>Use rank and nullity to check dimensions of subspaces and eigenspaces.</li></ul>
+</body>
+</html>
