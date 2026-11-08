@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Full Campus GIS Map Page (/campus/map)
- * Centered on UEAB Baraton [0.2505, 35.0800]
+ * Centered on UEAB Baraton, Nandi County [0.25766, 35.08578]
  * Interactive venue inspector with exterior & entrance door photos, walking route generator,
  * search by building/hall, and off-campus housing toggle.
  * NOTE: Strictly no free-room layers.
@@ -66,7 +66,7 @@ export const CampusMapPage: React.FC = () => {
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#071B4A] dark:text-white tracking-tight">
               Campus GIS Map
             </h1>
-            <Badge variant="done">UEAB Baraton</Badge>
+            <Badge variant="done">UEAB Baraton · Nandi County</Badge>
           </div>
           <p className="text-sm text-[#5B6475] dark:text-slate-300 mt-1">
             Building exterior &amp; entrance door guides, scheduled lectures, and walking route paths.

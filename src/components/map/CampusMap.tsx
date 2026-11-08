@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Interactive Campus GIS Map (Leaflet + OpenStreetMap)
- * Centered on University of Eastern Africa, Baraton (UEAB), Kenya [0.2505, 35.0800]
+ * Centered on University of Eastern Africa, Baraton (UEAB), Nandi County [0.25766, 35.08578]
  * Layers: Venues, Events Now, Houses (Off-Campus), Lost Items, My Route
  * NOTE: Strictly NO free rooms feature or layer anywhere.
  * Bottom sheet includes building exterior AND entrance door photos, indoor hints, and walking route.
@@ -44,9 +44,29 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// UEAB Baraton Coordinates
-const UEAB_CENTER: [number, number] = [0.2505, 35.0800];
-const MAIN_GATE_COORDS: [number, number] = [0.2485, 35.0802];
+// UEAB Baraton, Nandi County, Kenya. The venue seed coordinates are illustrative
+// campus points, so they are translated to this verified campus anchor for display.
+const UEAB_CENTER: [number, number] = [0.25766, 35.08578];
+const CAMPUS_DATA_ANCHOR: [number, number] = [0.2505, 35.0800];
+const CAMPUS_COORDINATE_OFFSET: [number, number] = [
+  UEAB_CENTER[0] - CAMPUS_DATA_ANCHOR[0],
+  UEAB_CENTER[1] - CAMPUS_DATA_ANCHOR[1],
+];
+const MAIN_GATE_COORDS: [number, number] = [0.2569, 35.0855];
+const UEAB_CAMPUS_BOUNDARY: [number, number][] = [
+  [0.2551, 35.0836],
+  [0.2583, 35.0832],
+  [0.2616, 35.0840],
+  [0.2623, 35.0872],
+  [0.2604, 35.0888],
+  [0.2562, 35.0884],
+  [0.2549, 35.0865],
+];
+
+const toCampusCoordinates = (latitude: number, longitude: number): [number, number] => [
+  latitude + CAMPUS_COORDINATE_OFFSET[0],
+  longitude + CAMPUS_COORDINATE_OFFSET[1],
+];
 
 export type MapLayerType = 'all' | 'venues' | 'events' | 'houses' | 'lost_found' | 'my_route';
 
@@ -67,6 +87,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markerGroupRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const campusBoundaryRef = useRef<L.Polygon | null>(null);
 
   const [activeLayer, setActiveLayer] = useState<MapLayerType>(initialLayer);
   const [selectedVenue, setSelectedVenue] = useState<VenueData | null>(null);
@@ -91,6 +112,35 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       maxZoom: 19,
     }).addTo(map);
 
+    L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
+
+    campusBoundaryRef.current = L.polygon(UEAB_CAMPUS_BOUNDARY, {
+      color: '#0B2A6F',
+      weight: 2,
+      opacity: 0.8,
+      fillColor: '#0B2A6F',
+      fillOpacity: 0.08,
+      dashArray: '7, 7',
+    })
+      .bindTooltip('University of Eastern Africa, Baraton', {
+        permanent: true,
+        direction: 'center',
+        className: 'ueab-campus-label',
+      })
+      .addTo(map);
+
+    L.marker(MAIN_GATE_COORDS, {
+      icon: createPinIcon('#16A34A', 'G'),
+      zIndexOffset: 500,
+    })
+      .bindPopup(`
+        <div style="font-family: Inter, sans-serif; font-size: 12px; line-height: 1.4; padding: 2px;">
+          <strong style="color: #071B4A; font-size: 13px;">UEAB Main Gate</strong><br/>
+          <span style="color: #5B6475;">Primary campus entrance and route starting point</span>
+        </div>
+      `)
+      .addTo(map);
+
     const markerGroup = L.layerGroup().addTo(map);
     markerGroupRef.current = markerGroup;
     mapInstanceRef.current = map;
@@ -98,6 +148,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     return () => {
       map.remove();
       mapInstanceRef.current = null;
+      campusBoundaryRef.current = null;
     };
   }, []);
 
@@ -131,7 +182,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     // 1. Campus Venues Layer
     if (activeLayer === 'all' || activeLayer === 'venues' || activeLayer === 'my_route') {
       VENUES.forEach((v) => {
-        const marker = L.marker([v.latitude, v.longitude], {
+        const marker = L.marker(toCampusCoordinates(v.latitude, v.longitude), {
           icon: createPinIcon('#0B2A6F', '🏛'),
         });
 
@@ -148,8 +199,11 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     if (activeLayer === 'all' || activeLayer === 'events') {
       CAMPUS_EVENTS.forEach((evt) => {
         const venue = VENUES.find((v) => v.code === evt.venueCode || v.name === evt.venueName);
-        const lat = venue ? venue.latitude + 0.00018 : 0.2515;
-        const lng = venue ? venue.longitude + 0.00018 : 35.0798;
+        const [venueLat, venueLng] = venue
+          ? toCampusCoordinates(venue.latitude, venue.longitude)
+          : UEAB_CENTER;
+        const lat = venueLat + 0.00018;
+        const lng = venueLng + 0.00018;
 
         const marker = L.marker([lat, lng], {
           icon: createPinIcon('#F2B705', '★'),
@@ -170,7 +224,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     // 3. Off-Campus Housing Layer (Gold House Pins)
     if (activeLayer === 'all' || activeLayer === 'houses') {
       HOUSES.forEach((h) => {
-        const marker = L.marker([h.latitude, h.longitude], {
+        const marker = L.marker(toCampusCoordinates(h.latitude, h.longitude), {
           icon: createPinIcon('#D97706', '🏠'),
         });
 
@@ -187,8 +241,11 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     if (activeLayer === 'all' || activeLayer === 'lost_found') {
       LOST_FOUND_ITEMS.forEach((item) => {
         const targetVenue = VENUES.find((v) => v.code === item.venueCode);
-        const lat = targetVenue ? targetVenue.latitude - 0.00018 : 0.2505;
-        const lng = targetVenue ? targetVenue.longitude - 0.00018 : 35.0800;
+        const [venueLat, venueLng] = targetVenue
+          ? toCampusCoordinates(targetVenue.latitude, targetVenue.longitude)
+          : UEAB_CENTER;
+        const lat = venueLat - 0.00018;
+        const lng = venueLng - 0.00018;
 
         const marker = L.marker([lat, lng], {
           icon: createPinIcon('#DC2626', item.type === 'found' ? 'F' : 'L'),
@@ -212,18 +269,19 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       const targetVenue = VENUES.find((v) => v.id === targetId || v.code.toLowerCase() === targetId.toLowerCase());
       if (targetVenue) {
         setSelectedVenue(targetVenue);
-        map.setView([targetVenue.latitude, targetVenue.longitude], 17, { animate: true });
+        const targetCoordinates = toCampusCoordinates(targetVenue.latitude, targetVenue.longitude);
+        map.setView(targetCoordinates, 17, { animate: true });
 
         // Walking route coordinates from Baraton Main Gate to Venue
         const startPoint = MAIN_GATE_COORDS;
         const midPoint: [number, number] = [
-          (startPoint[0] + targetVenue.latitude) / 2,
-          (startPoint[1] + targetVenue.longitude) / 2 + 0.0004,
+          (startPoint[0] + targetCoordinates[0]) / 2,
+          (startPoint[1] + targetCoordinates[1]) / 2 + 0.0004,
         ];
         const routeCoords: [number, number][] = [
           startPoint,
           midPoint,
-          [targetVenue.latitude, targetVenue.longitude],
+          targetCoordinates,
         ];
 
         const polyline = L.polyline(routeCoords, {
@@ -245,7 +303,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   };
 
   return (
-    <div className="relative rounded-2xl overflow-hidden border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] shadow-sm">
+    <div className={`relative rounded-2xl overflow-hidden border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] shadow-sm ${className}`}>
       {/* Top Map Layer Selector Strip (Chips: Venues, Events now, Houses, Lost items, My route - NO free rooms!) */}
       <div className="absolute top-3 left-3 z-20 flex flex-wrap gap-1.5 bg-white/95 dark:bg-[#071B4A]/95 backdrop-blur-md p-1.5 rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-md max-w-[85%]">
         <button
@@ -300,6 +358,21 @@ export const CampusMap: React.FC<CampusMapProps> = ({
         </button>
       </div>
 
+      <div className="absolute bottom-3 right-3 z-20 hidden sm:flex items-center gap-3 rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white/95 dark:bg-[#071B4A]/95 px-3 py-2 text-[10px] font-semibold text-[#5B6475] dark:text-slate-300 shadow-md backdrop-blur-md">
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#0B2A6F]" />
+          Campus venue
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-full bg-[#16A34A]" />
+          Main gate
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm border border-[#0B2A6F] bg-[#0B2A6F]/10" />
+          Campus boundary
+        </span>
+      </div>
+
       {/* Re-center & Locate Me Buttons */}
       <div className="absolute top-3 right-3 z-20 flex flex-col gap-2">
         <button
@@ -327,7 +400,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       </div>
 
       {/* Map Leaflet Container */}
-      <div ref={mapContainerRef} className={className} />
+      <div ref={mapContainerRef} className="h-full w-full" />
 
       {/* ================= VENUE BOTTOM SHEET ================= */}
       {/* Includes Exterior AND Entrance Door Photos, Indoor Hints, Walking Route */}
