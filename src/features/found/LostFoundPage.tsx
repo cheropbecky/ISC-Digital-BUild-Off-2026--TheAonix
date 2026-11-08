@@ -139,13 +139,15 @@ const Modal: React.FC<{
 };
 
 const ItemImage: React.FC<{ item: LostFoundItem; className?: string }> = ({ item, className = '' }) => {
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
   const Icon = CATEGORY_ICON[item.category] ?? SearchCheck;
-  return item.photoUrl ? (
+  return item.photoUrl && failedPhotoUrl !== item.photoUrl ? (
     <img
       src={item.photoUrl}
       alt={item.title}
       className={`w-full h-full object-cover ${className}`}
       referrerPolicy="no-referrer"
+      onError={() => setFailedPhotoUrl(item.photoUrl ?? null)}
     />
   ) : (
     <div className="w-full h-full bg-gradient-to-br from-[#071B4A] to-[#0B2A6F] flex items-center justify-center">
