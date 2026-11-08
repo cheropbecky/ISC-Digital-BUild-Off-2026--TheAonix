@@ -1,29 +1,31 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Kampas Timetable Page (/campus/timetable)
- * Views: Day, Week, List
- * Features: ICS export, clash detection warning, red "Venue changed" badge, route preview
- * Demo Flow 2: Lecturer venue change trigger
+ * Kampas Timetable Page
  */
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
+import { motion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { PERMISSIONS } from '../../lib/permissions';
 import {
-  Calendar,
-  Download,
   AlertTriangle,
-  MapPin,
-  Clock,
   ArrowRight,
+  Calendar,
+  CheckCircle2,
+  Clock3,
+  Download,
   Edit3,
+  ExternalLink,
+  MapPin,
   Navigation,
+  Share2,
   Sparkles,
-  Info,
+  Users,
+  X,
 } from 'lucide-react';
 import { formatTimeOnly, generateICS, downloadICSFile } from '../../lib/utils';
 import { TimetableEntry } from '../../lib/types';
@@ -36,371 +38,200 @@ const DAYS = [
   { id: 5, name: 'Friday', short: 'Fri' },
 ];
 
-export const TimetablePage: React.FC = () => {
-  const { timetable, venues, user, changeVenue } = useKampasStore();
+const START_HOUR = 7;
+const END_HOUR = 18;
+const HOUR_HEIGHT = 64;
 
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'list'>('day');
-  const [selectedDay, setSelectedDay] = useState<number>(1); // Monday default
+const toMinutes = (time: string) => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+const getWeekStart = (date: Date) => {
+  const result = new Date(date);
+  const day = result.getDay();
+  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  result.setHours(0, 0, 0, 0);
+  return result;
+};
+
+const formatDate = (date: Date) =>
+  date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+const getEventStyle = (entry: TimetableEntry) => {
+  const top = ((toMinutes(entry.startTime) - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+  const height = Math.max(((toMinutes(entry.endTime) - toMinutes(entry.startTime)) / 60) * HOUR_HEIGHT, 58);
+  return { top, height };
+};
+
+export const TimetablePage: React.FC = () => {
+  const { timetable, timetableLoading, timetableError, venues, user, changeVenue } = useKampasStore();
+  const [viewMode, setViewMode] = useState<'day' | 'week' | 'list'>('week');
+  const today = new Date().getDay();
+  const [selectedDay, setSelectedDay] = useState(today >= 1 && today <= 5 ? today : 1);
+  const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
   const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
   const [newVenueId, setNewVenueId] = useState('');
   const [venueChangeReason, setVenueChangeReason] = useState('Air conditioning maintenance and practical SQL lab requirement.');
-
   const canEdit = PERMISSIONS.canChangeVenue(user.role);
 
-  // Filter entries
-  const dayEntries = timetable
-    .filter((e) => e.dayOfWeek === selectedDay)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime));
+  const weekStart = useMemo(() => getWeekStart(new Date()), []);
+  const weekLabel = `${formatDate(weekStart)} – ${formatDate(new Date(weekStart.getTime() + 4 * 86400000))}`;
+  const clashes = useMemo(() => {
+    const result: Array<[TimetableEntry, TimetableEntry]> = [];
+    timetable.forEach((a, index) => timetable.slice(index + 1).forEach((b) => {
+      if (a.dayOfWeek === b.dayOfWeek && a.startTime < b.endTime && a.endTime > b.startTime) result.push([a, b]);
+    }));
+    return result;
+  }, [timetable]);
 
-  // Detect time clashes
-  const clashes: Array<[TimetableEntry, TimetableEntry]> = [];
-  timetable.forEach((a, i) => {
-    timetable.forEach((b, j) => {
-      if (i < j && a.dayOfWeek === b.dayOfWeek) {
-        if (a.startTime < b.endTime && a.endTime > b.startTime) {
-          clashes.push([a, b]);
-        }
-      }
-    });
-  });
+  const nextClass = useMemo(() => {
+    const now = new Date();
+    const day = now.getDay() >= 1 && now.getDay() <= 5 ? now.getDay() : 1;
+    const current = now.getHours() * 60 + now.getMinutes();
+    return timetable
+      .filter((entry) => entry.dayOfWeek === day && toMinutes(entry.endTime) >= current)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
+  }, [timetable]);
 
-  // Handle ICS Export
+  const activeEntry = selectedEntry || nextClass || timetable[0];
+  const enrolledUnits = Array.from(new Map(timetable.map((entry) => [entry.unitCode, entry])).values());
+
   const handleExportICS = () => {
-    const fullCalendarText = timetable
-      .map((entry) =>
-        generateICS({
-          title: `${entry.unitCode} - ${entry.unitName}`,
-          description: `Lecturer: ${entry.lecturerName}. Trimester 1, UEAB Baraton.`,
-          location: entry.venueName,
-          startTime: entry.startTime,
-          endTime: entry.endTime,
-          dayOfWeek: entry.dayOfWeek,
-        })
-      )
-      .join('\r\n');
-
-    downloadICSFile('UEAB_Baraton_Timetable.ics', fullCalendarText);
+    const text = timetable.map((entry) => generateICS({
+      title: `${entry.unitCode} - ${entry.unitName}`,
+      description: `Lecturer: ${entry.lecturerName}. Trimester 1, UEAB Baraton.`,
+      location: entry.venueName,
+      startTime: entry.startTime,
+      endTime: entry.endTime,
+      dayOfWeek: entry.dayOfWeek,
+    })).join('\r\n');
+    downloadICSFile('UEAB_Baraton_Timetable.ics', text);
   };
 
-  const handleVenueChangeSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleVenueChangeSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     if (!editingEntry || !newVenueId) return;
     changeVenue(editingEntry.id, newVenueId, venueChangeReason);
     setEditingEntry(null);
   };
 
+  const handleLocateVenue = (entry: TimetableEntry) => {
+    const query = encodeURIComponent(`${entry.venueName}, University of Eastern Africa, Baraton, Kenya`);
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+  };
+
+  const renderEvent = (entry: TimetableEntry, compact = false) => {
+    const eventStyle = getEventStyle(entry);
+    const isSelected = activeEntry?.id === entry.id;
+    return (
+      <motion.button
+        layout
+        key={entry.id}
+        type="button"
+        onClick={() => setSelectedEntry(entry)}
+        style={compact ? undefined : eventStyle}
+        className={`text-left rounded-lg border p-2 overflow-hidden transition-shadow ${
+          compact ? 'relative min-h-[92px] w-full' : 'absolute inset-x-1'
+        } ${
+          entry.isVenueChanged
+            ? 'border-red-300 bg-red-50 text-red-950 dark:bg-red-950/30 dark:text-red-100'
+            : isSelected
+              ? 'border-[#0B2A6F] bg-[#E8EEFF] text-[#071B4A] shadow-md dark:bg-[#102B62] dark:text-white'
+              : 'border-[#C9D5F5] bg-[#E9EEFF] text-[#071B4A] hover:border-[#0B2A6F] dark:bg-[#102B62] dark:text-white'
+        }`}
+      >
+        <div className="text-[10px] font-black uppercase tracking-wide">{entry.unitCode}</div>
+        <div className="mt-1 text-[11px] font-bold leading-tight line-clamp-2">{entry.unitName}</div>
+        <div className="mt-2 text-[10px] font-mono">{formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}</div>
+        <div className="mt-1 truncate text-[10px] text-slate-600 dark:text-slate-300">{entry.venueName}</div>
+        {entry.isVenueChanged && <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-bold text-red-600"><AlertTriangle className="h-3 w-3" /> Relocated</span>}
+      </motion.button>
+    );
+  };
+
   return (
-    <div className="space-y-6">
-      {/* Header & Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-[#071B4A] dark:text-white">
-              Academic Timetable
-            </h1>
-            <Badge variant="academic">Trimester 1</Badge>
-          </div>
-          <p className="text-xs text-[#5B6475] dark:text-slate-400 mt-1">
-            Official class schedule for BSc Software Engineering • Synchronized with Academic Registrar
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          {/* ICS Export Button */}
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={handleExportICS}
-            className="text-xs"
-            title="Export calendar to Google Calendar or Apple Calendar (.ics)"
-          >
-            <Download className="w-3.5 h-3.5 mr-1.5" />
-            Export to Calendar (ICS)
-          </Button>
-
-          {/* Lecturer Simulation Quick Button */}
-          {canEdit && (
-            <Button
-              size="sm"
-              variant="gold"
-              onClick={() => {
-                const sampleEntry = timetable.find((t) => t.unitCode === 'COSC 311') || timetable[0];
-                setEditingEntry(sampleEntry);
-                setNewVenueId(venues[2]?.id || 'venue-compmb');
-              }}
-              className="text-xs"
-            >
-              <Edit3 className="w-3.5 h-3.5 mr-1" />
-              Lecturer: Relocate Room
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Clash Warning (if detected) */}
-      {clashes.length > 0 && (
-        <div className="p-3 bg-[#FEF3C7] dark:bg-[#78350F]/20 border border-[#F59E0B]/40 rounded-xl flex items-center gap-3 text-xs text-[#92400E] dark:text-[#FCD34D]">
-          <AlertTriangle className="w-5 h-5 text-[#D97706] shrink-0" />
-          <div className="flex-1">
-            <span className="font-bold">Schedule Notice: </span>
-            A potential course timing overlap is registered between {clashes[0][0].unitCode} and {clashes[0][1].unitCode}. Contact the department coordinator.
-          </div>
-        </div>
-      )}
-
-      {/* View Switcher Tabs (Day / Week / List) */}
-      <div className="flex items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-3">
-        {/* Day Buttons */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          {DAYS.map((day) => (
-            <button
-              key={day.id}
-              onClick={() => {
-                setSelectedDay(day.id);
-                setViewMode('day');
-              }}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition whitespace-nowrap ${
-                selectedDay === day.id && viewMode === 'day'
-                  ? 'bg-[#0B2A6F] text-white shadow-sm'
-                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
-              }`}
-            >
-              {day.name}
-            </button>
-          ))}
-        </div>
-
-        {/* View Mode Toggle */}
-        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-lg shrink-0">
-          <button
-            onClick={() => setViewMode('day')}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition ${
-              viewMode === 'day'
-                ? 'bg-white dark:bg-[#071B4A] text-[#0B2A6F] dark:text-[#F2B705] shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            Day View
-          </button>
-          <button
-            onClick={() => setViewMode('week')}
-            className={`px-2.5 py-1 text-xs font-semibold rounded-md transition ${
-              viewMode === 'week'
-                ? 'bg-white dark:bg-[#071B4A] text-[#0B2A6F] dark:text-[#F2B705] shadow-xs'
-                : 'text-slate-600 dark:text-slate-400'
-            }`}
-          >
-            Full Week
-          </button>
-        </div>
-      </div>
-
-      {/* Day View Content */}
-      {viewMode === 'day' && (
-        <div className="space-y-4">
-          {dayEntries.length === 0 ? (
-            <Card className="text-center py-12">
-              <Calendar className="w-10 h-10 text-slate-300 mx-auto mb-2" />
-              <h3 className="text-sm font-bold text-slate-700 dark:text-slate-200">
-                No Lectures on {DAYS.find((d) => d.id === selectedDay)?.name}
-              </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Use this day for library study or student club activities.
-              </p>
-            </Card>
-          ) : (
-            dayEntries.map((entry) => (
-              <Card
-                key={entry.id}
-                padding="lg"
-                className={`transition-all ${
-                  entry.isVenueChanged
-                    ? 'border-l-4 border-l-[#DC2626] bg-red-50/20 dark:bg-red-950/10'
-                    : 'hover:border-[#0B2A6F]/30'
+    <div className="space-y-4">
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 rounded-xl bg-[#E8EEFF] p-1 dark:bg-[#102B62]">
+            {(['day', 'week', 'list'] as const).map((mode) => (
+              <button
+                key={mode}
+                type="button"
+                onClick={() => setViewMode(mode)}
+                className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
+                  viewMode === mode ? 'bg-white text-[#071B4A] shadow-sm dark:bg-[#071B4A] dark:text-white' : 'text-[#42527A] dark:text-slate-300'
                 }`}
               >
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-sm font-extrabold text-[#0B2A6F] dark:text-[#93C5FD]">
-                        {entry.unitCode}
-                      </span>
-                      {entry.isVenueChanged && (
-                        <Badge variant="urgent" showDot>
-                          VENUE CHANGED
-                        </Badge>
-                      )}
-                      <span className="text-xs text-slate-500">•</span>
-                      <span className="text-xs text-slate-600 dark:text-slate-300">
-                        {entry.lecturerName}
-                      </span>
-                    </div>
+                {mode === 'week' ? '▥  Week' : mode === 'day' ? '▣  Day' : '▤  List'}
+              </button>
+            ))}
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button size="sm" variant="secondary" onClick={handleExportICS}><Calendar className="h-3.5 w-3.5" /> Add to calendar (ICS)</Button>
+            <Button size="sm" variant="primary"><Share2 className="h-3.5 w-3.5" /> Share as image</Button>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
+          <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2.5 py-1 font-semibold text-[#15803D]"><CheckCircle2 className="h-3 w-3" /> Synced · Offline: showing saved timetable</span>
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Week 8 · {weekLabel}</span>
+        </div>
+      </div>
 
-                    <h3 className="text-base font-bold text-[#071B4A] dark:text-white mb-2">
-                      {entry.unitName}
-                    </h3>
+      {timetableError && <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">{timetableError} Showing the saved schedule.</div>}
 
-                    {/* Venue & Location Details */}
-                    <div className="flex flex-wrap items-center gap-4 text-xs text-slate-600 dark:text-slate-300">
-                      <div className="flex items-center gap-1.5 font-semibold text-[#071B4A] dark:text-white">
-                        <MapPin className="w-4 h-4 text-[#0B2A6F] dark:text-[#F2B705]" />
-                        <span>{entry.venueName}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 font-mono">
-                        <Clock className="w-4 h-4 text-slate-400" />
-                        <span>
-                          {formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Venue Change Alert Note */}
-                    {entry.isVenueChanged && (
-                      <div className="mt-3 p-2.5 rounded-lg bg-[#FEE2E2] dark:bg-[#7F1D1D]/30 border border-[#DC2626]/20 text-xs text-[#DC2626] dark:text-[#FCA5A5]">
-                        <span className="font-bold">Relocation Notice: </span>
-                        {entry.venueChangeNote}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex sm:flex-col items-center sm:items-end gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() => (window.location.hash = `#/home`)}
-                      className="text-xs"
-                    >
-                      <Navigation className="w-3.5 h-3.5 mr-1" />
-                      Map Route
-                    </Button>
-
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => {
-                          setEditingEntry(entry);
-                          setNewVenueId(venues[0]?.id || '');
-                        }}
-                        className="text-xs text-slate-600 dark:text-slate-300"
-                      >
-                        <Edit3 className="w-3.5 h-3.5 mr-1" />
-                        Relocate
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            ))
-          )}
+      {clashes.length > 0 && (
+        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-[#FFFAEB] p-3 text-xs text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
+          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
+          <div className="flex-1"><strong>Schedule conflict detected.</strong> {clashes[0][0].unitCode} overlaps with {clashes[0][1].unitCode}.</div>
+          <X className="h-4 w-4 text-slate-400" />
         </div>
       )}
 
-      {/* Week Grid View */}
-      {viewMode === 'week' && (
-        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-          {DAYS.map((day) => {
-            const entries = timetable
-              .filter((e) => e.dayOfWeek === day.id)
-              .sort((a, b) => a.startTime.localeCompare(b.startTime));
-
-            return (
-              <div key={day.id} className="space-y-2">
-                <div className="p-2 bg-[#0B2A6F] text-white text-center rounded-lg text-xs font-bold shadow-xs">
-                  {day.name}
+      {timetableLoading ? (
+        <Card className="py-16 text-center text-xs text-slate-500">Loading your timetable…</Card>
+      ) : (
+        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
+          <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E3E8F0] bg-white shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
+            {viewMode === 'list' && <div className="space-y-2 p-4">{timetable.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime)).map((entry) => renderEvent(entry, true))}</div>}
+            {viewMode === 'day' && (
+              <div className="p-4">
+                <div className="mb-3 flex gap-1 overflow-x-auto">{DAYS.map((day) => <button key={day.id} type="button" onClick={() => setSelectedDay(day.id)} className={`rounded-lg px-3 py-2 text-xs font-bold ${selectedDay === day.id ? 'bg-[#0B2A6F] text-white' : 'bg-slate-100 text-slate-600'}`}>{day.name}</button>)}</div>
+                <div className="space-y-2">{timetable.filter((entry) => entry.dayOfWeek === selectedDay).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((entry) => renderEvent(entry, true))}</div>
+              </div>
+            )}
+            {viewMode === 'week' && (
+              <div className="overflow-x-auto">
+                <div className="min-w-[680px]">
+                <div className="grid grid-cols-[58px_repeat(5,minmax(0,1fr))] border-b border-slate-200 dark:border-slate-700">
+                  <div className="p-3 text-[9px] font-bold uppercase text-slate-400">Time / day</div>
+                  {DAYS.map((day) => <button key={day.id} type="button" onClick={() => setSelectedDay(day.id)} className={`border-l border-slate-100 p-2 text-center dark:border-slate-700 ${selectedDay === day.id ? 'bg-[#F4F7FF] dark:bg-[#102B62]' : ''}`}><div className="text-[10px] font-bold uppercase text-slate-500">{day.short}</div><div className="text-xs font-black text-[#071B4A] dark:text-white">{formatDate(new Date(weekStart.getTime() + (day.id - 1) * 86400000))}</div></button>)}
                 </div>
-                <div className="space-y-2">
-                  {entries.length === 0 ? (
-                    <div className="p-4 text-center text-slate-400 text-xs bg-white dark:bg-slate-900 rounded-lg border border-slate-200 dark:border-slate-800">
-                      Free
-                    </div>
-                  ) : (
-                    entries.map((item) => (
-                      <div
-                        key={item.id}
-                        className={`p-3 bg-white dark:bg-[#0C1D3D] rounded-lg border text-xs shadow-xs ${
-                          item.isVenueChanged
-                            ? 'border-red-500 bg-red-50/40 dark:bg-red-950/20'
-                            : 'border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        <div className="font-extrabold text-[#0B2A6F] dark:text-[#93C5FD]">
-                          {item.unitCode}
-                        </div>
-                        <div className="font-semibold text-slate-800 dark:text-slate-100 line-clamp-1 mt-0.5">
-                          {item.unitName}
-                        </div>
-                        <div className="text-slate-500 text-[11px] mt-1 font-mono">
-                          {formatTimeOnly(item.startTime)}
-                        </div>
-                        <div className="text-[11px] text-[#071B4A] dark:text-slate-300 font-semibold truncate mt-0.5">
-                          📍 {item.venueName}
-                        </div>
-                      </div>
-                    ))
-                  )}
+                <div className="grid grid-cols-[58px_repeat(5,minmax(0,1fr))]">
+                  <div className="relative">{Array.from({ length: END_HOUR - START_HOUR }, (_, index) => <div key={index} style={{ height: HOUR_HEIGHT }} className="border-b border-slate-100 pr-2 pt-1 text-right text-[9px] font-mono text-slate-400 dark:border-slate-800">{formatTimeOnly(`${String(START_HOUR + index).padStart(2, '0')}:00`)}</div>)}</div>
+                  {DAYS.map((day) => <div key={day.id} className="relative border-l border-slate-100 dark:border-slate-800" style={{ height: (END_HOUR - START_HOUR) * HOUR_HEIGHT, backgroundImage: 'linear-gradient(to bottom, transparent 63px, #eef2f8 64px)', backgroundSize: `100% ${HOUR_HEIGHT}px` }}>{timetable.filter((entry) => entry.dayOfWeek === day.id).map((entry) => renderEvent(entry))}</div>)}
+                </div>
                 </div>
               </div>
-            );
-          })}
+            )}
+          </div>
+
+          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
+            <Card padding="sm">
+              <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black text-[#071B4A] dark:text-white">My enrolled units</h2><Badge variant="academic">{enrolledUnits.length} registered</Badge></div>
+              <div className="space-y-2">{enrolledUnits.map((entry) => <button key={entry.unitCode} type="button" onClick={() => setSelectedEntry(entry)} className={`w-full rounded-xl border p-3 text-left transition ${activeEntry?.unitCode === entry.unitCode ? 'border-[#0B2A6F] bg-[#F4F7FF] dark:bg-[#102B62]' : 'border-slate-200 dark:border-slate-700'}`}><div className="flex items-center gap-2"><span className="rounded-md bg-[#0B2A6F] px-2 py-1 text-[10px] font-black text-white">{entry.unitCode.split(' ')[0]}</span><span className="text-[10px] font-bold text-slate-500">{entry.unitCode.split(' ')[1]}</span></div><p className="mt-2 text-xs font-bold text-[#071B4A] dark:text-white line-clamp-2">{entry.unitName}</p><div className="mt-2 h-1 rounded-full bg-[#C7D2FE]" /></button>)}</div>
+            </Card>
+            {activeEntry && <Card padding="sm"><div className="mb-3 flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase text-slate-500">Active selection</p><h2 className="mt-1 text-sm font-black text-[#071B4A] dark:text-white">{activeEntry.unitCode}: {activeEntry.unitName}</h2></div><Sparkles className="h-4 w-4 text-[#F2B705]" /></div><div className="space-y-2 text-xs text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />{DAYS.find((day) => day.id === activeEntry.dayOfWeek)?.name} · {formatTimeOnly(activeEntry.startTime)} – {formatTimeOnly(activeEntry.endTime)}</span><span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{activeEntry.venueName}</span><span className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />{activeEntry.lecturerName}</span></div>{activeEntry.isVenueChanged && <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-950/30 dark:text-red-100"><strong>Relocation notice</strong><br />{activeEntry.venueChangeNote}</div>}<div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="primary" onClick={() => handleLocateVenue(activeEntry)}><Navigation className="h-3.5 w-3.5" /> Locate venue</Button>{canEdit && <Button size="sm" variant="ghost" onClick={() => { setEditingEntry(activeEntry); setNewVenueId(venues[0]?.id || ''); }}><Edit3 className="h-3.5 w-3.5" /> Relocate</Button>}</div></Card>}
+          </aside>
         </div>
       )}
 
-      {/* Lecturer Venue Change Modal */}
       {editingEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
-          <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl max-w-md w-full p-6 text-slate-900 dark:text-white shadow-2xl border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold">Relocate Lecture Hall</h3>
-              <Badge variant="academic">Lecturer Mode</Badge>
-            </div>
-            <p className="text-xs text-slate-600 dark:text-slate-300 mb-4">
-              Changing the venue for <strong>{editingEntry.unitCode}: {editingEntry.unitName}</strong> will immediately dispatch a live urgent alert to all enrolled students and update the campus map.
-            </p>
-
-            <form onSubmit={handleVenueChangeSubmit} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold mb-1">Select New Venue</label>
-                <select
-                  value={newVenueId}
-                  onChange={(e) => setNewVenueId(e.target.value)}
-                  className="w-full h-11 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm"
-                  required
-                >
-                  {venues.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {v.name} ({v.building}, {v.floor} - Cap: {v.capacity})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold mb-1">Reason for Change</label>
-                <input
-                  type="text"
-                  value={venueChangeReason}
-                  onChange={(e) => setVenueChangeReason(e.target.value)}
-                  placeholder="e.g. Projector failure, practical session in computing lab"
-                  className="w-full h-11 px-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-sm"
-                  required
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-2">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setEditingEntry(null)}
-                >
-                  Cancel
-                </Button>
-                <Button type="submit" variant="primary">
-                  Broadcast Venue Shift
-                </Button>
-              </div>
-            </form>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#0C1D3D]">
+            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold dark:text-white">Relocate Lecture Hall</h3><Badge variant="academic">Lecturer mode</Badge></div>
+            <form onSubmit={handleVenueChangeSubmit} className="space-y-4"><select value={newVenueId} onChange={(event) => setNewVenueId(event.target.value)} className="h-11 w-full rounded-lg border bg-slate-50 px-3 text-sm dark:bg-slate-900">{venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select><input value={venueChangeReason} onChange={(event) => setVenueChangeReason(event.target.value)} className="h-11 w-full rounded-lg border bg-slate-50 px-3 text-sm dark:bg-slate-900" /><div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setEditingEntry(null)}>Cancel</Button><Button type="submit">Broadcast Venue Shift</Button></div></form>
           </div>
         </div>
       )}

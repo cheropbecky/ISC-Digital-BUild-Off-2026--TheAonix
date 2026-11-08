@@ -40,6 +40,7 @@ import {
   INITIAL_NOTIFICATIONS,
 } from './mockData';
 import { notify, registerNotificationListener } from './notify';
+import { timetableService } from '../services/timetableService';
 
 interface ToastMessage {
   id: string;
@@ -67,6 +68,8 @@ interface KampasContextType {
   venues: Venue[];
   units: Unit[];
   timetable: TimetableEntry[];
+  timetableLoading: boolean;
+  timetableError: string | null;
   deadlines: Deadline[];
   documents: DocumentItem[];
   studyGroups: StudyGroup[];
@@ -128,6 +131,8 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [venues, setVenues] = useState<Venue[]>(INITIAL_VENUES);
   const [units] = useState<Unit[]>(INITIAL_UNITS);
   const [timetable, setTimetable] = useState<TimetableEntry[]>(INITIAL_TIMETABLE);
+  const [timetableLoading, setTimetableLoading] = useState(true);
+  const [timetableError, setTimetableError] = useState<string | null>(null);
   const [deadlines, setDeadlines] = useState<Deadline[]>(INITIAL_DEADLINES);
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
   const [studyGroups, setStudyGroups] = useState<StudyGroup[]>(INITIAL_STUDY_GROUPS);
@@ -164,6 +169,31 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     localStorage.setItem('kampas_user', JSON.stringify(user));
   }, [user]);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadTimetable = async () => {
+      setTimetableLoading(true);
+      setTimetableError(null);
+      try {
+        const entries = await timetableService.getTimetable();
+        if (active) setTimetable(entries);
+      } catch (error) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : 'Unable to load timetable data.';
+        console.error(message, error);
+        setTimetableError(message);
+      } finally {
+        if (active) setTimetableLoading(false);
+      }
+    };
+
+    void loadTimetable();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   // Register notification listener for in-app toasts
   useEffect(() => {
@@ -658,6 +688,8 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         venues,
         units,
         timetable,
+        timetableLoading,
+        timetableError,
         deadlines,
         documents,
         studyGroups,

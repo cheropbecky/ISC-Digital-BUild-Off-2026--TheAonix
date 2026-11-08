@@ -8,6 +8,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { Outlet } from 'react-router-dom';
 import { Header } from '../components/shared/Header';
 import { Sidebar } from '../components/shared/Sidebar';
@@ -18,6 +19,7 @@ import { PWAInstallPrompt } from '../components/ui/PWAInstallPrompt';
 import { WifiOff } from 'lucide-react';
 
 export const Layout: React.FC = () => {
+  const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
@@ -76,7 +78,11 @@ export const Layout: React.FC = () => {
         )}
 
         {/* Main Content Viewport: Offset beside fixed sidebar on desktop */}
-        <main className="flex-1 min-w-0 lg:pl-64 p-4 sm:p-6 lg:p-8 pb-24 md:pb-10 max-w-7xl mx-auto w-full">
+        <main
+          className={`flex-1 min-w-0 lg:pl-64 p-4 sm:p-6 lg:p-8 pb-24 md:pb-10 w-full ${
+            location.hash.includes('/campus/timetable') ? 'max-w-none' : 'max-w-7xl mx-auto'
+          } ${location.hash.includes('/campus/timetable') ? 'lg:pr-0' : ''}`}
+        >
           <Outlet />
         </main>
       </div>
@@ -85,7 +91,7 @@ export const Layout: React.FC = () => {
       <MobileTabBar />
 
       {/* Floating Demo Interactive Controls (bottom right) */}
-      <DemoControls />
+      {!location.pathname.includes('/campus/timetable') && <DemoControls />}
 
       {/* Global Realtime Toasts */}
       <ToastContainer />
