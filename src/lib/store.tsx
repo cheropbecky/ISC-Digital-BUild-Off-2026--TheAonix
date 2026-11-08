@@ -88,6 +88,7 @@ interface KampasContextType {
   addDeadline: (deadline: Omit<Deadline, 'id' | 'isCompleted'>) => void;
   uploadDocument: (doc: Omit<DocumentItem, 'id' | 'createdAt' | 'status' | 'downloadCount' | 'averageRating' | 'ratingCount'>) => void;
   approveDocument: (id: string, notes?: string) => void;
+  incrementDocumentDownload: (id: string) => void;
   toggleBookmark: (id: string) => void;
   createStudyGroup: (group: Omit<StudyGroup, 'id' | 'memberCount' | 'members' | 'sessions' | 'createdAt'>) => void;
   bookGroupSession: (groupId: string, session: { title: string; venueName: string; date: string; startTime: string; endTime: string }) => void;
@@ -372,6 +373,12 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const toggleBookmark = (id: string) => {
     setDocuments((prev) =>
       prev.map((d) => (d.id === id ? { ...d, isBookmarked: !d.isBookmarked } : d))
+    );
+  };
+
+  const incrementDocumentDownload = (id: string) => {
+    setDocuments((prev) =>
+      prev.map((doc) => doc.id === id ? { ...doc, downloadCount: doc.downloadCount + 1 } : doc)
     );
   };
 
@@ -706,6 +713,7 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         addDeadline,
         uploadDocument,
         approveDocument,
+        incrementDocumentDownload,
         toggleBookmark,
         createStudyGroup,
         bookGroupSession,
