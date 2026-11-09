@@ -18,16 +18,14 @@ import { getDeadlineUrgency } from '../../data/deadlines';
 import { HOUSES } from '../../data/houses';
 import { IMAGES } from '../../data/images';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
-import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { formatTimeOnly } from '../../lib/utils';
 import {
-  Clock,
   MapPin,
   Calendar,
+  CalendarDays,
   AlertTriangle,
   ArrowRight,
-  Sparkles,
   Navigation,
   Footprints,
   Home,
@@ -49,6 +47,7 @@ export const HomePage: React.FC = () => {
     timetableLoading,
     deadlines,
     events,
+    notices,
   } = useKampasStore();
 
   // Select the next scheduled class from the same data source as the timetable page.
@@ -80,6 +79,16 @@ export const HomePage: React.FC = () => {
     [events]
   );
 
+  const upcomingEvents = useMemo(
+    () => [...events]
+      .filter((event) => event.isPublished && new Date(event.startTime).getTime() >= Date.now())
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))
+      .slice(0, 3),
+    [events]
+  );
+
+  const latestNotices = notices.slice(0, 2);
+
   const todayClasses = timetable.filter((entry) => entry.dayOfWeek === currentDay);
   const todayLabel = new Intl.DateTimeFormat(undefined, {
     weekday: 'long',
@@ -88,9 +97,10 @@ export const HomePage: React.FC = () => {
   }).format(now);
   const unreadNotifications = notifications.filter((notification) => !notification.isRead).length;
   const dashboardStats = [
-    { label: 'Classes today', value: todayClasses.length, icon: Calendar, href: '/campus/timetable', color: 'text-[#0B2A6F] dark:text-blue-300' },
-    { label: 'Open tasks', value: urgentDeadlines.length, icon: AlertTriangle, href: '/campus/deadlines', color: 'text-amber-600 dark:text-amber-300' },
-    { label: 'Unread updates', value: unreadNotifications, icon: Bell, href: '/notifications', color: 'text-rose-600 dark:text-rose-300' },
+    { label: 'Classes today', value: todayClasses.length, icon: Calendar, href: '/campus/timetable' },
+    { label: 'Open tasks', value: urgentDeadlines.length, icon: AlertTriangle, href: '/campus/deadlines' },
+    { label: 'Unread updates', value: unreadNotifications, icon: Bell, href: '/notifications' },
+    { label: 'Campus events', value: events.filter((event) => event.isPublished).length, icon: CalendarDays, href: '/community/events' },
   ];
 
   const handleRouteToNextClass = () => {
@@ -101,7 +111,7 @@ export const HomePage: React.FC = () => {
 
   return (
     <motion.div
-      className="space-y-6"
+      className="space-y-4 sm:space-y-5"
       initial="hidden"
       animate="visible"
       variants={{
@@ -113,132 +123,177 @@ export const HomePage: React.FC = () => {
       <motion.div
         variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
         transition={{ duration: 0.35 }}
-        className="relative isolate overflow-hidden flex flex-col sm:flex-row sm:items-center justify-between gap-5 bg-gradient-to-br from-[#071B4A] via-[#0B2A6F] to-[#16459E] text-white p-5 sm:p-7 rounded-3xl shadow-lg border border-[#F2B705]/30"
+        className="relative isolate min-h-[190px] sm:min-h-[220px] overflow-hidden flex flex-col justify-center bg-[#071B4A] text-white p-5 sm:p-7 rounded-3xl shadow-lg border border-[#F2B705]/30"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 z-0 bg-cover bg-center brightness-[0.72] saturate-[1.08]"
+          style={{ backgroundImage: `url(${IMAGES.scienceComplexExterior.url})` }}
+        />
+        <div className="pointer-events-none absolute inset-0 z-0 bg-gradient-to-r from-[#04133F]/95 via-[#071B4A]/75 to-[#071B4A]/25" />
         <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full border-[24px] border-[#F2B705]/10" />
         <div className="pointer-events-none absolute -bottom-24 right-24 h-44 w-44 rounded-full bg-[#F2B705]/10 blur-2xl" />
-        <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-100 mb-2">
+        <div className="relative z-10 max-w-2xl">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-100 mb-3">
             <Sun className="w-3.5 h-3.5 text-[#F2B705]" />
             {todayLabel}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight">
+          <h1 className="text-2xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
             Welcome back, {user.fullName.split(' ')[0]}
           </h1>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs sm:text-sm text-slate-200 mt-2">
             {user.course || 'BSc Software Engineering'} • Year 3, 1st Trimester 2026/27
           </p>
-        </div>
-
-        {/* Quick Actions Strip */}
-        <div className="relative flex items-center gap-2 shrink-0">
-          <Button
-            size="sm"
-            variant="gold"
-            onClick={handleRouteToNextClass}
-            className="text-xs font-bold"
-          >
-            <Footprints className="w-3.5 h-3.5 mr-1" />
-            Route to Next Class
-          </Button>
-          <Link to="/housing">
+          <div className="relative flex items-center gap-2 mt-5">
             <Button
               size="sm"
-              variant="secondary"
-              className="text-xs border-white/40 text-white hover:bg-white/10 dark:text-white"
+              variant="gold"
+              onClick={handleRouteToNextClass}
+              className="text-xs font-bold shadow-lg shadow-black/20"
             >
-              <Home className="w-3.5 h-3.5 mr-1 text-[#F2B705]" />
-              House Find
+              <Footprints className="w-3.5 h-3.5 mr-1" />
+              Go to Next Class
             </Button>
-          </Link>
+            <Link to="/campus/timetable">
+              <Button
+                size="sm"
+                variant="secondary"
+                className="border-white bg-white text-xs text-[#071B4A] hover:border-[#F2B705] hover:bg-[#F2B705] hover:text-[#071B4A]"
+              >
+                <CalendarDays className="mr-1 h-3.5 w-3.5 text-[#1769FF]" />
+                View Timetable
+              </Button>
+            </Link>
+          </div>
+        </div>
+        <div className="relative z-10 mt-6 flex flex-wrap items-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-3 py-2.5 shadow-xl shadow-black/10 backdrop-blur-md sm:px-4">
+          <div className="flex items-center gap-2 pr-2 text-white">
+            <CalendarDays className="h-3.5 w-3.5 text-[#F2B705]" />
+            <span className="whitespace-nowrap text-[10px] font-bold sm:text-xs">{todayLabel}</span>
+            <span className="hidden text-[10px] text-blue-100/70 sm:inline">•</span>
+            <span className="hidden whitespace-nowrap text-[10px] text-blue-100/75 sm:inline">1st Trimester 2026/27 • Week 8</span>
+          </div>
+          <div className="ml-auto flex max-w-full flex-wrap items-center justify-end gap-x-4 gap-y-1.5">
+            {dashboardStats.map(({ label, value, icon: Icon, href }) => (
+              <Link key={label} to={href} className="group flex items-center gap-1.5 text-white/80 transition-colors hover:text-white" aria-label={`${label}: ${value}`}>
+                <Icon className="h-3.5 w-3.5 text-[#F2B705]" />
+                <span className="text-[10px] font-semibold uppercase tracking-wide">{label.replace(' today', '').replace(' updates', '')}</span>
+                <span className="text-sm font-black text-white">{value}</span>
+              </Link>
+            ))}
+          </div>
         </div>
       </motion.div>
 
-      <motion.div
-        variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-        className="grid grid-cols-1 sm:grid-cols-3 gap-3"
-      >
-        {dashboardStats.map(({ label, value, icon: Icon, href, color }) => (
-          <Link
-            key={label}
-            to={href}
-            className="group flex items-center justify-between rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] px-4 py-3.5 transition-all hover:-translate-y-0.5 hover:border-[#F2B705] hover:shadow-md"
-          >
-            <span className="flex items-center gap-3">
-              <span className={`rounded-lg bg-slate-100 dark:bg-slate-800 p-2 ${color}`}>
-                <Icon className="h-4 w-4" />
-              </span>
-              <span className="text-xs font-semibold text-[#5B6475] dark:text-slate-300">{label}</span>
-            </span>
-            <span className="flex items-center gap-2 text-lg font-black text-[#071B4A] dark:text-white">
-              {value}
-              <ArrowRight className="h-4 w-4 text-slate-400 transition-transform group-hover:translate-x-1" />
-            </span>
-          </Link>
-        ))}
-      </motion.div>
+      {/* Compact next-class alert */}
+      {nextClass && !timetableLoading && (
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+          role="status"
+          aria-label={`Next class: ${nextClass.unitName}`}
+          className="relative flex items-center gap-3 overflow-hidden rounded-xl border border-amber-200 border-l-4 border-l-[#F2B705] bg-gradient-to-r from-[#FFF9E6] via-white to-blue-50/70 px-3 py-2.5 shadow-sm ring-1 ring-amber-100 dark:border-amber-900/60 dark:border-l-[#F2B705] dark:from-[#3A2D04]/50 dark:via-[#0C1D3D] dark:to-[#102955] dark:ring-amber-900/30"
+        >
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#F2B705]/20 text-amber-700 dark:text-[#F2B705]">
+            <AlertTriangle className="h-4 w-4" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[9px] font-black uppercase tracking-[0.16em] text-amber-700 dark:text-[#F2B705]">Next class</span>
+              <span className="font-mono text-[10px] font-extrabold text-blue-700 dark:text-blue-300">{nextClass.unitCode}</span>
+              <span className="truncate text-xs font-black text-[#071B4A] dark:text-white">{nextClass.unitName}</span>
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-[#5B6475] dark:text-slate-300">
+              <span>{formatTimeOnly(nextClass.startTime)} – {formatTimeOnly(nextClass.endTime)}</span>
+              <span className="text-slate-300">•</span>
+              <span className="truncate">{nextClass.venueName}</span>
+            </div>
+          </div>
+          <Button size="sm" variant="gold" onClick={handleRouteToNextClass} className="hidden shrink-0 px-3 py-1.5 text-[10px] font-bold sm:inline-flex">
+            <Navigation className="mr-1 h-3 w-3" /> Route
+          </Button>
+        </motion.div>
+      )}
 
       <motion.section
         variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-        className="overflow-hidden rounded-2xl border border-[#E3E8F0] bg-white shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]"
+        className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.75fr)]"
       >
-        <div className="flex items-center justify-between gap-3 px-4 pb-3 pt-4 sm:px-5">
-          <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0B2A6F] dark:text-[#F2B705]">
-              Around campus
-            </p>
-            <h2 className="text-base font-black text-[#071B4A] dark:text-white">Life at Baraton</h2>
-          </div>
-          <a
-            href={UEAB_GALLERY_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="text-xs font-bold text-[#0B2A6F] hover:underline dark:text-[#F2B705]"
-          >
-            Official gallery
-          </a>
-        </div>
-        <div className="grid grid-cols-2 gap-2 px-4 pb-4 sm:px-5">
-          <div className="relative min-h-44 overflow-hidden rounded-xl sm:min-h-56">
-            <ImageWithFallback
-              src={IMAGES.baratonNewSignage.url}
-              alt={IMAGES.baratonNewSignage.alt}
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071B4A]/90 to-transparent px-3 pb-3 pt-8 text-[11px] font-bold text-white">
-              Research and learning
+        <div className="min-w-0">
+          <div className="mb-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="h-5 w-1 rounded-full bg-[#1769FF]" />
+              <h2 className="text-lg font-black text-[#071B4A] dark:text-white">Yesterday's Event Pictures</h2>
             </div>
+            <a href={UEAB_GALLERY_URL} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#1769FF] hover:underline dark:text-[#F2B705]">
+              View All <ArrowRight className="ml-1 inline h-3.5 w-3.5" />
+            </a>
           </div>
-          <div className="relative min-h-44 overflow-hidden rounded-xl sm:min-h-56">
-            <ImageWithFallback
-              src={IMAGES.baratonGraduation.url}
-              alt={IMAGES.baratonGraduation.alt}
-              className="h-full w-full object-cover"
-            />
-            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071B4A]/90 to-transparent px-3 pb-3 pt-8 text-[11px] font-bold text-white">
-              Graduation day at Baraton
-            </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.55fr_0.85fr]">
+            <a href={UEAB_GALLERY_URL} target="_blank" rel="noreferrer" className="group relative min-h-[220px] overflow-hidden rounded-2xl shadow-sm sm:min-h-[280px]">
+              <ImageWithFallback src={IMAGES.baratonNewSignage.url} alt={IMAGES.baratonNewSignage.alt} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#06163E]/90 via-[#06163E]/15 to-transparent" />
+              <span className="absolute left-3 top-3 rounded-full bg-[#1769FF] px-3 py-1 text-[10px] font-black text-white shadow-lg">Campus Life</span>
+              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                <h3 className="text-xl font-black sm:text-2xl">Life at Baraton</h3>
+                <p className="mt-1 text-xs text-blue-100">Explore student life, facilities and more at UEAB.</p>
+                <span className="mt-3 inline-flex items-center gap-1 rounded-full bg-white px-3 py-1.5 text-[10px] font-black text-[#071B4A]">Learn More <ArrowRight className="h-3 w-3" /></span>
+              </div>
+            </a>
+            <Link to="/community/events" className="group relative min-h-[220px] overflow-hidden rounded-2xl bg-[#071B4A] shadow-sm sm:min-h-[280px]">
+              <ImageWithFallback src={IMAGES.baratonGraduation.url} alt={IMAGES.baratonGraduation.alt} className="h-full w-full object-cover opacity-85 transition-transform duration-500 group-hover:scale-105" />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#06163E] via-[#06163E]/25 to-transparent" />
+              <span className="absolute left-3 top-3 rounded-full bg-violet-500 px-3 py-1 text-[10px] font-black text-white">Events</span>
+              <div className="absolute inset-x-0 bottom-0 p-4 text-white">
+                <h3 className="text-base font-black">Graduation Day at Baraton</h3>
+                <p className="mt-1 text-[10px] text-blue-100">Campus moments and upcoming gatherings.</p>
+                <span className="mt-4 inline-flex items-center gap-1 text-[10px] font-bold text-[#60A5FA]">View Details <ArrowRight className="h-3 w-3" /></span>
+              </div>
+            </Link>
           </div>
         </div>
-        <p className="px-4 pb-4 text-[10px] text-[#5B6475] dark:text-slate-400 sm:px-5">
-          Images from the official University of Eastern Africa, Baraton website.
-        </p>
+
+        <div className="space-y-5">
+          <div className="rounded-2xl border border-[#E3E8F0] bg-white p-4 shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h3 className="flex items-center gap-2 text-sm font-black text-[#071B4A] dark:text-white"><CalendarDays className="h-4 w-4 text-[#1769FF]" /> Upcoming Events</h3>
+              <Link to="/community/events" className="text-[10px] font-bold text-[#1769FF] dark:text-[#F2B705]">View Calendar <ArrowRight className="ml-1 inline h-3 w-3" /></Link>
+            </div>
+            <div className="space-y-3">
+              {upcomingEvents.length > 0 ? upcomingEvents.map((event) => {
+                const date = new Date(event.startTime);
+                return (
+                  <Link key={event.id} to="/community/events" className="group flex items-center gap-3">
+                    <div className="w-10 shrink-0 text-center"><div className="text-sm font-black text-[#1769FF]">{date.toLocaleDateString(undefined, { month: 'short' })}</div><div className="text-lg font-black leading-none text-[#071B4A] dark:text-white">{date.getDate()}</div></div>
+                    <div className="min-w-0 border-l border-slate-200 pl-3 dark:border-slate-700"><p className="truncate text-xs font-bold text-[#071B4A] group-hover:text-[#1769FF] dark:text-white dark:group-hover:text-[#F2B705]">{event.title}</p><p className="mt-0.5 truncate text-[10px] text-slate-500 dark:text-slate-400">{event.venueName}</p></div>
+                  </Link>
+                );
+              }) : <p className="text-xs text-slate-500">No upcoming events yet.</p>}
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#E3E8F0] bg-white p-4 shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
+            <div className="mb-3 flex items-center justify-between"><h3 className="flex items-center gap-2 text-sm font-black text-[#071B4A] dark:text-white"><Bell className="h-4 w-4 text-[#1769FF]" /> Announcements</h3><Link to="/notifications" className="text-[10px] font-bold text-[#1769FF] dark:text-[#F2B705]">View All <ArrowRight className="ml-1 inline h-3 w-3" /></Link></div>
+            <div className="space-y-3">
+              {latestNotices.length > 0 ? latestNotices.map((notice) => <Link key={notice.id} to="/notifications" className="block border-b border-slate-100 pb-2 last:border-0 last:pb-0 dark:border-slate-800"><div className="flex items-center justify-between gap-2"><span className={`rounded-full px-2 py-0.5 text-[9px] font-black ${notice.priority === 'urgent' ? 'bg-rose-100 text-rose-700' : notice.priority === 'important' ? 'bg-amber-100 text-amber-700' : 'bg-blue-100 text-blue-700'}`}>{notice.priority === 'normal' ? 'New' : notice.priority}</span><span className="text-[9px] text-slate-400">{new Date(notice.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}</span></div><p className="mt-1 truncate text-xs font-bold text-[#071B4A] dark:text-white">{notice.title}</p><p className="truncate text-[10px] text-slate-500 dark:text-slate-400">{notice.content}</p></Link>) : <p className="text-xs text-slate-500">No announcements yet.</p>}
+            </div>
+          </div>
+        </div>
       </motion.section>
 
       <motion.section
         variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-        className="rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] p-4 sm:p-5 shadow-sm"
+        className="rounded-3xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white dark:bg-[#0C1D3D] p-4 sm:p-6 shadow-sm"
       >
-        <div className="flex items-center justify-between gap-3 mb-4">
+        <div className="mb-5 flex items-end justify-between gap-3">
           <div>
-            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#0B2A6F] dark:text-[#F2B705]">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-[#1769FF] dark:text-[#60A5FA]">
               Daily overview
             </p>
-            <h2 className="text-base font-black text-[#071B4A] dark:text-white">Today at Baraton</h2>
+            <h2 className="mt-1 text-xl font-black tracking-tight text-[#071B4A] dark:text-white">Today's Schedule</h2>
           </div>
           <Link
             to="/campus/timetable"
-            className="flex items-center gap-1 text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline"
+            className="flex items-center gap-1 rounded-lg px-2 py-1 text-xs font-bold text-[#1769FF] hover:bg-blue-50 dark:text-[#F2B705] dark:hover:bg-blue-950/40"
           >
             View timetable
             <ChevronRight className="w-3.5 h-3.5" />
@@ -248,32 +303,32 @@ export const HomePage: React.FC = () => {
         {timetableLoading ? (
           <div className="h-16 animate-pulse rounded-xl bg-slate-100 dark:bg-slate-800" />
         ) : todayClasses.length > 0 ? (
-          <div className="flex gap-3 overflow-x-auto pb-1">
+          <div className="relative space-y-3">
+            <div className="absolute bottom-5 left-[19px] top-5 w-px bg-blue-100 dark:bg-blue-900/60" aria-hidden="true" />
             {todayClasses
               .sort((a, b) => a.startTime.localeCompare(b.startTime))
               .map((entry, index) => (
                 <Link
                   key={entry.id}
                   to={`/campus/map?venue=${encodeURIComponent(entry.venueId)}`}
-                  className={`group min-w-[220px] flex-1 rounded-xl border p-3 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                  className={`group relative flex items-center gap-4 rounded-2xl border p-3.5 pl-3 transition-all hover:border-[#8EB4FF] hover:shadow-md ${
                     index === 0
-                      ? 'border-[#F2B705]/60 bg-[#FFF9E6] dark:bg-[#3A2D04]/40'
-                      : 'border-slate-200 bg-slate-50 dark:border-slate-700 dark:bg-slate-800/60'
+                      ? 'border-blue-200 bg-blue-50/60 dark:border-blue-900/70 dark:bg-blue-950/25'
+                      : 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-800/60'
                   }`}
                 >
-                  <div className="flex items-center justify-between gap-2 mb-2">
-                    <span className="font-mono text-[10px] font-black text-[#0B2A6F] dark:text-blue-300">
-                      {entry.unitCode}
-                    </span>
-                    <span className="text-[10px] font-bold text-[#5B6475] dark:text-slate-400">
-                      {formatTimeOnly(entry.startTime)}
-                    </span>
+                  <div className={`relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full border-4 border-white text-[10px] font-black shadow-sm dark:border-[#0C1D3D] ${index === 0 ? 'bg-[#1769FF] text-white' : 'bg-blue-100 text-[#1769FF] dark:bg-blue-900 dark:text-blue-200'}`}>
+                    {index + 1}
                   </div>
-                  <p className="text-xs font-bold text-[#071B4A] dark:text-white line-clamp-1">{entry.unitName}</p>
-                  <p className="mt-1 flex items-center gap-1 text-[10px] text-[#5B6475] dark:text-slate-400">
-                    <MapPin className="w-3 h-3 text-[#0B2A6F] dark:text-[#F2B705]" />
-                    {entry.venueName}
-                  </p>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-mono text-[10px] font-black text-[#1769FF] dark:text-blue-300">{entry.unitCode}</span>
+                      <span className="text-[10px] font-bold text-[#5B6475] dark:text-slate-400">{formatTimeOnly(entry.startTime)}</span>
+                    </div>
+                    <p className="mt-1 truncate text-sm font-black text-[#071B4A] dark:text-white">{entry.unitName}</p>
+                    <p className="mt-1 flex items-center gap-1 truncate text-[10px] text-[#5B6475] dark:text-slate-400"><MapPin className="h-3 w-3 shrink-0 text-[#1769FF]" />{entry.venueName}</p>
+                  </div>
+                  <ArrowRight className="h-4 w-4 shrink-0 text-slate-300 transition-transform group-hover:translate-x-1 group-hover:text-[#1769FF]" />
                 </Link>
               ))}
           </div>
@@ -283,68 +338,6 @@ export const HomePage: React.FC = () => {
           </p>
         )}
       </motion.section>
-
-      {/* 2. Top "Now & Next" Priority Action Card */}
-      {nextClass && !timetableLoading && (
-        <motion.div
-          variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-          className="relative overflow-hidden bg-gradient-to-r from-white to-blue-50/60 dark:from-[#0C1D3D] dark:to-[#102955] rounded-2xl border-2 border-[#0B2A6F]/20 dark:border-[#F2B705]/30 p-4 sm:p-5 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
-        >
-          <div className="flex items-start gap-3.5 min-w-0">
-            <div className="w-12 h-12 rounded-xl bg-[#0B2A6F] text-[#F2B705] flex flex-col items-center justify-center shrink-0 font-mono font-bold leading-none shadow-xs">
-              <span className="text-xs">NEXT</span>
-              <span className="text-[10px] text-slate-300 mt-0.5">CLASS</span>
-            </div>
-
-            <div className="space-y-1 min-w-0">
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="font-mono font-extrabold text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-300">
-                  {nextClass.unitCode}
-                </span>
-                <span className="font-extrabold text-sm sm:text-base text-[#071B4A] dark:text-white truncate">
-                  {nextClass.unitName}
-                </span>
-                {nextClass.isVenueChanged && (
-                  <Badge variant="urgent" showDot>
-                    Venue Relocated!
-                  </Badge>
-                )}
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3 text-xs text-[#5B6475] dark:text-slate-300">
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{formatTimeOnly(nextClass.startTime)} – {formatTimeOnly(nextClass.endTime)}</span>
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1 font-semibold text-[#071B4A] dark:text-slate-200">
-                  <MapPin className="w-3.5 h-3.5 text-[#0B2A6F] dark:text-[#F2B705]" />
-                  <span>{nextClass.venueName}</span>
-                </span>
-                <span>•</span>
-                <span>Lecturer: {nextClass.lecturerName}</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0 w-full md:w-auto justify-end">
-            <Button
-              size="sm"
-              variant="gold"
-              onClick={handleRouteToNextClass}
-              className="text-xs font-bold"
-            >
-              <Navigation className="w-3.5 h-3.5 mr-1" />
-              One-Tap Route Guide
-            </Button>
-            <Link to="/campus/timetable">
-              <Button size="sm" variant="secondary" className="text-xs">
-                Full Timetable
-              </Button>
-            </Link>
-          </div>
-        </motion.div>
-      )}
 
       {/* 3. Three-Column "Now" Activity Feed */}
       <motion.div
@@ -356,7 +349,7 @@ export const HomePage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Calendar className="w-4 h-4 text-[#DC2626]" />
+                <Calendar className="w-4 h-4 text-[#1769FF]" />
                 <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
                   Approaching Deadlines
                 </h3>
@@ -406,7 +399,7 @@ export const HomePage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Home className="w-4 h-4 text-[#D97706]" />
+                <Home className="w-4 h-4 text-[#1769FF]" />
                 <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
                   Nearby rental
                 </h3>
@@ -452,7 +445,7 @@ export const HomePage: React.FC = () => {
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
-                <Sparkles className="w-4 h-4 text-[#F2B705]" />
+                <CalendarDays className="w-4 h-4 text-[#1769FF]" />
                 <h3 className="font-bold text-sm text-[#071B4A] dark:text-white">
                   Upcoming campus event
                 </h3>
