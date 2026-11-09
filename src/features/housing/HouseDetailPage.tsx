@@ -160,21 +160,15 @@ export const HouseDetailPage: React.FC = () => {
       {/* Main Visual Gallery (3 to 5 photos) */}
       <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-xs">
         {/* Main Display Image */}
-        <div className="relative aspect-16/9 w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
           <ImageWithFallback
             src={house.photos[selectedPhotoIdx] || house.photos[0]}
             alt={house.title}
-            className="w-full h-full object-cover"
+            className="w-full h-full object-cover object-center scale-[1.04]"
           />
 
           {/* Top Floating Badges */}
           <div className="absolute top-4 left-4 flex items-center gap-2">
-            {house.isVerified && (
-              <span className="bg-[#0B2A6F]/90 backdrop-blur-md text-[#F2B705] px-3 py-1 rounded-md text-xs font-extrabold flex items-center gap-1.5 shadow-md">
-                <ShieldCheck className="w-4 h-4" />
-                <span>Verified Off-Campus Rental</span>
-              </span>
-            )}
             <span className="bg-black/60 backdrop-blur-md text-white px-2.5 py-1 rounded-md text-xs font-semibold">
               {house.area}
             </span>
