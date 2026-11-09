@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="32 28 741 701">
+  <defs>
+    <clipPath id="icon-shape">
+      <rect x="32" y="28" width="741" height="701" rx="170" />
+    </clipPath>
+  </defs>
+  <image
+    href="/brand/kampas-favicon.png"
+    x="32"
+    y="28"
+    width="741"
+    height="701"
+    preserveAspectRatio="xMidYMid slice"
+    clip-path="url(#icon-shape)"
+  />
+</svg>

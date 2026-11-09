@@ -4,6 +4,7 @@ import { CheckCircle2, Search, Send, Users } from 'lucide-react';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { COMMUNITY_EVENTS, COMMUNITY_ITEMS, CommunityCategory, EventCategory, getEventStatus, UEAB_SCHOOLS } from '../../data/communityModule';
+import { IMAGES } from '../../data/images';
 import { CommunityCard, CommunitySubNav, EmptyState, EventCard } from './components/CommunityPrimitives';
 
 type MainTab = 'community' | 'events';
@@ -70,7 +71,12 @@ export const CommunityEventsPage: React.FC = () => {
 
   return (
     <div className="space-y-4 pb-24">
-      <header className="rounded-2xl bg-gradient-to-br from-[#071B4A] to-[#0B2A6F] p-5 text-white shadow-sm sm:p-6">
+      <header
+        className="relative overflow-hidden rounded-2xl bg-[#071B4A] bg-cover bg-center p-5 text-white shadow-sm sm:p-6"
+        style={{
+          backgroundImage: `linear-gradient(90deg, rgba(7, 27, 74, 0.96) 0%, rgba(11, 42, 111, 0.88) 52%, rgba(7, 27, 74, 0.72) 100%), url("${IMAGES.studentLifeQuad.url}")`,
+        }}
+      >
         <div className="flex flex-col gap-5">
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-start">
             <div>

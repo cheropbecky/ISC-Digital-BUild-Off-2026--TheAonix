@@ -7,6 +7,21 @@
  */
 
 import { IMAGES } from './images';
+import A1 from '../assets/images/A1.png';
+import A2 from '../assets/images/A2.png';
+import A3 from '../assets/images/A3.png';
+import A4 from '../assets/images/A4.png';
+import B1 from '../assets/images/B1.png';
+import B2 from '../assets/images/B2.png';
+import B3 from '../assets/images/B3.png';
+import B4 from '../assets/images/B4.png';
+import C1 from '../assets/images/C1.jpg';
+import C2 from '../assets/images/C2.jpg';
+import C3 from '../assets/images/C3.jpg';
+import C4 from '../assets/images/C4.jpg';
+import D1 from '../assets/images/D1.png';
+import D2 from '../assets/images/D2.png';
+import D3 from '../assets/images/D3.png';
 
 export interface HouseListing {
   id: string;
@@ -56,7 +71,14 @@ export interface RoommatePost {
   contactEmail: string;
 }
 
-export const HOUSES: HouseListing[] = [
+const REAL_HOUSING_PHOTOS: Record<HouseListing['type'], string[]> = {
+  one_bedroom: [A1, A2, A3, A4],
+  single: [B1, B2, B3, B4],
+  bedsitter: [C1, C2, C3, C4],
+  shared: [D1, D2, D3],
+};
+
+const HOUSES_DATA: HouseListing[] = [
   {
     id: 'house-1',
     title: 'Highland Executive Studios & Bedsitters',
@@ -528,6 +550,11 @@ export const HOUSES: HouseListing[] = [
     longitude: 35.0810,
   },
 ];
+
+export const HOUSES: HouseListing[] = HOUSES_DATA.map((house) => ({
+  ...house,
+  photos: REAL_HOUSING_PHOTOS[house.type],
+}));
 
 export const ROOMMATES: RoommatePost[] = [
   {

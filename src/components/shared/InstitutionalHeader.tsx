@@ -126,23 +126,11 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
         <div className="w-full flex items-center justify-between gap-4">
           {/* UEAB Crest Emblem & University Name */}
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
-            <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-white/10 border border-[#F2B705]/60 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
-              <svg viewBox="0 0 100 100" className="w-7 h-7 sm:w-8 sm:h-8" fill="none">
-                <path d="M50 12 L82 30 L82 70 L50 88 L18 70 L18 30 Z" fill="#F2B705" />
-                <path d="M50 22 L72 34 L72 66 L50 78 L28 66 L28 34 Z" fill="#071B4A" />
-                <text x="50" y="59" textAnchor="middle" fill="#FFFFFF" fontSize="24" fontWeight="900" fontFamily="Inter">
-                  U
-                </text>
-              </svg>
-            </div>
-            <div>
-              <div className="text-sm sm:text-base font-black tracking-tight leading-tight text-white flex items-center gap-2">
-                <span>University of Eastern Africa, Baraton</span>
-              </div>
-              <div className="text-[10px] sm:text-[11px] font-semibold text-[#F2B705] tracking-wider uppercase">
-                Chartered 1980 • Eldoret, Kenya
-              </div>
-            </div>
+            <img
+              src="/brand/kampas-wordmark.png"
+              alt="Kampas, the campus in one place"
+              className="h-10 w-auto max-w-[190px] rounded-lg object-contain transition-transform group-hover:scale-[1.02] sm:h-12 sm:max-w-[230px]"
+            />
           </Link>
 
           {/* Desktop Navigation Links */}
