@@ -148,7 +148,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
   // Tile layer mode: 'satellite' (2026 HD Hybrid) | 'osm' (Street Map) | 'aerial' (Esri Imagery)
   const [baseMapType, setBaseMapType] = useState<BaseMapType>('satellite');
-  const [mapReady, setMapReady] = useState(false);
 
   // Layer filter
   const [activeFilter, setActiveFilter] = useState<MapLayerFilter>(initialLayer);
@@ -384,7 +383,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       .addTo(map);
 
     mapInstanceRef.current = map;
-    setMapReady(true);
 
     // Observe container size changes
     const resizeObserver = new ResizeObserver(() => {
@@ -396,7 +394,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
-      setMapReady(false);
     };
   }, []);
 
@@ -664,7 +661,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
         handleDrawDirections(found);
       }
     }
-  }, [highlightVenueId, showRouteToVenueId, handleFocusVenue, handleDrawDirections, mapReady]);
+  }, [highlightVenueId, showRouteToVenueId, handleFocusVenue, handleDrawDirections]);
 
   // Locate Me Geolocation handler
   const handleLocateMe = () => {

@@ -20,14 +20,11 @@ export const MobileTabBar: React.FC = () => {
     { to: '/campus/map', label: 'Campus', icon: MapPin },
     { to: '/housing', label: 'Housing', icon: Building, badge: 'New' },
     { to: '/share', label: 'Share', icon: FileText },
-    { to: '/community', label: 'Community', icon: Users },
+    { to: '/community/events', label: 'Community', icon: Users },
   ];
 
   return (
-    <nav
-      aria-label="Mobile navigation"
-      className="md:hidden fixed inset-x-0 bottom-0 z-40 flex h-[calc(60px+env(safe-area-inset-bottom))] items-start justify-around border-t border-[#E3E8F0] bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md select-none dark:border-[#1E3158] dark:bg-[#071B4A]/95"
-    >
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 h-[60px] bg-white/95 dark:bg-[#071B4A]/95 backdrop-blur-md border-t border-[#E3E8F0] dark:border-[#1E3158] flex items-center justify-around px-2 select-none">
       {tabs.map(({ to, label, icon: Icon, badge }) => (
         <NavLink
           key={to}
