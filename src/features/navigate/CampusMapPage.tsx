@@ -138,7 +138,7 @@ export const CampusMapPage: React.FC = () => {
         {showMoreCategories && <div className="flex flex-wrap gap-2 rounded-2xl bg-[#EEF3FF] p-3 dark:bg-[#0C1D3D]">{(Object.keys(VENUE_CATEGORY_LABELS) as VenueCategory[]).filter((item) => !quickCategories.includes(item)).map((item) => <button key={item} onClick={() => { setCategory(item); setShowMoreCategories(false); }} className="rounded-full bg-white px-3 py-2 text-xs font-bold text-[#263968] ring-1 ring-[#D8E2F7] dark:bg-slate-800 dark:text-slate-200 dark:ring-slate-600">{VENUE_CATEGORY_LABELS[item]}</button>)}</div>}
       </section>
 
-      <section className="grid grid-cols-1 gap-3 px-5 pb-5 min-[520px]:grid-cols-2 lg:grid-cols-4 sm:px-6">
+      <section className="grid grid-cols-2 gap-2 px-3 pb-5 min-[520px]:gap-3 sm:px-6 lg:grid-cols-4">
         {displayVenues.map((venue) => {
           const Icon = categoryIcon[venue.category];
           return (

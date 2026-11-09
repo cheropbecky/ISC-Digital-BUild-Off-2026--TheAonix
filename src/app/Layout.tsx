@@ -46,9 +46,6 @@ export const Layout: React.FC = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F7F9FC] dark:bg-[#050E24] text-[#0F172A] dark:text-[#F8FAFC] antialiased">
-      {/* PWA Install Banner */}
-      <PWAInstallPrompt />
-
       {/* Offline Connectivity Alert */}
       {!isOnline && (
         <div className="bg-[#D97706] text-white px-4 py-1.5 text-xs font-semibold flex items-center justify-center gap-2 sticky top-0 z-50">
@@ -63,7 +60,12 @@ export const Layout: React.FC = () => {
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      <div className="flex-1 flex w-full relative pt-14 sm:pt-[68px]">
+      {/* PWA banner sits below the fixed header so it cannot be covered by navigation. */}
+      <div className="pt-14 sm:pt-[68px]">
+        <PWAInstallPrompt />
+      </div>
+
+      <div className="flex-1 flex w-full relative">
         {/* Persistent FIXED Left Sidebar on Desktop (1024px+): does NOT scroll with page */}
         <div className={`hidden lg:block fixed left-0 top-14 sm:top-[68px] bottom-0 z-30 transition-[width] duration-300 ease-out ${isSidebarCollapsed ? 'w-20' : 'w-56'}`}>
           <Sidebar isCollapsed={isSidebarCollapsed} onCollapsedChange={setIsSidebarCollapsed} />
