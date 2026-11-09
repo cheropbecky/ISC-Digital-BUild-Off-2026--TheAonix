@@ -30,10 +30,13 @@ import {
 interface SidebarProps {
   isMobileDrawer?: boolean;
   onCloseDrawer?: () => void;
+  isCollapsed?: boolean;
+  onCollapsedChange?: (collapsed: boolean) => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onCloseDrawer }) => {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onCloseDrawer, isCollapsed: controlledCollapsed, onCollapsedChange }) => {
+  const [internalCollapsed, setInternalCollapsed] = useState(false);
+  const isCollapsed = controlledCollapsed ?? internalCollapsed;
   const { user } = useKampasStore();
   const shouldReduceMotion = useReducedMotion();
 
@@ -175,7 +178,11 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
 
         {!isMobileDrawer && (
           <button
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={() => {
+              const nextCollapsed = !isCollapsed;
+              setInternalCollapsed(nextCollapsed);
+              onCollapsedChange?.(nextCollapsed);
+            }}
             className="w-full py-2 px-2 rounded-xl text-blue-100/60 hover:text-white hover:bg-white/10 flex items-center justify-center transition text-xs font-semibold"
             title={isCollapsed ? 'Expand Sidebar' : 'Collapse Sidebar to Icons'}
           >
