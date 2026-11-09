@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
       items: [
         { to: '/housing', label: 'House Find (Rentals)', icon: Building, badge: 'New' },
         { to: '/share', label: 'Share Hub (Notes)', icon: FileText },
-        { to: '/community/events', label: 'Community & Events', icon: Users },
+        { to: '/community', label: 'Community & Events', icon: Users },
         { to: '/found', label: 'Lost & Found Desk', icon: SearchCheck },
       ],
     },

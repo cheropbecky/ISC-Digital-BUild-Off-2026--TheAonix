@@ -36,12 +36,17 @@ import {
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
 import { searchService, SearchResultItem } from '../../services/searchService';
-import campusHeroImage from '../../assets/images/ueab_campus_hero_1794150142310.jpg';
-import housingImage from '../../assets/images/ueab_student_housing_1794150143766.jpg';
-import libraryImage from '../../assets/images/ueab_library_students_1794150143182.jpg';
-import studentLifeImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
-import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
-import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
+
+const campusHeroImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/710079021_4634835960079023_5382080630327967758_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1152&ctp=p720x720&_nc_cat=111&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=9gMXD-rMdb4Q7kNvwFs7ipY&_nc_oc=AdoJn37T_WJ0A9mMfv6RgTwslceOjXTBoWL4M-k7NlgBNKrKv8hfFa6mVE2OevUooD4&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=g1yS8SK-hv87kJ_y9RjZ7Q&_nc_ss=7b2a8&oh=00_AQT477CJQHd3JLWOdzIYFvlf-5DomH6DiKd8cq6FrAjDFQ&oe=6AF79210';
+const housingImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/735067882_122109136923316648_1042423582806146663_n.jpg?stp=dst-jpg_tt6&cstp=mx720x480&ctp=s720x480&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=GAsvv2PgnBMQ7kNvwH7Xi3g&_nc_oc=AdpwGGyNu_XQ7TigTDK1w52kbSpitMiOljeP3oGqiDM3yJO2RjP8N0BO9kXklK6FvuI&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQTZac7ONUtzaZgvUELsHoeAMUon8VXw6BoMAL4FQxLWeA&oe=6AF773E5';
+const libraryImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/842311859_122135662940846732_6867406674687758303_n.jpg?stp=dst-jpg_tt6&cstp=mx715x476&ctp=s715x476&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=dZ8fZaHj_xcQ7kNvwG1F8ns&_nc_oc=Adqkn0rfUSt8qmlBjNKtQQ3NRgf-8zztzL8rGA9i5f4lygt6J5JG94-jnbanohBhGXk&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQQ5dhxlm5mJgN_YbnYL5F-4dKVGxFC2iVMiapUjpOunPQ&oe=6AF7A455';
+const studentLifeImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/793028073_122129524136846732_1498613680495360111_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1364&ctp=s2048x1364&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=z43NEFaHHqMQ7kNvwEfF61r&_nc_oc=AdoirRmn6PGxtfSPPlRu5R2965Z5HXu33X7unZOxsqKai0HoUnkl894hzDHxNvW_CSY&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=6l4sl033atoM1P-yb6_8iA&_nc_ss=7b2a8&oh=00_AQQx5SYdS2T5xITieyVLpjAD0zCS_S4NcOp77y5t2oK_Mg&oe=6AF7A0FD';
+const scienceComplexImage = libraryImage;
+const venueEntranceImage = studentLifeImage;
 
 interface HeroSlide {
   id: number;
@@ -51,10 +56,22 @@ interface HeroSlide {
   subtext: string;
 }
 
+const SEARCH_CATEGORIES = [
+  'All',
+  'Venues',
+  'Houses',
+  'Documents',
+  'Lost items',
+  'Events',
+  'Units',
+  'Clubs',
+  'People',
+] as const;
+
 const HERO_SLIDES: HeroSlide[] = [
   {
     id: 1,
-    image: '/src/assets/images/ueab_campus_hero_1794150142310.jpg',
+    image: campusHeroImage,
     tagline: 'OFFICIAL STUDENT PORTAL & LOGISTICS PLATFORM',
     headline: 'The campus, in one place.',
     subtext:
@@ -62,7 +79,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 2,
-    image: '/src/assets/images/ueab_student_housing_1794150143766.jpg',
+    image: housingImage,
     tagline: 'HOUSE FIND • OFF-CAMPUS STUDENT HOUSING',
     headline: 'Find verified rentals with zero broker scams.',
     subtext:
@@ -70,7 +87,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 3,
-    image: '/src/assets/images/ueab_library_students_1794150143182.jpg',
+    image: libraryImage,
     tagline: 'ACADEMIC SHARE HUB & STUDY GROUPS',
     headline: 'Top lecture notes & past papers at your fingertips.',
     subtext:
@@ -78,7 +95,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 4,
-    image: '/src/assets/images/ueab_student_life_1794150144449.jpg',
+    image: studentLifeImage,
     tagline: 'ALUMNI MENTORSHIP & INDUSTRY REFERRALS',
     headline: 'From Baraton classrooms to Kenya’s tech leaders.',
     subtext:
@@ -307,6 +324,7 @@ export const LandingPage: React.FC = () => {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 50);
+      setSelectedSearchCategory('All');
     } else {
       setSearchQuery('');
     }
@@ -382,6 +400,33 @@ export const LandingPage: React.FC = () => {
 
   return (
     <div className="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#F7F9FC] dark:bg-[#050E24] text-[#0F172A] dark:text-[#F8FAFC] font-sans transition-colors duration-300">
+      {/* Inline styles for custom animations */}
+      <style>{`
+        @keyframes customMarquee {
+          0% { transform: translateX(0%); }
+          100% { transform: translateX(-50%); }
+        }
+        .animate-custom-marquee {
+          display: flex;
+          width: max-content;
+          animation: customMarquee 60s linear infinite;
+        }
+        .animate-custom-marquee:hover {
+          animation-play-state: paused;
+        }
+        @keyframes sideToSideSlide {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(calc(-100% + 100vw - 3rem)); }
+        }
+        .side-to-side-track {
+          display: flex;
+          animation: sideToSideSlide 28s ease-in-out infinite alternate;
+        }
+        .side-to-side-track.paused {
+          animation-play-state: paused;
+        }
+      `}</style>
+
       {/* 1. INSTITUTIONAL TOP BAR & CREATIVE NAVIGATION */}
       <header className="sticky top-0 z-50 bg-[#071B4A] text-white shadow-lg border-b border-[#F2B705]/20">
         {/* Top utility strip */}
@@ -795,34 +840,31 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. CURVED SECTION SEPARATOR */}
-      <div className="relative h-28 sm:h-40 mt-14 overflow-hidden bg-[#071B4A]" aria-hidden="true">
-        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_18%_20%,rgba(96,165,250,0.32),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(242,183,5,0.22),transparent_24%)]" />
-        <svg
-          className="absolute bottom-[-1px] left-0 h-full w-full"
-          viewBox="0 0 1440 180"
-          preserveAspectRatio="none"
-          xmlns="http://www.w3.org/2000/svg"
-        >
-          <path
-            d="M0 86C180 34 322 52 500 98C718 154 850 178 1050 118C1222 66 1325 28 1440 62"
-            fill="none"
-            stroke="rgba(96,165,250,0.42)"
-            strokeWidth="3"
-          />
-          <path
-            d="M0 106C174 58 316 72 486 116C700 170 846 190 1054 136C1228 90 1326 52 1440 82"
-            fill="none"
-            stroke="rgba(242,183,5,0.35)"
-            strokeWidth="2"
-          />
-          <path
-            d="M0 94C180 38 322 58 500 106C718 166 850 188 1050 126C1222 74 1325 36 1440 72V180H0V94Z"
-            fill="currentColor"
-            className="text-[#F7F9FC] dark:text-[#050E24]"
-          />
-        </svg>
-      </div>
+      {/* 4. TECHNOLOGY PARTNERS MARQUEE */}
+      <section className="bg-white dark:bg-[#071B4A] border-y border-[#E3E8F0] dark:border-[#1E3158] py-8 mt-14 overflow-hidden w-full">
+        <div className="w-full px-4 sm:px-8 lg:px-12">
+          <p className="text-center text-[11px] font-black uppercase tracking-[0.24em] text-[#5B6475] dark:text-slate-400 mb-6">
+            Engineered with tools trusted by modern teams
+          </p>
+          <div className="relative overflow-hidden w-full" aria-label="Technology partners">
+            <div className="animate-custom-marquee flex items-center">
+              {[...PARTNER_LOGOS, ...PARTNER_LOGOS, ...PARTNER_LOGOS].map((partner, index) => (
+                <div
+                  key={`${partner.name}-${index}`}
+                  className="mx-6 sm:mx-10 flex items-center gap-3.5 whitespace-nowrap"
+                >
+                  <div className="shrink-0 transition-transform duration-200 hover:scale-110">
+                    {partner.svg}
+                  </div>
+                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white select-none">
+                    {partner.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* 5. ABOUT SECTION */}
       <section id="section-about" className="w-full px-4 sm:px-8 lg:px-12 py-20 sm:py-28 overflow-hidden">
@@ -873,7 +915,7 @@ export const LandingPage: React.FC = () => {
               <div className="relative">
                 <div className="overflow-hidden rounded-3xl shadow-2xl border-4 border-white dark:border-[#0C1D3D] [clip-path:polygon(0_10%,100%_0,100%_90%,0_100%)]">
                   <img
-                    src="/src/assets/images/ueab_campus_hero_1794150142310.jpg"
+                    src={campusHeroImage}
                     alt="UEAB Campus Administration Tower"
                     className="w-full h-[360px] sm:h-[420px] object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -931,7 +973,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 6. SIX INTEGRATED CAMPUS MODULES - UNEVEN HONEYCOMB CLUSTERS */}
-      <section id="section-modules" className="relative bg-[#05112F] text-white py-14 sm:py-20 overflow-hidden w-full border-t border-b border-white/10">
+      <section id="section-modules" className="relative bg-[#05112F] text-white py-20 sm:py-28 overflow-hidden w-full border-t border-b border-white/10">
         {/* Tech-inspired circuit/grid texture across the full module section */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.16]">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -960,7 +1002,7 @@ export const LandingPage: React.FC = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-8 sm:mb-10 pb-4 border-b border-white/10">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 sm:mb-16 pb-6 border-b border-white/10">
             <div className="max-w-2xl space-y-3">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                 Six Integrated Campus Modules
@@ -990,7 +1032,7 @@ export const LandingPage: React.FC = () => {
             {MODULE_DATA.map((mod) => (
               <div
                 key={mod.id}
-                className={`group relative rounded-3xl overflow-hidden border border-white/10 hover:border-[#F2B705]/60 bg-[#071B4A]/90 p-6 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-[0_14px_45px_rgba(242,183,5,0.18)] transition-all duration-500 ${mod.span} ${mod.stagger}`}
+                className={`group relative rounded-3xl overflow-hidden border border-white/10 hover:border-[#F2B705]/60 bg-[#071B4A]/90 p-6 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-[0_14px_45px_rgba(242,183,5,0.18)] transition-all duration-500 hover:-translate-y-1.5 ${mod.span} ${mod.stagger}`}
               >
                 {/* Dimmed Background Campus Image with smooth zoom on hover */}
                 <div
@@ -1013,7 +1055,7 @@ export const LandingPage: React.FC = () => {
                     {/* Hexagon Honeycomb Icon Badge */}
                     <div className="relative flex items-center justify-center">
                       <div
-                        className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#F2B705] to-amber-600 flex items-center justify-center text-[#071B4A] shadow-md"
+                        className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#F2B705] to-amber-600 flex items-center justify-center text-[#071B4A] shadow-md group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
                         style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
                       >
                         <mod.icon className="w-5 h-5 stroke-[2.4]" />
@@ -1111,7 +1153,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_campus_hero_1794150142310.jpg)',
+                    backgroundImage: `url(${campusHeroImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1127,7 +1169,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_student_housing_1794150143766.jpg)',
+                    backgroundImage: `url(${housingImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1171,7 +1213,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_library_students_1794150143182.jpg)',
+                    backgroundImage: `url(${libraryImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1187,7 +1229,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_student_life_1794150144449.jpg)',
+                    backgroundImage: `url(${studentLifeImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1282,11 +1324,8 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 10. INSTITUTIONAL FOOTER */}
-      <footer className="relative overflow-hidden bg-[#051336] text-white border-t border-white/10 pt-14 sm:pt-16 pb-8 w-full">
-        <div className="absolute inset-x-0 bottom-[-1.5rem] z-0 text-center text-[clamp(7rem,24vw,23rem)] font-black leading-none tracking-[-0.08em] text-[#273248]/80 select-none whitespace-nowrap pointer-events-none">
-          KAMPAS
-        </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_1fr_1.25fr] gap-10 lg:gap-14 pb-12 border-b border-white/10">
+      <footer className="bg-[#051336] text-white border-t border-white/10 pt-14 sm:pt-16 pb-8 w-full">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_1fr_1.25fr] gap-10 lg:gap-14 pb-12 border-b border-white/10">
           <div className="space-y-5">
             <div className="flex items-center gap-2.5">
               <img
@@ -1372,7 +1411,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
           <p>© {new Date().getFullYear()} University of Eastern Africa, Baraton. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <button
@@ -1438,7 +1477,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Category Filter Pills */}
             <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-[#051336] flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-              {['All', 'Venues', 'Houses', 'Documents', 'Lost items', 'Events', 'Units'].map((cat) => (
+              {SEARCH_CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedSearchCategory(cat)}
@@ -1521,7 +1560,10 @@ export const LandingPage: React.FC = () => {
                     ].map((sug, i) => (
                       <button
                         key={i}
-                        onClick={() => setSearchQuery(sug.query)}
+                        onClick={() => {
+                          setSearchQuery(sug.query);
+                          setSelectedSearchCategory(sug.cat);
+                        }}
                         className="text-left p-3 rounded-xl bg-slate-50 dark:bg-[#0C1D3D] hover:bg-[#F2B705]/10 border border-slate-100 dark:border-slate-800 transition-all flex items-center justify-between group"
                       >
                         <div>
