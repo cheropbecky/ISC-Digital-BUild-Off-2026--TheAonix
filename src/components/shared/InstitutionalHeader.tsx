@@ -67,8 +67,8 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
   return (
     <header className="sticky top-0 z-50 w-full shadow-md">
       {/* Row 1: Institutional Utility Strip (Varsity Dark Navy #071B4A) */}
-      <div className="bg-[#071B4A] text-slate-300 text-[11px] sm:text-xs font-medium py-1.5 px-4 sm:px-6 border-b border-blue-950/60">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="bg-[#071B4A] text-slate-300 text-[11px] sm:text-xs font-medium py-1.5 px-4 sm:px-8 lg:px-16 border-b border-blue-950/60">
+        <div className="w-full flex items-center justify-between gap-4">
           {/* Left: Contact Info */}
           <div className="flex items-center gap-4 sm:gap-6">
             <a
@@ -122,8 +122,8 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
       </div>
 
       {/* Row 2: Main Institutional Navigation Bar (#0B2A6F) */}
-      <div className="bg-[#0B2A6F] text-white py-2.5 sm:py-3 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto flex items-center justify-between gap-4">
+      <div className="bg-[#0B2A6F] text-white py-2.5 sm:py-3 px-4 sm:px-8 lg:px-16">
+        <div className="w-full flex items-center justify-between gap-4">
           {/* UEAB Crest Emblem & University Name */}
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
             <div className="w-9 h-9 sm:w-11 sm:h-11 rounded-lg bg-white/10 border border-[#F2B705]/60 flex items-center justify-center shadow-inner group-hover:scale-105 transition-transform">
