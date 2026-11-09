@@ -247,14 +247,8 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           <Link to="/home" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B2A6F] border border-[#F2B705]/70 flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform">
-              <svg viewBox="0 0 100 100" className="w-6 h-6 sm:w-7 sm:h-7" fill="none">
-                <path d="M50 12 L82 30 L82 70 L50 88 L18 70 L18 30 Z" fill="#F2B705" />
-                <path d="M50 22 L72 34 L72 66 L50 78 L28 66 L28 34 Z" fill="#071B4A" />
-                <text x="50" y="59" textAnchor="middle" fill="#FFFFFF" fontSize="24" fontWeight="900" fontFamily="Inter">
-                  U
-                </text>
-              </svg>
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B2A6F] flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform">
+              <img src="/brand/kampas-favicon.png" alt="Kampas logo" className="h-full w-full rounded-xl object-cover" />
             </div>
             <div>
               <div className="flex items-center gap-1.5 leading-none">

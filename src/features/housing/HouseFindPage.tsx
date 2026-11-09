@@ -22,7 +22,6 @@ import {
   Heart,
   Share2,
   CheckCircle2,
-  ShieldCheck,
   Wifi,
   Droplets,
   Zap,
@@ -554,22 +553,14 @@ export const HouseFindPage: React.FC = () => {
                   >
                     <div>
                       {/* Photo Thumbnail with Action Overlays */}
-                      <div className="relative aspect-16/10 w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-slate-800">
                         <Link to={`/housing/${house.id}`}>
                           <ImageWithFallback
                             src={house.photos[0]}
                             alt={house.title}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
                           />
                         </Link>
-
-                        {/* Verified Badge */}
-                        {house.isVerified && (
-                          <div className="absolute top-3 left-3 bg-[#0B2A6F]/90 backdrop-blur-xs text-[#F2B705] px-2.5 py-1 rounded-md text-[11px] font-extrabold flex items-center gap-1 shadow-md">
-                            <ShieldCheck className="w-3.5 h-3.5" />
-                            <span>Verified</span>
-                          </div>
-                        )}
 
                         {/* Top-Right Heart Save Button */}
                         <button

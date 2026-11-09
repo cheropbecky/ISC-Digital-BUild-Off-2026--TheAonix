@@ -472,9 +472,9 @@ export const LandingPage: React.FC = () => {
             {/* Official Logo matching favicon */}
             <Link to="/" className="flex items-center gap-3 group">
               <img
-                src="/icon.svg"
+                src="/brand/kampas-wordmark.png"
                 alt="Kampas UEAB Logo"
-                className="w-10 h-10 object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform"
+                className="h-10 w-auto max-w-[190px] object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform"
               />
               <div>
                 <div className="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
@@ -1329,9 +1329,9 @@ export const LandingPage: React.FC = () => {
           <div className="space-y-5">
             <div className="flex items-center gap-2.5">
               <img
-                src="/icon.svg"
+                src="/brand/kampas-wordmark.png"
                 alt="Kampas UEAB Logo"
-                className="w-10 h-10 object-contain rounded-xl shadow-lg ring-1 ring-white/15"
+                className="h-10 w-auto max-w-[190px] object-contain rounded-xl shadow-lg ring-1 ring-white/15"
               />
               <span className="text-xl font-black tracking-tight">KAMPAS</span>
             </div>
