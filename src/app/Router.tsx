@@ -27,6 +27,7 @@ import { EventsPage } from '../features/community/EventsPage';
 import { ClubsPage } from '../features/community/ClubsPage';
 import { AlumniDirectoryPage } from '../features/community/AlumniDirectoryPage';
 import { OpportunitiesPage } from '../features/community/OpportunitiesPage';
+import { CommunityEventsPage } from '../features/community/CommunityEventsPage';
 import { LostFoundPage } from '../features/found/LostFoundPage';
 import { NotificationsPage } from '../features/core/NotificationsPage';
 import { SearchResultsPage } from '../features/core/SearchResultsPage';
@@ -67,7 +68,8 @@ export const AppRouter: React.FC = () => {
         <Route path="/share/groups/:id" element={<StudyGroupsPage />} />
 
         {/* 4. Community Module (Events, Clubs, Alumni Network, Opportunities) */}
-        <Route path="/community/events" element={<EventsPage />} />
+          <Route path="/community" element={<CommunityEventsPage />} />
+          <Route path="/community/events" element={<EventsPage />} />
         <Route path="/community/events/:id" element={<EventsPage />} />
         <Route path="/community/clubs" element={<ClubsPage />} />
         <Route path="/community/alumni" element={<AlumniDirectoryPage />} />
