@@ -69,28 +69,28 @@ export const PWAInstallPrompt: React.FC = () => {
 
   return (
     <>
-      <div className="bg-[#071B4A] text-white px-4 py-2.5 flex items-center justify-between text-xs sm:text-sm border-b border-[#F2B705]/30">
-        <div className="flex items-center gap-2.5">
-          <span className="p-1.5 bg-[#F2B705] text-[#071B4A] rounded-md font-bold text-xs">
+      <div className="flex items-center justify-between gap-2 border-b border-[#F2B705]/30 bg-[#071B4A] px-2.5 py-1.5 text-[10px] text-white sm:px-4 sm:py-2 sm:text-sm">
+        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5">
+          <span className="shrink-0 rounded-md bg-[#F2B705] px-1.5 py-0.5 text-[9px] font-bold text-[#071B4A] sm:p-1.5 sm:text-xs">
             PWA
           </span>
-          <span className="font-medium">
+          <span className="truncate font-medium">
             Install Kampas for instant offline access to your timetable, deadlines & student ID.
           </span>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
           <Button
             size="sm"
             variant="gold"
             onClick={handleInstallClick}
-            className="text-xs h-8"
+            className="h-7 px-2 text-[10px] sm:h-8 sm:px-3 sm:text-xs"
           >
-            <Download className="w-3.5 h-3.5 mr-1" />
+            <Download className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
             Install App
           </Button>
           <button
             onClick={() => setDismissed(true)}
-            className="text-slate-400 hover:text-white p-1"
+            className="p-0.5 text-slate-400 hover:text-white sm:p-1"
             title="Dismiss"
           >
             <X className="w-4 h-4" />

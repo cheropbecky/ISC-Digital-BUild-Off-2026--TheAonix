@@ -2,17 +2,18 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Fixed Mobile Bottom Tab Bar (60px high, 44px touch targets)
- * 5 Main Sections:
+ * 6 Main Sections:
  * 1. Home
  * 2. Campus (Map / Timetable)
  * 3. House Find
  * 4. Share Hub
- * 5. Community
+ * 5. Lost & Found
+ * 6. Community
  */
 
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { Home, MapPin, Building, FileText, Users } from 'lucide-react';
+import { Home, MapPin, Building, FileText, Users, SearchCheck } from 'lucide-react';
 
 export const MobileTabBar: React.FC = () => {
   const tabs = [
@@ -20,6 +21,7 @@ export const MobileTabBar: React.FC = () => {
     { to: '/campus/map', label: 'Campus', icon: MapPin },
     { to: '/housing', label: 'Housing', icon: Building, badge: 'New' },
     { to: '/share', label: 'Share', icon: FileText },
+    { to: '/found', label: 'Lost & Found', icon: SearchCheck },
     { to: '/community', label: 'Community', icon: Users },
   ];
 
