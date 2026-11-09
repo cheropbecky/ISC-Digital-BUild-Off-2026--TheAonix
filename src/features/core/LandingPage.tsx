@@ -36,12 +36,17 @@ import {
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
 import { searchService, SearchResultItem } from '../../services/searchService';
-import campusHeroImage from '../../assets/images/ueab_campus_hero_1794150142310.jpg';
-import housingImage from '../../assets/images/ueab_student_housing_1794150143766.jpg';
-import libraryImage from '../../assets/images/ueab_library_students_1794150143182.jpg';
-import studentLifeImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
-import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
-import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
+
+const campusHeroImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/710079021_4634835960079023_5382080630327967758_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1152&ctp=p720x720&_nc_cat=111&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=9gMXD-rMdb4Q7kNvwFs7ipY&_nc_oc=AdoJn37T_WJ0A9mMfv6RgTwslceOjXTBoWL4M-k7NlgBNKrKv8hfFa6mVE2OevUooD4&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=g1yS8SK-hv87kJ_y9RjZ7Q&_nc_ss=7b2a8&oh=00_AQT477CJQHd3JLWOdzIYFvlf-5DomH6DiKd8cq6FrAjDFQ&oe=6AF79210';
+const housingImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/735067882_122109136923316648_1042423582806146663_n.jpg?stp=dst-jpg_tt6&cstp=mx720x480&ctp=s720x480&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=GAsvv2PgnBMQ7kNvwH7Xi3g&_nc_oc=AdpwGGyNu_XQ7TigTDK1w52kbSpitMiOljeP3oGqiDM3yJO2RjP8N0BO9kXklK6FvuI&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQTZac7ONUtzaZgvUELsHoeAMUon8VXw6BoMAL4FQxLWeA&oe=6AF773E5';
+const libraryImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/842311859_122135662940846732_6867406674687758303_n.jpg?stp=dst-jpg_tt6&cstp=mx715x476&ctp=s715x476&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=dZ8fZaHj_xcQ7kNvwG1F8ns&_nc_oc=Adqkn0rfUSt8qmlBjNKtQQ3NRgf-8zztzL8rGA9i5f4lygt6J5JG94-jnbanohBhGXk&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQQ5dhxlm5mJgN_YbnYL5F-4dKVGxFC2iVMiapUjpOunPQ&oe=6AF7A455';
+const studentLifeImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/793028073_122129524136846732_1498613680495360111_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1364&ctp=s2048x1364&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=z43NEFaHHqMQ7kNvwEfF61r&_nc_oc=AdoirRmn6PGxtfSPPlRu5R2965Z5HXu33X7unZOxsqKai0HoUnkl894hzDHxNvW_CSY&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=6l4sl033atoM1P-yb6_8iA&_nc_ss=7b2a8&oh=00_AQQx5SYdS2T5xITieyVLpjAD0zCS_S4NcOp77y5t2oK_Mg&oe=6AF7A0FD';
+const scienceComplexImage = libraryImage;
+const venueEntranceImage = studentLifeImage;
 
 interface HeroSlide {
   id: number;
@@ -51,10 +56,22 @@ interface HeroSlide {
   subtext: string;
 }
 
+const SEARCH_CATEGORIES = [
+  'All',
+  'Venues',
+  'Houses',
+  'Documents',
+  'Lost items',
+  'Events',
+  'Units',
+  'Clubs',
+  'People',
+] as const;
+
 const HERO_SLIDES: HeroSlide[] = [
   {
     id: 1,
-    image: '/src/assets/images/ueab_campus_hero_1794150142310.jpg',
+    image: campusHeroImage,
     tagline: 'OFFICIAL STUDENT PORTAL & LOGISTICS PLATFORM',
     headline: 'The campus, in one place.',
     subtext:
@@ -62,7 +79,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 2,
-    image: '/src/assets/images/ueab_student_housing_1794150143766.jpg',
+    image: housingImage,
     tagline: 'HOUSE FIND • OFF-CAMPUS STUDENT HOUSING',
     headline: 'Find verified rentals with zero broker scams.',
     subtext:
@@ -70,7 +87,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 3,
-    image: '/src/assets/images/ueab_library_students_1794150143182.jpg',
+    image: libraryImage,
     tagline: 'ACADEMIC SHARE HUB & STUDY GROUPS',
     headline: 'Top lecture notes & past papers at your fingertips.',
     subtext:
@@ -78,7 +95,7 @@ const HERO_SLIDES: HeroSlide[] = [
   },
   {
     id: 4,
-    image: '/src/assets/images/ueab_student_life_1794150144449.jpg',
+    image: studentLifeImage,
     tagline: 'ALUMNI MENTORSHIP & INDUSTRY REFERRALS',
     headline: 'From Baraton classrooms to Kenya’s tech leaders.',
     subtext:
@@ -307,6 +324,7 @@ export const LandingPage: React.FC = () => {
       setTimeout(() => {
         searchInputRef.current?.focus();
       }, 50);
+      setSelectedSearchCategory('All');
     } else {
       setSearchQuery('');
     }
@@ -897,7 +915,7 @@ export const LandingPage: React.FC = () => {
               <div className="relative">
                 <div className="overflow-hidden rounded-3xl shadow-2xl border-4 border-white dark:border-[#0C1D3D] [clip-path:polygon(0_10%,100%_0,100%_90%,0_100%)]">
                   <img
-                    src="/src/assets/images/ueab_campus_hero_1794150142310.jpg"
+                    src={campusHeroImage}
                     alt="UEAB Campus Administration Tower"
                     className="w-full h-[360px] sm:h-[420px] object-cover hover:scale-105 transition-transform duration-700"
                   />
@@ -1135,7 +1153,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_campus_hero_1794150142310.jpg)',
+                    backgroundImage: `url(${campusHeroImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1151,7 +1169,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_student_housing_1794150143766.jpg)',
+                    backgroundImage: `url(${housingImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1195,7 +1213,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_library_students_1794150143182.jpg)',
+                    backgroundImage: `url(${libraryImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1211,7 +1229,7 @@ export const LandingPage: React.FC = () => {
                 <div
                   className="text-[8.5rem] sm:text-[10rem] md:text-[12rem] font-black leading-none tracking-tighter select-none bg-cover bg-center text-transparent bg-clip-text brightness-[0.78] drop-shadow-2xl"
                   style={{
-                    backgroundImage: 'url(/src/assets/images/ueab_student_life_1794150144449.jpg)',
+                    backgroundImage: `url(${studentLifeImage})`,
                     WebkitBackgroundClip: 'text',
                   }}
                 >
@@ -1459,7 +1477,7 @@ export const LandingPage: React.FC = () => {
 
             {/* Category Filter Pills */}
             <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50 dark:bg-[#051336] flex items-center gap-1.5 overflow-x-auto scrollbar-none text-xs">
-              {['All', 'Venues', 'Houses', 'Documents', 'Lost items', 'Events', 'Units'].map((cat) => (
+              {SEARCH_CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   onClick={() => setSelectedSearchCategory(cat)}
@@ -1542,7 +1560,10 @@ export const LandingPage: React.FC = () => {
                     ].map((sug, i) => (
                       <button
                         key={i}
-                        onClick={() => setSearchQuery(sug.query)}
+                        onClick={() => {
+                          setSearchQuery(sug.query);
+                          setSelectedSearchCategory(sug.cat);
+                        }}
                         className="text-left p-3 rounded-xl bg-slate-50 dark:bg-[#0C1D3D] hover:bg-[#F2B705]/10 border border-slate-100 dark:border-slate-800 transition-all flex items-center justify-between group"
                       >
                         <div>

@@ -8,7 +8,7 @@
  * NOTE: Strictly no free-room layers.
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
 import { CampusMap, MapLayerType } from '../../components/map/CampusMap';
 import { VENUES, VenueData } from '../../data/venues';
@@ -37,10 +37,18 @@ export const CampusMapPage: React.FC = () => {
   const [routeToVenueId, setRouteToVenueId] = useState<string | undefined>(undefined);
   const [searchVenueTerm, setSearchVenueTerm] = useState('');
   const [activeLayer, setActiveLayer] = useState<MapLayerType>('all');
+  const mapSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (venueParam) {
       setSelectedVenueId(venueParam);
+      const scrollToMap = () => {
+        mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      };
+      requestAnimationFrame(() => {
+        scrollToMap();
+        window.setTimeout(scrollToMap, 250);
+      });
     }
   }, [venueParam]);
 
@@ -53,6 +61,12 @@ export const CampusMapPage: React.FC = () => {
       v.building.toLowerCase().includes(q)
     );
   });
+
+  const focusVenueOnMap = (venueId: string, route = false) => {
+    setSelectedVenueId(venueId);
+    setRouteToVenueId(route ? venueId : undefined);
+    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   return (
     <div className="space-y-6">
@@ -88,16 +102,6 @@ export const CampusMapPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Map Container */}
-      <div className="space-y-4">
-        <CampusMap
-          highlightVenueId={selectedVenueId}
-          showRouteToVenueId={routeToVenueId}
-          initialLayer={activeLayer}
-          className="h-[520px] sm:h-[600px] w-full"
-        />
-      </div>
-
       {/* Campus Venues Directory Strip */}
       <div className="space-y-4 pt-2">
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
@@ -127,11 +131,7 @@ export const CampusMapPage: React.FC = () => {
                   ? 'bg-blue-50/50 dark:bg-blue-950/40 border-[#0B2A6F] dark:border-[#F2B705] ring-2 ring-[#0B2A6F]/20'
                   : 'bg-white dark:bg-[#0C1D3D] border-[#E3E8F0] dark:border-[#1E3158] hover:border-[#0B2A6F]'
               }`}
-              onClick={() => {
-                setSelectedVenueId(v.id);
-                setRouteToVenueId(undefined);
-                window.scrollTo({ top: 120, behavior: 'smooth' });
-              }}
+              onClick={() => focusVenueOnMap(v.id)}
             >
               <div className="flex items-start gap-3">
                 <div className="w-14 h-14 rounded-lg overflow-hidden shrink-0 border border-slate-200 dark:border-slate-700">
@@ -167,9 +167,7 @@ export const CampusMapPage: React.FC = () => {
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    setSelectedVenueId(v.id);
-                    setRouteToVenueId(v.id);
-                    window.scrollTo({ top: 120, behavior: 'smooth' });
+                    focusVenueOnMap(v.id, true);
                   }}
                   className="text-[#0B2A6F] dark:text-[#F2B705] font-bold text-[11px] hover:underline flex items-center gap-1"
                 >
@@ -180,6 +178,16 @@ export const CampusMapPage: React.FC = () => {
             </div>
           ))}
         </div>
+      </div>
+
+      {/* Main Map Container */}
+      <div ref={mapSectionRef} id="campus-map-section" className="scroll-mt-6 space-y-4">
+        <CampusMap
+          highlightVenueId={selectedVenueId}
+          showRouteToVenueId={routeToVenueId}
+          initialLayer={activeLayer}
+          className="h-[520px] sm:h-[600px] w-full"
+        />
       </div>
     </div>
   );

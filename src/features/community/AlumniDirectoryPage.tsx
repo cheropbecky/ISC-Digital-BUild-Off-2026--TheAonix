@@ -25,6 +25,7 @@ import {
   Search,
 } from 'lucide-react';
 import { AlumniProfile, ReferralRequest } from '../../lib/types';
+import { CommunityShell, CommunitySubNav, PageHeader } from './components/CommunityLayout';
 
 export const AlumniDirectoryPage: React.FC = () => {
   const { alumni, referrals, sendReferralRequest, updateReferralStatus, user, setRole } = useKampasStore();
@@ -62,7 +63,16 @@ export const AlumniDirectoryPage: React.FC = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <CommunityShell>
+      <PageHeader title="Baraton alumni directory" description="Connect with verified UEAB graduates for mentoring, guidance, and internal referrals." actions={
+        user.role === 'alumnus' ? (
+          <Button size="sm" variant="secondary" onClick={() => setRole('student')}>Switch to student view</Button>
+        ) : (
+          <Button size="sm" variant="gold" onClick={() => setRole('alumnus')}>Simulate alumnus view</Button>
+        )
+      } />
+      <CommunitySubNav />
+      <div className="hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
@@ -70,6 +80,7 @@ export const AlumniDirectoryPage: React.FC = () => {
               Baraton Alumni Directory
             </h1>
             <Badge variant="academic">Verified Graduates</Badge>
+          </div>
           </div>
           <p className="text-xs text-[#5B6475] dark:text-slate-400 mt-1">
             Connect with UEAB alumni at leading organizations. Request internal referrals and career mentorship.
@@ -220,12 +231,12 @@ export const AlumniDirectoryPage: React.FC = () => {
       </div>
 
       {/* Screen 1: Alumni Profiles Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {filteredAlumni.map((alum) => (
-          <Card key={alum.id} padding="md" hoverable className="flex flex-col justify-between">
+          <Card key={alum.id} padding="md" hoverable className="group flex flex-col justify-between rounded-2xl">
             <div>
               <div className="flex items-start justify-between gap-2 mb-3">
-                <div className="w-12 h-12 rounded-full bg-[#0B2A6F] text-[#F2B705] font-black text-sm flex items-center justify-center ring-2 ring-[#F2B705]/40 shadow-sm">
+                  <div className="flex h-14 w-14 rounded-full bg-[#0B2A6F] text-sm font-black text-[#F2B705] items-center justify-center ring-2 ring-[#F2B705]/40 shadow-sm transition group-hover:scale-105">
                   {alum.name
                     .split(' ')
                     .map((n) => n[0])
@@ -352,6 +363,6 @@ export const AlumniDirectoryPage: React.FC = () => {
           </div>
         </div>
       )}
-    </div>
+    </CommunityShell>
   );
 };

@@ -4,9 +4,7 @@
  * UEAB Baraton Venues & Facilities Master Data
  * University of Eastern Africa, Baraton, Nandi County, Kenya
  * Verified Real Campus Center: [0.25766, 35.08578] (OSM Way 218276680)
- * The directory is limited to UEAB Baraton facilities. Photos use locally bundled
- * official UEAB imagery; an image is not presented as a building-specific photo
- * unless the source identifies that facility.
+ * All building coordinates are approximate offsets on the real Baraton campus with TODO comments for verification.
  */
 
 import { IMAGES } from './images';
@@ -73,11 +71,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26320,
     longitude: 35.08547,
     photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research and learning event on campus',
+      exterior: IMAGES.libraryExterior.url,
+      exteriorAlt: 'UEAB University Library exterior facade with manicured study lawns and pedestrian paths',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Library main entrance double doors with electronic card access and reception desk',
-      interior: IMAGES.baratonResearchConference.url,
+      interior: IMAGES.venueInteriorLab.url,
     },
     todayClasses: [
       { unitCode: 'COSC 330', unitName: 'Advanced Database Systems', lecturer: 'Prof. Mary Achieng', time: '11:00 AM - 01:00 PM' },
@@ -107,11 +105,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26172,
     longitude: 35.08573,
     photos: {
-      exterior: IMAGES.baratonNewSignage.url,
-      exteriorAlt: 'UEAB Baraton campus signage in front of the administration building',
+      exterior: IMAGES.campusHero.url,
+      exteriorAlt: 'Administration Block clock tower and executive plaza at Baraton',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Administration central double glass doors under the clock tower arch',
-      interior: IMAGES.baratonNewSignage.url,
+      interior: IMAGES.campusHero.url,
     },
     todayClasses: [],
   },
@@ -139,11 +137,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26223,
     longitude: 35.08608,
     photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton graduation day gathering on campus',
+      exterior: IMAGES.campusHero.url,
+      exteriorAlt: 'Main University Church Sanctuary facade with landscaped prayer garden',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Main Church portico wooden double doors with brass handles',
-      interior: IMAGES.baratonGraduation.url,
+      interior: IMAGES.studentLifeQuad.url,
     },
     todayClasses: [
       { unitCode: 'RELT 220', unitName: 'Christian Ethics & Social Responsibility', lecturer: 'Pastor Jonathan Bett', time: '08:00 AM - 09:30 AM' },
@@ -173,11 +171,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26334,
     longitude: 35.08588,
     photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton auditorium event',
+      exterior: IMAGES.scienceComplexExterior.url,
+      exteriorAlt: 'Central Assembly Auditorium building with covered walkway',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Acoustic-sealed double doors to main auditorium hall',
-      interior: IMAGES.baratonAuditorium.url,
+      interior: IMAGES.campusHero.url,
     },
     todayClasses: [
       { unitCode: 'COSC 311', unitName: 'Compiler Design & Formal Automata', lecturer: 'Dr. Evans Kiprop', time: '08:00 AM - 10:00 AM' },
@@ -207,11 +205,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26229,
     longitude: 35.08358,
     photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton student community gathering',
+      exterior: IMAGES.studentLifeQuad.url,
+      exteriorAlt: 'Student Center open veranda and student association courtyard',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Student Center main glass sliding doors into student guild lounge',
-      interior: IMAGES.baratonGraduation.url,
+      interior: IMAGES.studentLifeQuad.url,
     },
     todayClasses: [
       { unitCode: 'COMM 111', unitName: 'Scholarly Writing & Academic Oratory', lecturer: 'Dr. Sarah Rotich', time: '02:00 PM - 04:00 PM' },
@@ -241,11 +239,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26245,
     longitude: 35.08369,
     photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton community event',
+      exterior: IMAGES.studentLifeQuad.url,
+      exteriorAlt: 'Dining Hall exterior with cafeteria patio seating and tree-lined path',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Dining Hall entrance turnstiles with meal registration card readers',
-      interior: IMAGES.baratonAuditorium.url,
+      interior: IMAGES.campusHero.url,
     },
     todayClasses: [],
   },
@@ -273,11 +271,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26080,
     longitude: 35.08388,
     photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton academic research event',
+      exterior: IMAGES.scienceComplexExterior.url,
+      exteriorAlt: 'Science Building modern brick and glass architectural wing',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Science Complex glass double doors with laboratory safety guidelines signage',
-      interior: IMAGES.baratonResearchConference.url,
+      interior: IMAGES.venueInteriorLab.url,
     },
     todayClasses: [
       { unitCode: 'MATH 201', unitName: 'Linear Algebra with Vector Computation', lecturer: 'Dr. Benson Wafula', time: '11:00 AM - 01:00 PM' },
@@ -308,11 +306,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26381,
     longitude: 35.08679,
     photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
+      exterior: IMAGES.campusHero.url,
+      exteriorAlt: 'Outdoor green amphitheater bowl with stone stages and surrounding flowering trees',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Entrance ramp leading into the lower amphitheater stage area',
-      interior: IMAGES.baratonRoadRace.url,
+      interior: IMAGES.libraryExterior.url,
     },
     todayClasses: [],
   },
@@ -340,11 +338,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26099,
     longitude: 35.08516,
     photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research conference campus event',
+      exterior: IMAGES.libraryExterior.url,
+      exteriorAlt: 'Research and Community Center exterior with paved walkways',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Glass security door with badge scanner for research staff and scholars',
-      interior: IMAGES.baratonResearchConference.url,
+      interior: IMAGES.venueInteriorLab.url,
     },
     todayClasses: [],
   },
@@ -372,11 +370,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26325,
     longitude: 35.08562,
     photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research and learning event',
+      exterior: IMAGES.libraryExterior.url,
+      exteriorAlt: 'East wing of library housing the Ellen G. White Seventh-day Adventist Research Archive',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Archival climate-controlled wooden glass door with EGW research plaque',
-      interior: IMAGES.baratonResearchConference.url,
+      interior: IMAGES.libraryExterior.url,
     },
     todayClasses: [],
   },
@@ -404,11 +402,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.25916,
     longitude: 35.08328,
     photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton university event',
+      exterior: IMAGES.scienceComplexExterior.url,
+      exteriorAlt: 'Baraton Health Centre hospital wing with ambulance bay',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Emergency clinic glass entrance with international red cross sign and triage desk',
-      interior: IMAGES.baratonAuditorium.url,
+      interior: IMAGES.venueInteriorLab.url,
     },
     todayClasses: [
       { unitCode: 'NURS 215', unitName: 'Human Anatomy & Physiology II Clinical', lecturer: 'Dr. Grace Kemboi', time: '02:00 PM - 05:00 PM' },
@@ -438,11 +436,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26114,
     longitude: 35.08545,
     photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton community gathering',
+      exterior: IMAGES.studentLifeQuad.url,
+      exteriorAlt: 'Community Centre exterior bordered by Baraton dairy and agricultural green belts',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Double wide entrance doors for community functions and exhibitions',
-      interior: IMAGES.baratonGraduation.url,
+      interior: IMAGES.studentLifeQuad.url,
     },
     todayClasses: [],
   },
@@ -470,11 +468,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26383,
     longitude: 35.08365,
     photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
+      exterior: IMAGES.campusHero.url,
+      exteriorAlt: 'Outdoor championship basketball court with backboards and mountain perimeter view',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Spectator gate access into the enclosed basketball court facility',
-      interior: IMAGES.baratonRoadRace.url,
+      interior: IMAGES.studentLifeQuad.url,
     },
     todayClasses: [],
   },
@@ -502,11 +500,11 @@ export const VENUES: VenueData[] = [
     latitude: 0.26402,
     longitude: 35.08650,
     photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
+      exterior: IMAGES.campusHero.url,
+      exteriorAlt: 'Main University Soccer Stadium and championship running track overlooking green hills',
       entranceDoor: IMAGES.venueDoorStandard.url,
       entranceDoorAlt: 'Athletic grandstand gate entrance and team locker room passage',
-      interior: IMAGES.baratonRoadRace.url,
+      interior: IMAGES.studentLifeQuad.url,
     },
     todayClasses: [],
   },
