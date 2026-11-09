@@ -3,33 +3,38 @@
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Campus GIS Map
  * University of Eastern Africa, Baraton (Nandi County, Kenya)
- * Center: OSM campus centroid [0.25766, 35.08578], Zoom: 17, minZoom: 14
+ * Center: supplied UEAB Gate coordinate, Zoom: 17, minZoom: 14
  * Base layers: OpenStreetMap & Esri World Imagery (Satellite)
  * Features:
  * - Custom UEAB blue & gold markers with category icons
  * - Layer chips: Academic, Services, Worship, Sports, Events, Lost items
  * - Coordinate picker (Dev tool when VITE_DEV_TOOLS=true) with draggable markers & copy button
  * - Detailed venue bottom sheet with exterior & entrance door photos (with alt text)
- * - Walking directions with OSRM (distance & walking time) and straight-line fallback
+ * - Walking directions with OSRM only when a reliable live origin is available
  * - Locate-me with friendly error message and offline state banner
  * - InvalidateSize on resize & panel toggle, min 44px touch targets
  */
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import L from 'leaflet';
-import { VENUES, VenueData, VenueCategory, UEAB_CAMPUS_CENTER, UEAB_MAIN_GATE } from '../../data/venues';
-import { ImageWithFallback } from '../ui/ImageWithFallback';
+import 'leaflet.markercluster';
+import { VENUES, VENUE_CATEGORY_LABELS, VenueData, VenueCategory, UEAB_CAMPUS_CENTER } from '../../data/venues';
 import { Button } from '../ui/Button';
 import {
   MapPin,
+  GraduationCap,
+  Building2,
+  Utensils,
+  Hospital,
+  Bed,
+  Car,
   Navigation,
   Compass,
   Layers,
   Clock,
-  DoorOpen,
   Building,
   Sparkles,
-  Search,
   X,
   Locate,
   Footprints,
@@ -65,55 +70,15 @@ const MAX_BOUNDS: L.LatLngBoundsExpression = [
   [0.2720, 35.1020],
 ];
 
-// Official UEAB Baraton 339-acre campus perimeter polygon (OSM Way 218276680)
+// Existing OSM campus perimeter retained as map context; it is not a location record.
 export const UEAB_CAMPUS_BOUNDARY: [number, number][] = [
-  [0.2561622, 35.0798875],
-  [0.2545864, 35.0814284],
-  [0.2546481, 35.0815176],
-  [0.2545783, 35.0815919],
-  [0.2545046, 35.0816705],
-  [0.2544147, 35.0816041],
-  [0.2538971, 35.082095],
-  [0.2509172, 35.0837633],
-  [0.2498765, 35.0845036],
-  [0.2493427, 35.0850481],
-  [0.2542082, 35.0877249],
-  [0.2554326, 35.08837],
-  [0.2555667, 35.0885001],
-  [0.2576307, 35.0916658],
-  [0.2651032, 35.0910281],
-  [0.2651609, 35.0909919],
-  [0.2659669, 35.088653],
-  [0.2636622, 35.0840275],
-  [0.2635744, 35.0839229],
-  [0.2602378, 35.0821258],
-  [0.2561622, 35.0798875],
-];
-
-// Campus Quad Loop & Spine Road (OSM Way 218274606)
-export const UEAB_RING_ROAD: [number, number][] = [
-  [0.25889, 35.0829841],
-  [0.2591233, 35.0827213],
-  [0.2593097, 35.0824799],
-  [0.2596772, 35.0820306],
-  [0.2598059, 35.0820105],
-  [0.2601101, 35.0821633],
-  [0.2608627, 35.0825563],
-  [0.2619289, 35.0831169],
-  [0.2627094, 35.0835219],
-  [0.2628086, 35.0836198],
-  [0.2628824, 35.0837767],
-  [0.2630433, 35.084399],
-  [0.2630581, 35.0845666],
-  [0.2630675, 35.0847101],
-  [0.2630158, 35.0854243],
-  [0.2629695, 35.0854705],
-  [0.2626973, 35.0855054],
-  [0.2626014, 35.0854699],
-  [0.2624599, 35.0853834],
-  [0.2623754, 35.0853753],
-  [0.2621046, 35.0853941],
-  [0.2620268, 35.0853834],
+  [0.2561622, 35.0798875], [0.2545864, 35.0814284], [0.2546481, 35.0815176],
+  [0.2545783, 35.0815919], [0.2545046, 35.0816705], [0.2544147, 35.0816041],
+  [0.2538971, 35.082095], [0.2509172, 35.0837633], [0.2498765, 35.0845036],
+  [0.2493427, 35.0850481], [0.2542082, 35.0877249], [0.2554326, 35.08837],
+  [0.2555667, 35.0885001], [0.2576307, 35.0916658], [0.2651032, 35.0910281],
+  [0.2651609, 35.0909919], [0.2659669, 35.088653], [0.2636622, 35.0840275],
+  [0.2635744, 35.0839229], [0.2602378, 35.0821258], [0.2561622, 35.0798875],
 ];
 
 export type BaseMapType = 'satellite' | 'osm' | 'aerial';
@@ -126,6 +91,9 @@ export interface CampusMapProps {
   className?: string;
   initialLayer?: MapLayerFilter;
   onVenueSelect?: (venue: VenueData) => void;
+  fitAllMarkers?: boolean;
+  activeFilter?: MapLayerFilter;
+  locationSearch?: string;
 }
 
 export const CampusMap: React.FC<CampusMapProps> = ({
@@ -134,6 +102,9 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   className = 'h-[540px] sm:h-[620px] w-full',
   initialLayer = 'all',
   onVenueSelect,
+  fitAllMarkers = false,
+  activeFilter: activeFilterProp,
+  locationSearch = '',
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -151,6 +122,10 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
   // Layer filter
   const [activeFilter, setActiveFilter] = useState<MapLayerFilter>(initialLayer);
+
+  useEffect(() => {
+    if (activeFilterProp !== undefined) setActiveFilter(activeFilterProp);
+  }, [activeFilterProp]);
 
   // Selected venue for inspector sheet
   const [selectedVenue, setSelectedVenue] = useState<VenueData | null>(null);
@@ -172,9 +147,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   // Offline detection
   const [isOnline, setIsOnline] = useState<boolean>(navigator.onLine);
 
-  // Search input
-  const [searchQuery, setSearchQuery] = useState('');
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   // Dev Coordinate Picker tool
   const isDevToolsAvailable = Boolean(
@@ -203,29 +175,39 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   }, []);
 
   // Category Icon & Color Helper
-  const getCategoryTheme = (category: VenueCategory) => {
+  const getCategoryTheme = (category: VenueCategory, locationName = '') => {
+    if (locationName.toLowerCase().includes('parking')) return { color: '#0B2A6F', textColor: '#FFFFFF', icon: Car, label: 'Parking' };
     switch (category) {
       case 'academic':
-        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: '🏛', label: 'Academic' };
+        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: GraduationCap, label: 'Academic' };
+      case 'administration':
+        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: Building2, label: 'Administration' };
       case 'worship':
-        return { color: '#071B4A', textColor: '#F2B705', icon: '⛪', label: 'Worship' };
-      case 'services':
-        return { color: '#D97706', textColor: '#FFFFFF', icon: '🏢', label: 'Services' };
+        return { color: '#071B4A', textColor: '#F2B705', icon: Church, label: 'Worship' };
+      case 'student_services':
+        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: Utensils, label: 'Student Services' };
+      case 'food_dining':
+        return { color: '#F2B705', textColor: '#071B4A', icon: Utensils, label: 'Food & Dining' };
+      case 'facilities':
+        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: Hospital, label: 'Facilities' };
+      case 'health_services':
+        return { color: '#DC2626', textColor: '#FFFFFF', icon: Hospital, label: 'Health Services' };
       case 'sports':
-        return { color: '#16A34A', textColor: '#FFFFFF', icon: '⚽', label: 'Sports' };
-      case 'events':
-        return { color: '#F2B705', textColor: '#071B4A', icon: '★', label: 'Events' };
-      case 'lost_found':
-        return { color: '#DC2626', textColor: '#FFFFFF', icon: '🔍', label: 'Lost Items' };
+        return { color: '#16A34A', textColor: '#FFFFFF', icon: Trophy, label: 'Sports' };
+      case 'accommodation':
+        return { color: '#7C3AED', textColor: '#FFFFFF', icon: Bed, label: 'Accommodation' };
+      case 'landmarks':
+        return { color: '#F2B705', textColor: '#071B4A', icon: MapPin, label: 'Landmark' };
       default:
-        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: '📍', label: 'Venue' };
+        return { color: '#0B2A6F', textColor: '#FFFFFF', icon: MapPin, label: 'Venue' };
     }
   };
 
   // Create Custom Leaflet DivIcon with UEAB Blue & Gold Styling
-  const createVenuePinIcon = (category: VenueCategory, isSelected = false) => {
-    const theme = getCategoryTheme(category);
-    const size = isSelected ? 40 : 34;
+  const createVenuePinIcon = (category: VenueCategory, isSelected = false, locationName = '') => {
+    const theme = getCategoryTheme(category, locationName);
+    const iconMarkup = renderToStaticMarkup(React.createElement(theme.icon, { size: isSelected ? 18 : 15, strokeWidth: 2.5 }));
+    const size = isSelected ? 42 : 36;
     const border = isSelected ? '3px solid #F2B705' : '2.5px solid #FFFFFF';
 
     return L.divIcon({
@@ -235,28 +217,26 @@ export const CampusMap: React.FC<CampusMapProps> = ({
           background-color: ${theme.color};
           width: ${size}px;
           height: ${size}px;
-          border-radius: 50% 50% 50% 0;
-          transform: rotate(-45deg);
+          border-radius: 50%;
           display: flex;
           align-items: center;
           justify-content: center;
-          box-shadow: 0 4px 12px rgba(7, 27, 74, 0.38);
+          box-shadow: 0 4px 12px rgba(7, 27, 74, 0.30);
           border: ${border};
-          transition: transform 0.2s ease;
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
         ">
           <span style="
-            transform: rotate(45deg);
             color: ${theme.textColor};
             font-size: ${isSelected ? 16 : 13}px;
             font-weight: 800;
             line-height: 1;
             user-select: none;
-          ">${theme.icon}</span>
+          ">${iconMarkup}</span>
         </div>
       `,
       iconSize: [size, size],
-      iconAnchor: [size / 2, size],
-      popupAnchor: [0, -size],
+      iconAnchor: [size / 2, size / 2],
+      popupAnchor: [0, -size / 2],
     });
   };
 
@@ -324,6 +304,10 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     // Start with Esri World Imagery.
     hybridSatelliteLayer.addTo(map);
 
+    L.polygon(UEAB_CAMPUS_BOUNDARY, {
+      color: '#F2B705', weight: 2.5, dashArray: '6, 8', fillColor: '#0B2A6F', fillOpacity: 0.06,
+    }).bindTooltip('University of Eastern Africa, Baraton campus perimeter', { sticky: true, className: 'ueab-campus-label' }).addTo(map);
+
     satelliteTileLayerRef.current = hybridSatelliteLayer;
     osmTileLayerRef.current = osmLayer;
     esriTileLayerRef.current = esriLayer;
@@ -334,60 +318,15 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     };
     [hybridSatelliteLayer, osmLayer, esriLayer, labelsLayer].forEach((layer) => layer.on('tileerror', handleTileError));
 
-    // Draw Official UEAB Baraton 339-Acre Campus Perimeter Boundary (OSM Way 218276680)
-    L.polygon(UEAB_CAMPUS_BOUNDARY, {
-      color: '#F2B705',
-      weight: 2.5,
-      dashArray: '6, 8',
-      fillColor: '#0B2A6F',
-      fillOpacity: 0.06,
-    })
-      .bindTooltip('University of Eastern Africa, Baraton (339-Acre Campus Perimeter)', {
-        sticky: true,
-        className: 'ueab-campus-label',
-      })
-      .addTo(map);
-
-    // Draw Campus Spine & Quad Ring Road
-    L.polyline(UEAB_RING_ROAD, {
-      color: '#0B2A6F',
-      weight: 3.5,
-      opacity: 0.65,
-      dashArray: '8, 6',
-      lineCap: 'round',
-      lineJoin: 'round',
-    })
-      .bindTooltip('Baraton Central Academic Spine & Ring Road', {
-        sticky: true,
-      })
-      .addTo(map);
-
     // Marker LayerGroup
-    const markersGroup = L.layerGroup().addTo(map);
+    const leafletWithClusters = L as unknown as typeof L & { markerClusterGroup?: (options?: object) => L.LayerGroup };
+    const markersGroup = leafletWithClusters.markerClusterGroup
+      ? leafletWithClusters.markerClusterGroup({ showCoverageOnHover: false, maxClusterRadius: 42 }).addTo(map)
+      : L.layerGroup().addTo(map);
     markersLayerGroupRef.current = markersGroup;
 
     // Scale Control
     L.control.scale({ imperial: false, position: 'bottomleft' }).addTo(map);
-
-    // Main Gate Marker
-    L.marker(UEAB_MAIN_GATE, {
-      icon: L.divIcon({
-        className: 'gate-pin',
-        html: `
-          <div style="background-color: #16A34A; width: 34px; height: 34px; border-radius: 50% 50% 50% 0; transform: rotate(-45deg); display: flex; align-items: center; justify-content: center; box-shadow: 0 4px 10px rgba(0,0,0,0.35); border: 2.5px solid #FFFFFF;">
-            <span style="transform: rotate(45deg); color: #FFFFFF; font-weight: 900; font-size: 13px;">GATE</span>
-          </div>
-        `,
-        iconSize: [34, 34],
-        iconAnchor: [17, 34],
-      }),
-      zIndexOffset: 300,
-    })
-      .bindTooltip('UEAB Main Campus Gate (Security & Primary Route Origin)', {
-        direction: 'top',
-        className: 'ueab-campus-label',
-      })
-      .addTo(map);
 
     mapInstanceRef.current = map;
 
@@ -472,7 +411,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       setSelectedVenue(venue);
       if (onVenueSelect) onVenueSelect(venue);
 
-      if (mapInstanceRef.current) {
+      if (mapInstanceRef.current && venue.lat !== undefined && venue.lng !== undefined) {
         if (animate) {
           mapInstanceRef.current.flyTo([venue.lat, venue.lng], 18, {
             duration: 1.1,
@@ -490,7 +429,10 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   const handleDrawDirections = useCallback(
     async (targetVenue: VenueData) => {
       const map = mapInstanceRef.current;
-      if (!map) return;
+      if (!map || targetVenue.lat === undefined || targetVenue.lng === undefined) {
+        setMapStatusMessage('Directions are unavailable until this location\'s GPS coordinates are verified.');
+        return;
+      }
 
       routingAbortRef.current?.abort();
       const controller = new AbortController();
@@ -504,7 +446,12 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       }
       setActiveRoute(null);
 
-      const origin: [number, number] = userLocation || UEAB_MAIN_GATE;
+      if (!userLocation) {
+        setMapStatusMessage('Allow current location to calculate a reliable pedestrian route. Google Maps directions are available below.');
+        setIsRoutingLoading(false);
+        return;
+      }
+      const origin: [number, number] = userLocation;
       const destination: [number, number] = [targetVenue.lat, targetVenue.lng];
       let timeoutId: number | undefined;
 
@@ -544,7 +491,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
         triggerInvalidateSize();
       } catch (error) {
         if (!controller.signal.aborted) {
-          setMapStatusMessage('Walking directions are temporarily unavailable. No straight-line estimate was shown.');
+          setMapStatusMessage('Walking directions are temporarily unavailable. No estimated route was shown.');
         }
       } finally {
         if (timeoutId !== undefined) window.clearTimeout(timeoutId);
@@ -576,21 +523,18 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
     const filtered = VENUES.filter((venue) => {
       if (activeFilter !== 'all' && venue.category !== activeFilter) return false;
-      if (searchQuery.trim()) {
-        const q = searchQuery.toLowerCase();
-        return (
-          venue.name.toLowerCase().includes(q) ||
-          venue.building.toLowerCase().includes(q) ||
-          venue.code.toLowerCase().includes(q)
-        );
+      if (locationSearch.trim()) {
+        const query = locationSearch.toLowerCase();
+        return venue.name.toLowerCase().includes(query) || venue.category.toLowerCase().includes(query);
       }
       return true;
     });
 
     filtered.forEach((venue) => {
+      if (venue.lat === undefined || venue.lng === undefined) return;
       const isSelected = selectedVenue?.id === venue.id;
       const marker = L.marker([venue.lat, venue.lng], {
-        icon: createVenuePinIcon(venue.category, isSelected),
+        icon: createVenuePinIcon(venue.category, isSelected, venue.name),
         draggable: isCoordPickerActive,
         zIndexOffset: isSelected ? 500 : 100,
       });
@@ -605,7 +549,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
         `<div style="font-family: Inter, sans-serif; font-size: 11px; font-weight: bold; padding: 1px 3px;">
           ${venue.name} <span style="color: #F2B705; font-family: monospace;">(${venue.code})</span>
         </div>`,
-        { direction: 'top', offset: [0, -32] }
+        { direction: 'top', offset: [0, -32], permanent: isSelected, className: isSelected ? 'ueab-selected-label' : undefined }
       );
 
       // Drag listener for Dev Coordinate Picker
@@ -624,7 +568,15 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
       markersGroup.addLayer(marker);
     });
-  }, [activeFilter, searchQuery, selectedVenue, isCoordPickerActive, handleFocusVenue]);
+  }, [activeFilter, locationSearch, selectedVenue, isCoordPickerActive, handleFocusVenue]);
+
+  useEffect(() => {
+    if (!fitAllMarkers || !mapInstanceRef.current) return;
+    const mapped = VENUES.filter((venue): venue is VenueData & { lat: number; lng: number } => venue.lat !== undefined && venue.lng !== undefined);
+    if (mapped.length > 0) {
+      mapInstanceRef.current.fitBounds(mapped.map((venue) => [venue.lat, venue.lng] as [number, number]), { padding: [42, 42], maxZoom: 17, animate: true });
+    }
+  }, [fitAllMarkers, activeFilter, locationSearch]);
 
   // Handle external highlightVenueId or showRouteToVenueId props
   useEffect(() => {
@@ -743,35 +695,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
       {/* Top Map Toolbar: Layer Chips & Satellite Switcher */}
       <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
-        {/* Layer Filter Chips */}
-        <div className="flex flex-wrap items-center gap-1.5 bg-white/95 dark:bg-[#071B4A]/95 backdrop-blur-md p-1.5 rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-md pointer-events-auto max-w-[80%] overflow-x-auto">
-          {(
-            [
-              { id: 'all', label: 'All' },
-              { id: 'academic', label: 'Academic' },
-              { id: 'services', label: 'Services' },
-              { id: 'worship', label: 'Worship' },
-              { id: 'sports', label: 'Sports' },
-              { id: 'events', label: 'Events' },
-            ] as const
-          ).map(({ id, label }) => (
-            <button
-              key={id}
-              onClick={() => {
-                setActiveFilter(id);
-                triggerInvalidateSize();
-              }}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors touch-target min-h-[36px] flex items-center gap-1 ${
-                activeFilter === id
-                  ? 'bg-[#0B2A6F] text-white shadow-xs'
-                  : 'text-[#5B6475] dark:text-slate-300 hover:text-[#0B2A6F] dark:hover:text-white'
-              }`}
-            >
-              <span>{label}</span>
-            </button>
-          ))}
-        </div>
-
         {/* Top-Right Control Actions: Map/Satellite Switcher, 2026 Badge, Dev Picker */}
         <div className="flex items-center gap-2 pointer-events-auto">
           {/* 2026 Campus Badge */}
@@ -889,6 +812,15 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       </div>
 
       {/* Floating Active Directions Banner */}
+      {fitAllMarkers && (
+        <div className="absolute bottom-3 left-3 z-20 hidden max-w-[min(90%,420px)] flex-wrap gap-x-3 gap-y-1 rounded-xl border border-[#E3E8F0] bg-white/95 px-3 py-2 text-[10px] font-bold text-[#071B4A] shadow-md backdrop-blur-md dark:border-[#1E3158] dark:bg-[#071B4A]/95 dark:text-white sm:flex">
+          {Object.entries(VENUE_CATEGORY_LABELS).map(([id, label]) => (
+            <span key={id} className="flex items-center gap-1"><span className="h-2 w-2 rounded-full" style={{ backgroundColor: getCategoryTheme(id as VenueCategory).color }} />{label}</span>
+          ))}
+        </div>
+      )}
+
+      {/* Floating Active Directions Banner */}
       {activeRoute && (
         <div className="absolute top-16 left-3 z-20 bg-white/98 dark:bg-[#071B4A]/98 backdrop-blur-md border border-[#E3E8F0] dark:border-[#1E3158] p-3 rounded-2xl shadow-xl flex items-center gap-3 max-w-sm animate-in fade-in slide-in-from-top-2 duration-200">
           <div className="w-10 h-10 rounded-xl bg-[#F2B705] text-[#071B4A] flex items-center justify-center shrink-0">
@@ -965,33 +897,6 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       {selectedVenue && (
         <div className="z-30 bg-white/98 dark:bg-[#071B4A]/98 backdrop-blur-md border-t border-[#E3E8F0] dark:border-[#1E3158] p-4 sm:p-5 shadow-2xl animate-in fade-in slide-in-from-bottom-4 duration-200">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            {/* Dual Photos: Exterior AND Entrance Door with Accessible Alt Text */}
-            <div className="flex items-center gap-2.5 shrink-0">
-              {/* Photo 1: Building Exterior */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative bg-slate-100 group">
-                <ImageWithFallback
-                  src={selectedVenue.photos.exterior}
-                  alt={selectedVenue.photos.exteriorAlt || `${selectedVenue.name} Building Exterior`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
-                <span className="absolute bottom-0 inset-x-0 bg-black/70 backdrop-blur-xs text-[9px] text-white text-center font-bold py-0.5">
-                  Exterior
-                </span>
-              </div>
-
-              {/* Photo 2: Entrance Door */}
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 relative bg-slate-100 group">
-                <ImageWithFallback
-                  src={selectedVenue.photos.entranceDoor}
-                  alt={selectedVenue.photos.entranceDoorAlt || `${selectedVenue.name} Entrance Door`}
-                  className="w-full h-full object-cover transition-transform group-hover:scale-105"
-                />
-                <span className="absolute bottom-0 inset-x-0 bg-[#0B2A6F]/90 backdrop-blur-xs text-[9px] text-[#F2B705] text-center font-black py-0.5 flex items-center justify-center gap-0.5">
-                  <DoorOpen className="w-2.5 h-2.5" /> Door
-                </span>
-              </div>
-            </div>
-
             {/* Venue Metadata */}
             <div className="flex-1 min-w-0 space-y-1.5">
               <div className="flex items-center gap-2">
@@ -1035,6 +940,17 @@ export const CampusMap: React.FC<CampusMapProps> = ({
                 <Footprints className="w-4 h-4 mr-1.5" />
                 <span>{isRoutingLoading ? 'Calculating...' : 'Directions'}</span>
               </Button>
+
+              {selectedVenue.googleMapsUrl && (
+                <a
+                  href={selectedVenue.googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex min-h-[44px] w-full items-center justify-center rounded-lg border border-[#0B2A6F] px-3 py-2 text-xs font-bold text-[#0B2A6F] hover:bg-blue-50 dark:border-[#F2B705] dark:text-[#F2B705] dark:hover:bg-[#0B2A6F]"
+                >
+                  Open Google Maps
+                </a>
+              )}
 
               <button
                 onClick={() => {
