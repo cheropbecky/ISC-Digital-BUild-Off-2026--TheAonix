@@ -72,6 +72,13 @@
   z-index: 10;
 }
 
+.leaflet-control-zoom a {
+  width: 44px !important;
+  height: 44px !important;
+  line-height: 42px !important;
+  font-size: 24px !important;
+}
+
 .ueab-campus-label {
   border: 0;
   background: rgba(255, 255, 255, 0.88);

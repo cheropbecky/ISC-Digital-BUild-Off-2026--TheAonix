@@ -249,6 +249,50 @@ export const TIMETABLE_ENTRIES: TimetableEntry[] = [
   },
 ];
 
+export type TimetableClash = [TimetableEntry, TimetableEntry];
+
+export const getTimetableDayIndex = (day: TimetableEntry['dayOfWeek']): number => {
+  const dayIndexes: Record<TimetableEntry['dayOfWeek'], number> = {
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+  };
+  return dayIndexes[day];
+};
+
+const timeToMinutes = (time: string): number => {
+  const [hours, minutes] = time.split(':').map(Number);
+  return hours * 60 + minutes;
+};
+
+/**
+ * Find timetable entries scheduled on the same day with overlapping times.
+ */
+export function detectClashes(entries: TimetableEntry[] = TIMETABLE_ENTRIES): TimetableClash[] {
+  const clashes: TimetableClash[] = [];
+
+  for (let index = 0; index < entries.length; index += 1) {
+    const current = entries[index];
+    const currentStart = timeToMinutes(current.startTime);
+    const currentEnd = timeToMinutes(current.endTime);
+
+    for (let nextIndex = index + 1; nextIndex < entries.length; nextIndex += 1) {
+      const next = entries[nextIndex];
+      if (current.dayOfWeek !== next.dayOfWeek) continue;
+
+      const nextStart = timeToMinutes(next.startTime);
+      const nextEnd = timeToMinutes(next.endTime);
+      if (currentStart < nextEnd && nextStart < currentEnd) {
+        clashes.push([current, next]);
+      }
+    }
+  }
+
+  return clashes;
+}
+
 /**
  * Generate standard iCalendar (.ics) string for export
  */
