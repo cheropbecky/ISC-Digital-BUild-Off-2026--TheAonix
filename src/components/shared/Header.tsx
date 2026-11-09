@@ -13,6 +13,7 @@
 
 import React, { useState, useEffect, useRef, useTransition } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion, useReducedMotion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
 import { searchService, GroupedSearchResults, SearchResultItem } from '../../services/searchService';
 import { ImageWithFallback } from '../ui/ImageWithFallback';
@@ -74,6 +75,7 @@ export const Header: React.FC<HeaderProps> = ({
   // User Avatar Dropdown
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isHeaderHidden, setIsHeaderHidden] = useState(false);
+  const shouldReduceMotion = useReducedMotion();
 
   const searchContainerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -230,14 +232,14 @@ export const Header: React.FC<HeaderProps> = ({
   }, []);
 
   return (
-    <header className={`sticky top-0 z-40 w-full h-14 sm:h-[68px] bg-white dark:bg-[#071B4A] border-b border-[#E3E8F0] dark:border-[#1E3158] transition-[transform,colors] duration-300 ease-in-out select-none shadow-xs ${isHeaderHidden ? '-translate-y-full md:translate-y-0' : 'translate-y-0'}`}>
-      <div className="h-full max-w-7xl mx-auto min-w-0 px-4 sm:px-6 flex items-center justify-between gap-3 sm:gap-4">
+    <header className={`fixed top-0 left-0 z-40 w-full h-14 sm:h-[68px] bg-[#06163E] text-white border-b border-white/10 transition-[transform,colors] duration-300 ease-in-out select-none shadow-[0_8px_24px_rgba(4,16,48,0.16)] ${isHeaderHidden ? '-translate-y-full md:translate-y-0' : 'translate-y-0'}`}>
+      <div className="h-full max-w-[1440px] mx-auto min-w-0 px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3 sm:gap-5">
         {/* Left: Brand Identity & Mobile Hamburger */}
         <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
           {onToggleMobileMenu && (
             <button
               onClick={onToggleMobileMenu}
-              className="md:hidden p-2 -ml-2 text-[#0B2A6F] dark:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg touch-target flex items-center justify-center"
+              className="lg:hidden p-2 -ml-2 text-white hover:bg-white/10 rounded-xl touch-target flex items-center justify-center transition-colors"
               aria-label="Toggle navigation menu"
             >
               {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -245,7 +247,7 @@ export const Header: React.FC<HeaderProps> = ({
           )}
 
           <Link to="/home" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B2A6F] border border-[#F2B705]/60 flex items-center justify-center shadow-sm group-hover:scale-105 transition-transform">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B2A6F] border border-[#F2B705]/70 flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform">
               <svg viewBox="0 0 100 100" className="w-6 h-6 sm:w-7 sm:h-7" fill="none">
                 <path d="M50 12 L82 30 L82 70 L50 88 L18 70 L18 30 Z" fill="#F2B705" />
                 <path d="M50 22 L72 34 L72 66 L50 78 L28 66 L28 34 Z" fill="#071B4A" />
@@ -256,14 +258,14 @@ export const Header: React.FC<HeaderProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-lg sm:text-xl font-black tracking-tight text-[#071B4A] dark:text-white">
+                <span className="text-lg sm:text-xl font-black tracking-tight text-white">
                   Kampas
                 </span>
                 <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#F2B705] text-[#071B4A]">
                   UEAB
                 </span>
               </div>
-              <span className="hidden sm:block text-[10px] font-semibold text-[#5B6475] dark:text-slate-300 tracking-wider uppercase">
+              <span className="hidden sm:block text-[10px] font-semibold text-blue-100/65 tracking-wider uppercase">
                 The campus, in one place
               </span>
             </div>
@@ -271,9 +273,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         {/* Center: Global Working Search Bar with Debounce & Grouped Suggestions */}
-        <div ref={searchContainerRef} className="relative hidden min-w-0 max-w-lg flex-1 sm:block">
+        <div ref={searchContainerRef} className="relative hidden min-w-0 max-w-2xl flex-1 sm:block">
           <div className="relative">
-            <Search className="w-4 h-4 text-[#5B6475] absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-blue-100/70 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               ref={inputRef}
               type="text"
@@ -285,7 +287,7 @@ export const Header: React.FC<HeaderProps> = ({
               onFocus={() => setIsSearchOpen(true)}
               onKeyDown={handleKeyDown}
               placeholder="Search venues, houses, events, units, notes, people... (⌘K)"
-              className="w-full h-10 sm:h-11 pl-10 pr-12 rounded-xl bg-[#F7F9FC] dark:bg-slate-900 border border-[#E3E8F0] dark:border-[#1E3158] text-xs sm:text-sm text-[#0F172A] dark:text-white placeholder-[#5B6475] focus:outline-none focus:border-[#0B2A6F] focus:ring-2 focus:ring-[#F2B705]/50 transition"
+              className="w-full h-10 sm:h-11 pl-11 pr-12 rounded-2xl bg-white/10 border border-white/15 text-xs sm:text-sm text-white placeholder-blue-100/55 focus:outline-none focus:bg-white/14 focus:border-[#F2B705]/70 focus:ring-2 focus:ring-[#F2B705]/20 focus:scale-[1.01] transition-all duration-200"
             />
             {searchQuery ? (
               <button
@@ -294,12 +296,12 @@ export const Header: React.FC<HeaderProps> = ({
                   setSearchResults(null);
                   inputRef.current?.focus();
                 }}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-1"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-100/60 hover:text-white p-1"
               >
                 <X className="w-3.5 h-3.5" />
               </button>
             ) : (
-              <kbd className="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded shadow-xs pointer-events-none">
+              <kbd className="hidden sm:inline-block absolute right-3 top-1/2 -translate-y-1/2 px-2 py-1 text-[10px] font-mono text-blue-100/70 bg-white/10 border border-white/15 rounded-lg pointer-events-none">
                 ⌘K
               </kbd>
             )}
@@ -307,7 +309,12 @@ export const Header: React.FC<HeaderProps> = ({
 
           {/* Grouped Suggestions Dropdown */}
           {isSearchOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#071B4A] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl max-h-[75vh] overflow-y-auto z-50 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in slide-in-from-top-1 duration-150">
+            <motion.div
+              initial={shouldReduceMotion ? false : { opacity: 0, y: -6, scale: 0.99 }}
+              animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+              className="absolute top-full left-0 right-0 mt-2 bg-white dark:bg-[#071B4A] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl max-h-[75vh] overflow-y-auto z-50 divide-y divide-slate-100 dark:divide-slate-800"
+            >
               {/* If no query, show Recent Searches & Quick Links */}
               {!searchQuery.trim() && (
                 <div className="p-4 space-y-3">
@@ -618,7 +625,7 @@ export const Header: React.FC<HeaderProps> = ({
                   </p>
                 </div>
               )}
-            </div>
+            </motion.div>
           )}
         </div>
 
@@ -629,8 +636,8 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={() => setLowDataMode(!lowDataMode)}
             className={`p-2 rounded-xl text-xs font-semibold transition hidden lg:flex items-center gap-1.5 ${
               lowDataMode
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                : 'text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-emerald-400/15 text-emerald-300 ring-1 ring-emerald-300/20'
+                : 'text-blue-100/65 hover:text-white hover:bg-white/10'
             }`}
             title="Toggle Low-Data Mode for Slow Network"
           >
@@ -641,7 +648,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Dark Mode Toggle */}
           <button
             onClick={toggleDarkMode}
-            className="p-2 text-slate-500 hover:text-[#0B2A6F] dark:text-slate-300 dark:hover:text-[#F2B705] hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+            className="p-2 text-blue-100/70 hover:text-[#F2B705] hover:bg-white/10 rounded-xl transition"
             title={darkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
             aria-label="Toggle dark mode"
           >
@@ -651,7 +658,7 @@ export const Header: React.FC<HeaderProps> = ({
           {/* Notification Bell */}
           <Link
             to="/notifications"
-            className="relative p-2 text-slate-600 hover:text-[#0B2A6F] dark:text-slate-300 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition"
+            className="relative p-2 text-blue-100/80 hover:text-white hover:bg-white/10 rounded-xl transition"
             aria-label={`Notifications (${unreadCount} unread)`}
           >
             <Bell className="w-5 h-5" />
@@ -668,14 +675,14 @@ export const Header: React.FC<HeaderProps> = ({
               onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
               className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-700 hover:opacity-90 transition group"
             >
-              <div className="w-8 h-8 rounded-full bg-[#0B2A6F] text-[#F2B705] font-extrabold text-xs flex items-center justify-center ring-2 ring-[#F2B705]/40 shadow-xs">
+              <div className="w-8 h-8 rounded-full bg-[#1769FF] text-white font-extrabold text-xs flex items-center justify-center ring-2 ring-[#F2B705]/60 shadow-lg shadow-black/20">
                 {user.fullName.split(' ').map((n) => n[0]).join('').slice(0, 2)}
               </div>
               <div className="hidden xl:block text-left text-xs">
-                <div className="font-bold text-[#071B4A] dark:text-white leading-tight">
+                <div className="font-bold text-white leading-tight">
                   {user.fullName}
                 </div>
-                <div className="text-[10px] text-[#5B6475] dark:text-slate-400 capitalize">
+                <div className="text-[10px] text-blue-100/60 capitalize">
                   {user.course || 'BSc Software Eng'}
                 </div>
               </div>
@@ -683,7 +690,12 @@ export const Header: React.FC<HeaderProps> = ({
 
             {/* Avatar Dropdown Menu */}
             {isUserMenuOpen && (
-              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#071B4A] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-2 z-50 divide-y divide-slate-100 dark:divide-slate-800 animate-in fade-in slide-in-from-top-1">
+              <motion.div
+                initial={shouldReduceMotion ? false : { opacity: 0, y: -6, scale: 0.98 }}
+                animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.2, ease: 'easeOut' }}
+                className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-[#071B4A] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl p-2 z-50 divide-y divide-slate-100 dark:divide-slate-800"
+              >
                 <div className="p-2.5">
                   <div className="font-extrabold text-xs text-[#071B4A] dark:text-white">
                     {user.fullName}
@@ -692,7 +704,7 @@ export const Header: React.FC<HeaderProps> = ({
                     {user.email}
                   </div>
                   <div className="text-[10px] font-mono text-[#0B2A6F] dark:text-[#F2B705] font-bold mt-1">
-                    ID: SENG/2023/4921
+                    ID: {user.studentId || user.id}
                   </div>
                 </div>
 
@@ -745,7 +757,7 @@ export const Header: React.FC<HeaderProps> = ({
                     <span>Exit to Landing Page</span>
                   </Link>
                 </div>
-              </div>
+              </motion.div>
             )}
           </div>
         </div>

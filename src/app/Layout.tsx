@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Main Layout Shell
- * Desktop: FIXED left sidebar that never scrolls, main content offset with lg:pl-64
+ * Desktop: FIXED left sidebar that never scrolls, main content offset beside it
  * Mobile: Slide-in drawer + fixed 60px bottom tab bar
  * Includes floating Demo Controls panel
  */
@@ -21,6 +21,7 @@ import { WifiOff } from 'lucide-react';
 export const Layout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -33,6 +34,15 @@ export const Layout: React.FC = () => {
       window.removeEventListener('offline', handleOffline);
     };
   }, []);
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isMobileMenuOpen]);
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F7F9FC] dark:bg-[#050E24] text-[#0F172A] dark:text-[#F8FAFC] antialiased">
@@ -53,21 +63,24 @@ export const Layout: React.FC = () => {
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      <div className="flex-1 flex w-full relative">
+      <div className="flex-1 flex w-full relative pt-14 sm:pt-[68px]">
         {/* Persistent FIXED Left Sidebar on Desktop (1024px+): does NOT scroll with page */}
-        <div className="hidden lg:block fixed left-0 top-14 sm:top-[68px] bottom-0 z-30 w-64">
-          <Sidebar />
+        <div className={`hidden lg:block fixed left-0 top-14 sm:top-[68px] bottom-0 z-30 transition-[width] duration-300 ease-out ${isSidebarCollapsed ? 'w-20' : 'w-56'}`}>
+          <Sidebar isCollapsed={isSidebarCollapsed} onCollapsedChange={setIsSidebarCollapsed} />
         </div>
 
         {/* Mobile Slide-Out Drawer */}
         {isMobileMenuOpen && (
           <div
-            className="lg:hidden fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex animate-in fade-in"
+            className="lg:hidden fixed inset-0 z-50 bg-[#02091D]/70 backdrop-blur-sm flex animate-in fade-in duration-200"
             onClick={() => setIsMobileMenuOpen(false)}
+            role="presentation"
           >
             <div
-              className="w-72 bg-white dark:bg-[#071B4A] h-full shadow-2xl p-0 overflow-y-auto"
+              className="w-[min(18rem,84vw)] bg-[#06163E] h-full shadow-2xl p-0 overflow-y-auto animate-in slide-in-from-left duration-300"
               onClick={(e) => e.stopPropagation()}
+              role="dialog"
+              aria-label="Campus navigation"
             >
               <Sidebar
                 isMobileDrawer
@@ -79,9 +92,11 @@ export const Layout: React.FC = () => {
 
         {/* Main Content Viewport: Offset beside fixed sidebar on desktop */}
         <main
-          className={`flex-1 min-w-0 lg:pl-64 p-4 sm:p-6 lg:p-8 pb-24 md:pb-10 w-full ${
-            location.hash.includes('/campus/timetable') ? 'max-w-none' : 'max-w-7xl mx-auto'
-          } ${location.hash.includes('/campus/timetable') ? 'lg:pr-0' : ''}`}
+          className={`flex-1 min-w-0 w-full max-w-none mx-0 px-3 sm:px-5 pt-5 sm:pt-5 lg:pt-6 pb-24 md:pb-10 transition-[padding-left] duration-300 ease-out ${
+            isSidebarCollapsed ? 'lg:pl-[calc(5rem+1.5rem)]' : 'lg:pl-[calc(14rem+1.5rem)]'
+          } ${
+            location.hash.includes('/campus/timetable') ? 'lg:pr-0' : ''
+          }`}
         >
           <Outlet />
         </main>
