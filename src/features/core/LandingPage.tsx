@@ -840,31 +840,34 @@ export const LandingPage: React.FC = () => {
         </div>
       </section>
 
-      {/* 4. TECHNOLOGY PARTNERS MARQUEE */}
-      <section className="bg-white dark:bg-[#071B4A] border-y border-[#E3E8F0] dark:border-[#1E3158] py-8 mt-14 overflow-hidden w-full">
-        <div className="w-full px-4 sm:px-8 lg:px-12">
-          <p className="text-center text-[11px] font-black uppercase tracking-[0.24em] text-[#5B6475] dark:text-slate-400 mb-6">
-            Engineered with tools trusted by modern teams
-          </p>
-          <div className="relative overflow-hidden w-full" aria-label="Technology partners">
-            <div className="animate-custom-marquee flex items-center">
-              {[...PARTNER_LOGOS, ...PARTNER_LOGOS, ...PARTNER_LOGOS].map((partner, index) => (
-                <div
-                  key={`${partner.name}-${index}`}
-                  className="mx-6 sm:mx-10 flex items-center gap-3.5 whitespace-nowrap"
-                >
-                  <div className="shrink-0 transition-transform duration-200 hover:scale-110">
-                    {partner.svg}
-                  </div>
-                  <span className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-white select-none">
-                    {partner.name}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+      {/* 4. WAVY SECTION SEPARATOR */}
+      <div className="relative h-28 sm:h-40 mt-14 overflow-hidden bg-[#071B4A]" aria-hidden="true">
+        <div className="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_18%_20%,rgba(96,165,250,0.32),transparent_28%),radial-gradient(circle_at_82%_0%,rgba(242,183,5,0.22),transparent_24%)]" />
+        <svg
+          className="absolute bottom-[-1px] left-0 h-full w-full"
+          viewBox="0 0 1440 180"
+          preserveAspectRatio="none"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            d="M0 86C180 34 322 52 500 98C718 154 850 178 1050 118C1222 66 1325 28 1440 62"
+            fill="none"
+            stroke="rgba(96,165,250,0.42)"
+            strokeWidth="3"
+          />
+          <path
+            d="M0 106C174 58 316 72 486 116C700 170 846 190 1054 136C1228 90 1326 52 1440 82"
+            fill="none"
+            stroke="rgba(242,183,5,0.35)"
+            strokeWidth="2"
+          />
+          <path
+            d="M0 94C180 38 322 58 500 106C718 166 850 188 1050 126C1222 74 1325 36 1440 72V180H0V94Z"
+            fill="currentColor"
+            className="text-[#F7F9FC] dark:text-[#050E24]"
+          />
+        </svg>
+      </div>
 
       {/* 5. ABOUT SECTION */}
       <section id="section-about" className="w-full px-4 sm:px-8 lg:px-12 py-20 sm:py-28 overflow-hidden">
@@ -973,7 +976,7 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 6. SIX INTEGRATED CAMPUS MODULES - UNEVEN HONEYCOMB CLUSTERS */}
-      <section id="section-modules" className="relative bg-[#05112F] text-white py-20 sm:py-28 overflow-hidden w-full border-t border-b border-white/10">
+      <section id="section-modules" className="relative bg-[#05112F] text-white py-14 sm:py-20 overflow-hidden w-full border-t border-b border-white/10">
         {/* Tech-inspired circuit/grid texture across the full module section */}
         <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-[0.16]">
           <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
@@ -1002,8 +1005,8 @@ export const LandingPage: React.FC = () => {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Section Header */}
-          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12 sm:mb-16 pb-6 border-b border-white/10">
-            <div className="max-w-2xl space-y-3">
+          <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-7 sm:mb-9 pb-4 border-b border-white/10">
+            <div className="max-w-2xl space-y-2">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight text-white leading-tight">
                 Six Integrated Campus Modules
               </h2>
@@ -1027,12 +1030,12 @@ export const LandingPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Uneven Honeycomb Bento Grid of Divs */}
+          {/* Aligned Honeycomb Bento Grid of Divs */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-5 sm:gap-6 lg:gap-7 items-stretch">
             {MODULE_DATA.map((mod) => (
               <div
                 key={mod.id}
-                className={`group relative rounded-3xl overflow-hidden border border-white/10 hover:border-[#F2B705]/60 bg-[#071B4A]/90 p-6 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-[0_14px_45px_rgba(242,183,5,0.18)] transition-all duration-500 hover:-translate-y-1.5 ${mod.span} ${mod.stagger}`}
+                className={`group relative rounded-3xl overflow-hidden border border-white/10 hover:border-[#F2B705]/60 bg-[#071B4A]/90 p-6 sm:p-8 flex flex-col justify-between shadow-xl hover:shadow-[0_14px_45px_rgba(242,183,5,0.18)] transition-all duration-500 hover:-translate-y-1.5 ${mod.span}`}
               >
                 {/* Dimmed Background Campus Image with smooth zoom on hover */}
                 <div
@@ -1055,7 +1058,7 @@ export const LandingPage: React.FC = () => {
                     {/* Hexagon Honeycomb Icon Badge */}
                     <div className="relative flex items-center justify-center">
                       <div
-                        className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#F2B705] to-amber-600 flex items-center justify-center text-[#071B4A] shadow-md group-hover:scale-110 group-hover:rotate-6 transition-all duration-300"
+                        className="w-12 h-12 shrink-0 bg-gradient-to-br from-[#F2B705] to-amber-600 flex items-center justify-center text-[#071B4A] shadow-md group-hover:scale-110 transition-all duration-300"
                         style={{ clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)' }}
                       >
                         <mod.icon className="w-5 h-5 stroke-[2.4]" />
@@ -1324,8 +1327,11 @@ export const LandingPage: React.FC = () => {
       </section>
 
       {/* 10. INSTITUTIONAL FOOTER */}
-      <footer className="bg-[#051336] text-white border-t border-white/10 pt-14 sm:pt-16 pb-8 w-full">
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_1fr_1.25fr] gap-10 lg:gap-14 pb-12 border-b border-white/10">
+      <footer className="relative overflow-hidden bg-[#051336] text-white border-t border-white/10 pt-14 sm:pt-16 pb-8 w-full">
+        <div className="absolute inset-x-0 bottom-[-1.5rem] z-0 bg-gradient-to-r from-[#F2B705] via-[#60A5FA] to-[#F2B705] bg-clip-text text-center text-[clamp(7rem,24vw,23rem)] font-black leading-none tracking-[-0.08em] text-transparent opacity-40 select-none whitespace-nowrap pointer-events-none">
+          KAMPAS
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-[1.25fr_0.9fr_1fr_1.25fr] gap-10 lg:gap-14 pb-12 border-b border-white/10">
           <div className="space-y-5">
             <div className="flex items-center gap-2.5">
               <img
@@ -1411,7 +1417,7 @@ export const LandingPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-8 lg:px-12 pt-6 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-3">
           <p>© {new Date().getFullYear()} University of Eastern Africa, Baraton. All rights reserved.</p>
           <div className="flex items-center gap-4">
             <button
