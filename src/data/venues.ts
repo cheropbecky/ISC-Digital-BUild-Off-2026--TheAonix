@@ -1,521 +1,63 @@
-/**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * UEAB Baraton Venues & Facilities Master Data
- * University of Eastern Africa, Baraton, Nandi County, Kenya
- * Verified Real Campus Center: [0.25766, 35.08578] (OSM Way 218276680)
- * The directory is limited to UEAB Baraton facilities. Photos use locally bundled
- * official UEAB imagery; an image is not presented as a building-specific photo
- * unless the source identifies that facility.
- */
+/** UEAB Baraton campus locations supplied as the Kampas GIS source of truth. */
 
-import { IMAGES } from './images';
+export const UEAB_CAMPUS_CENTER: [number, number] = [0.2572, 35.084];
 
-// OSM way 218276680 centroid: the single campus reference point used by the map.
-// Keep these editable here so map, routing, and venue tooling share one source of truth.
-export const UEAB_CAMPUS_CENTER: [number, number] = [0.25766, 35.08578];
+export type VenueCategory = 'academic' | 'administration' | 'worship' | 'food_dining' | 'student_services' | 'health_services' | 'facilities' | 'sports' | 'accommodation' | 'landmarks';
+export const VENUE_CATEGORY_LABELS: Record<VenueCategory, string> = {
+  academic: 'Academic Buildings', administration: 'Administration', worship: 'Worship', food_dining: 'Food & Dining',
+  student_services: 'Student Services', health_services: 'Health Services', facilities: 'Campus Facilities',
+  sports: 'Sports & Recreation', accommodation: 'Accommodation', landmarks: 'Other Landmarks',
+};
 
-// Existing main-gate pin used by the campus road geometry and routing fallback origin.
-// Confirm this entrance pin with UEAB Security/OSM before using it for production turn-by-turn navigation.
-export const UEAB_MAIN_GATE: [number, number] = [0.25889, 35.08298];
-
-export type VenueCategory = 'academic' | 'services' | 'worship' | 'sports' | 'events' | 'lost_found';
-
-export interface VenuePhotos {
-  exterior: string;
-  exteriorAlt: string;
-  entranceDoor: string;
-  entranceDoorAlt: string;
-  interior?: string;
-}
-
+export interface VenuePhotos { exterior: string; exteriorAlt: string; entranceDoor: string; entranceDoorAlt: string; interior?: string; }
 export interface VenueData {
-  id: string;
-  name: string;
-  code: string;
-  category: VenueCategory;
-  building: string;
-  floor: string;
-  capacity?: number;
-  hasProjector?: boolean;
-  hasPowerSockets?: boolean;
-  hasWifi?: boolean;
-  isAccessible?: boolean;
-  indoorHint: string;
-  indoorHints: string; // backwards compatibility
-  openingHours: string;
-  lat: number;
-  lng: number;
-  latitude: number;  // backwards compatibility
-  longitude: number; // backwards compatibility
-  photos: VenuePhotos;
-  todayClasses?: Array<{
-    unitCode: string;
-    unitName: string;
-    lecturer: string;
-    time: string;
-  }>;
+  id: string; name: string; code: string; category: VenueCategory; building: string; floor: string;
+  description?: string; googleMapsUrl?: string; needsVerification: boolean; coordinateStatus: 'verified' | 'pending';
+  capacity?: number; hasProjector?: boolean; hasPowerSockets?: boolean; hasWifi?: boolean; isAccessible?: boolean;
+  indoorHint: string; indoorHints: string; openingHours: string; lat?: number; lng?: number; latitude?: number; longitude?: number;
+  photos: VenuePhotos; todayClasses?: Array<{ unitCode: string; unitName: string; lecturer: string; time: string }>;
 }
+
+const noPhoto = (name: string): VenuePhotos => ({ exterior: '', exteriorAlt: `No photograph supplied for ${name}`, entranceDoor: '', entranceDoorAlt: `No entrance photograph supplied for ${name}` });
+const location = (id: string, name: string, category: VenueCategory, lat: number | null, lng: number | null, googleMapsUrl?: string): VenueData => ({
+  id, name, code: id.toUpperCase().replace(/[^A-Z0-9]+/g, '-'), category, building: name, floor: 'Not supplied', lat: lat ?? undefined, lng: lng ?? undefined,
+  latitude: lat ?? undefined, longitude: lng ?? undefined, googleMapsUrl, needsVerification: lat === null || lng === null,
+  coordinateStatus: lat === null || lng === null ? 'pending' : 'verified', indoorHint: 'Additional location details have not been supplied yet.',
+  indoorHints: 'Additional location details have not been supplied yet.', openingHours: 'Not supplied', photos: noPhoto(name),
+});
 
 export const VENUES: VenueData[] = [
-  // 1. University Library
-  {
-    id: 'venue-library',
-    name: 'University Library',
-    code: 'LIB-01',
-    category: 'academic',
-    building: 'Library & Learning Commons Block',
-    floor: 'Ground & 1st Floor',
-    capacity: 350,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Main foyer through turnstiles; reserve collection on ground floor, reference & quiet research suites on 1st floor.',
-    indoorHints: 'Main foyer through turnstiles; reserve collection on ground floor, reference & quiet research suites on 1st floor.',
-    openingHours: '07:30 AM – 10:00 PM (Mon - Thu, Sun), 07:30 AM – 03:00 PM (Fri)',
-    // TODO: verify coordinates
-    lat: 0.26320,
-    // TODO: verify coordinates
-    lng: 35.08547,
-    latitude: 0.26320,
-    longitude: 35.08547,
-    photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research and learning event on campus',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Library main entrance double doors with electronic card access and reception desk',
-      interior: IMAGES.baratonResearchConference.url,
-    },
-    todayClasses: [
-      { unitCode: 'COSC 330', unitName: 'Advanced Database Systems', lecturer: 'Prof. Mary Achieng', time: '11:00 AM - 01:00 PM' },
-    ],
-  },
-
-  // 2. Administration Block
-  {
-    id: 'venue-admin',
-    name: 'Administration Block',
-    code: 'ADM-01',
-    category: 'services',
-    building: 'Main Administration & Clock Tower Building',
-    floor: 'Ground & 1st Floor',
-    capacity: 120,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Main administrative offices: Vice-Chancellor, Registrar, Admissions, and Student Finance along the central rotunda hallway.',
-    indoorHints: 'Main administrative offices: Vice-Chancellor, Registrar, Admissions, and Student Finance along the central rotunda hallway.',
-    openingHours: '08:00 AM – 05:00 PM (Mon - Thu), 08:00 AM – 01:00 PM (Fri)',
-    // TODO: verify coordinates
-    lat: 0.26172,
-    // TODO: verify coordinates
-    lng: 35.08573,
-    latitude: 0.26172,
-    longitude: 35.08573,
-    photos: {
-      exterior: IMAGES.baratonNewSignage.url,
-      exteriorAlt: 'UEAB Baraton campus signage in front of the administration building',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Administration central double glass doors under the clock tower arch',
-      interior: IMAGES.baratonNewSignage.url,
-    },
-    todayClasses: [],
-  },
-
-  // 3. Main Church
-  {
-    id: 'venue-church',
-    name: 'Main Church',
-    code: 'UCH-01',
-    category: 'worship',
-    building: 'University Seventh-day Adventist Church',
-    floor: 'Ground Floor & Balcony',
-    capacity: 1500,
-    hasProjector: true,
-    hasPowerSockets: false,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Main sanctuary entrance through west portico gates; balcony access via dual north and south stairwells.',
-    indoorHints: 'Main sanctuary entrance through west portico gates; balcony access via dual north and south stairwells.',
-    openingHours: '06:00 AM – 09:00 PM (Daily, Sabbath worship Friday sunset to Saturday sunset)',
-    // TODO: verify coordinates
-    lat: 0.26223,
-    // TODO: verify coordinates
-    lng: 35.08608,
-    latitude: 0.26223,
-    longitude: 35.08608,
-    photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton graduation day gathering on campus',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Main Church portico wooden double doors with brass handles',
-      interior: IMAGES.baratonGraduation.url,
-    },
-    todayClasses: [
-      { unitCode: 'RELT 220', unitName: 'Christian Ethics & Social Responsibility', lecturer: 'Pastor Jonathan Bett', time: '08:00 AM - 09:30 AM' },
-    ],
-  },
-
-  // 4. Auditorium
-  {
-    id: 'venue-auditorium',
-    name: 'Auditorium',
-    code: 'AUD-01',
-    category: 'events',
-    building: 'Central Assembly Complex',
-    floor: 'Ground Floor',
-    capacity: 600,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Ground floor tiered theater with stage lighting, acoustics control booth at rear center.',
-    indoorHints: 'Ground floor tiered theater with stage lighting, acoustics control booth at rear center.',
-    openingHours: '07:30 AM – 09:00 PM (Event & scheduled lecture basis)',
-    // TODO: verify coordinates
-    lat: 0.26334,
-    // TODO: verify coordinates
-    lng: 35.08588,
-    latitude: 0.26334,
-    longitude: 35.08588,
-    photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton auditorium event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Acoustic-sealed double doors to main auditorium hall',
-      interior: IMAGES.baratonAuditorium.url,
-    },
-    todayClasses: [
-      { unitCode: 'COSC 311', unitName: 'Compiler Design & Formal Automata', lecturer: 'Dr. Evans Kiprop', time: '08:00 AM - 10:00 AM' },
-    ],
-  },
-
-  // 5. Student Center
-  {
-    id: 'venue-student-center',
-    name: 'Student Center',
-    code: 'SC-01',
-    category: 'services',
-    building: 'Student Life & Guild Pavilion',
-    floor: 'Ground & 1st Floor',
-    capacity: 250,
-    hasProjector: false,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Houses Student Association offices, bookstore, student postal lockers, and indoor recreational lounge.',
-    indoorHints: 'Houses Student Association offices, bookstore, student postal lockers, and indoor recreational lounge.',
-    openingHours: '07:00 AM – 10:30 PM (Daily)',
-    // TODO: verify coordinates
-    lat: 0.26229,
-    // TODO: verify coordinates
-    lng: 35.08358,
-    latitude: 0.26229,
-    longitude: 35.08358,
-    photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton student community gathering',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Student Center main glass sliding doors into student guild lounge',
-      interior: IMAGES.baratonGraduation.url,
-    },
-    todayClasses: [
-      { unitCode: 'COMM 111', unitName: 'Scholarly Writing & Academic Oratory', lecturer: 'Dr. Sarah Rotich', time: '02:00 PM - 04:00 PM' },
-    ],
-  },
-
-  // 6. Dining Hall
-  {
-    id: 'venue-dining-hall',
-    name: 'Dining Hall',
-    code: 'DH-01',
-    category: 'services',
-    building: 'University Food Services Complex',
-    floor: 'Ground Floor',
-    capacity: 800,
-    hasProjector: false,
-    hasPowerSockets: false,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Dual cafeteria service lines for hot vegetarian meals; ticket scanning counter at main entrance.',
-    indoorHints: 'Dual cafeteria service lines for hot vegetarian meals; ticket scanning counter at main entrance.',
-    openingHours: 'Breakfast: 06:30 – 08:30 AM, Lunch: 12:00 – 02:00 PM, Supper: 05:30 – 07:30 PM',
-    // TODO: verify coordinates
-    lat: 0.26245,
-    // TODO: verify coordinates
-    lng: 35.08369,
-    latitude: 0.26245,
-    longitude: 35.08369,
-    photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton community event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Dining Hall entrance turnstiles with meal registration card readers',
-      interior: IMAGES.baratonAuditorium.url,
-    },
-    todayClasses: [],
-  },
-
-  // 7. Science Building
-  {
-    id: 'venue-science',
-    name: 'Science Building',
-    code: 'SCI-01',
-    category: 'academic',
-    building: 'Faculty of Science & Technology Block',
-    floor: 'Ground, 1st & 2nd Floors',
-    capacity: 400,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Ground floor chemistry & biology wet labs; 1st floor computer science labs & faculty offices; 2nd floor physics labs.',
-    indoorHints: 'Ground floor chemistry & biology wet labs; 1st floor computer science labs & faculty offices; 2nd floor physics labs.',
-    openingHours: '07:00 AM – 09:30 PM (Mon - Fri)',
-    // TODO: verify coordinates
-    lat: 0.26080,
-    // TODO: verify coordinates
-    lng: 35.08388,
-    latitude: 0.26080,
-    longitude: 35.08388,
-    photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton academic research event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Science Complex glass double doors with laboratory safety guidelines signage',
-      interior: IMAGES.baratonResearchConference.url,
-    },
-    todayClasses: [
-      { unitCode: 'MATH 201', unitName: 'Linear Algebra with Vector Computation', lecturer: 'Dr. Benson Wafula', time: '11:00 AM - 01:00 PM' },
-      { unitCode: 'COSC 420', unitName: 'Software Architecture & Cloud Systems', lecturer: 'Eng. Dennis Cheruiyot', time: '10:00 AM - 12:00 PM' },
-    ],
-  },
-
-  // 8. Amphitheater
-  {
-    id: 'venue-amphitheater',
-    name: 'Amphitheater',
-    code: 'AMPHI-01',
-    category: 'events',
-    building: 'Open Air Academic Amphitheater',
-    floor: 'Outdoor Tiered Bowl',
-    capacity: 700,
-    hasProjector: false,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Tiered semi-circular stone seating bowl adjacent to the main administration gardens for outdoor lectures and student presentations.',
-    indoorHints: 'Tiered semi-circular stone seating bowl adjacent to the main administration gardens for outdoor lectures and student presentations.',
-    openingHours: '06:00 AM – 07:00 PM (Daylight hours)',
-    // TODO: verify coordinates
-    lat: 0.26381,
-    // TODO: verify coordinates
-    lng: 35.08679,
-    latitude: 0.26381,
-    longitude: 35.08679,
-    photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Entrance ramp leading into the lower amphitheater stage area',
-      interior: IMAGES.baratonRoadRace.url,
-    },
-    todayClasses: [],
-  },
-
-  // 9. Research and Community Center
-  {
-    id: 'venue-research-community',
-    name: 'Research and Community Center',
-    code: 'RCC-01',
-    category: 'academic',
-    building: 'Interdisciplinary Research & Outreach Facility',
-    floor: 'Ground & 1st Floor',
-    capacity: 180,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Ground floor research data collection suites; 1st floor community engagement seminar hall and conference room.',
-    indoorHints: 'Ground floor research data collection suites; 1st floor community engagement seminar hall and conference room.',
-    openingHours: '08:00 AM – 06:00 PM (Mon - Fri)',
-    // TODO: verify coordinates
-    lat: 0.26099,
-    // TODO: verify coordinates
-    lng: 35.08516,
-    latitude: 0.26099,
-    longitude: 35.08516,
-    photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research conference campus event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Glass security door with badge scanner for research staff and scholars',
-      interior: IMAGES.baratonResearchConference.url,
-    },
-    todayClasses: [],
-  },
-
-  // 10. Ellen G. White Research Centre
-  {
-    id: 'venue-egw-centre',
-    name: 'Ellen G. White Research Centre',
-    code: 'EGW-01',
-    category: 'worship',
-    building: 'Heritage & Theological Archive Pavilion',
-    floor: '1st Floor Library Wing',
-    capacity: 60,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Located within the library east wing; specialized research archives, rare books room, and microfilm study carrels.',
-    indoorHints: 'Located within the library east wing; specialized research archives, rare books room, and microfilm study carrels.',
-    openingHours: '08:30 AM – 05:00 PM (Mon - Thu), 08:30 AM – 01:00 PM (Fri)',
-    // TODO: verify coordinates
-    lat: 0.26325,
-    // TODO: verify coordinates
-    lng: 35.08562,
-    latitude: 0.26325,
-    longitude: 35.08562,
-    photos: {
-      exterior: IMAGES.baratonResearchConference.url,
-      exteriorAlt: 'Official UEAB Baraton research and learning event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Archival climate-controlled wooden glass door with EGW research plaque',
-      interior: IMAGES.baratonResearchConference.url,
-    },
-    todayClasses: [],
-  },
-
-  // 11. Health Centre (institutional hospital)
-  {
-    id: 'venue-health-centre',
-    name: 'Health Centre',
-    code: 'HC-01',
-    category: 'services',
-    building: 'Baraton University Health Services & Hospital',
-    floor: 'Ground Floor',
-    capacity: 50,
-    hasProjector: false,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: '24/7 outpatient clinic, pharmacy, triage desk, inpatient observation ward, and clinical simulation rooms.',
-    indoorHints: '24/7 outpatient clinic, pharmacy, triage desk, inpatient observation ward, and clinical simulation rooms.',
-    openingHours: '24 Hours Emergency & Outpatient Services',
-    // TODO: verify coordinates
-    lat: 0.25916,
-    // TODO: verify coordinates
-    lng: 35.08328,
-    latitude: 0.25916,
-    longitude: 35.08328,
-    photos: {
-      exterior: IMAGES.baratonAuditorium.url,
-      exteriorAlt: 'Official UEAB Baraton university event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Emergency clinic glass entrance with international red cross sign and triage desk',
-      interior: IMAGES.baratonAuditorium.url,
-    },
-    todayClasses: [
-      { unitCode: 'NURS 215', unitName: 'Human Anatomy & Physiology II Clinical', lecturer: 'Dr. Grace Kemboi', time: '02:00 PM - 05:00 PM' },
-    ],
-  },
-
-  // 12. Community Centre
-  {
-    id: 'venue-community-centre',
-    name: 'Community Centre',
-    code: 'CC-01',
-    category: 'services',
-    building: 'University Community Outreach Hall',
-    floor: 'Ground Floor',
-    capacity: 220,
-    hasProjector: true,
-    hasPowerSockets: true,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Multi-use hall for campus agricultural outreach, youth programs, and staff-student community gatherings.',
-    indoorHints: 'Multi-use hall for campus agricultural outreach, youth programs, and staff-student community gatherings.',
-    openingHours: '08:00 AM – 08:00 PM',
-    // TODO: verify coordinates
-    lat: 0.26114,
-    // TODO: verify coordinates
-    lng: 35.08545,
-    latitude: 0.26114,
-    longitude: 35.08545,
-    photos: {
-      exterior: IMAGES.baratonGraduation.url,
-      exteriorAlt: 'Official UEAB Baraton community gathering',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Double wide entrance doors for community functions and exhibitions',
-      interior: IMAGES.baratonGraduation.url,
-    },
-    todayClasses: [],
-  },
-
-  // 13. Basketball Court
-  {
-    id: 'venue-basketball',
-    name: 'Basketball Court',
-    code: 'BKC-01',
-    category: 'sports',
-    building: 'Outdoor Sports Courts Facility',
-    floor: 'Outdoor Ground Level',
-    capacity: 250,
-    hasProjector: false,
-    hasPowerSockets: false,
-    hasWifi: true,
-    isAccessible: true,
-    indoorHint: 'Regulation paved basketball courts with floodlights for evening games and spectator bleachers.',
-    indoorHints: 'Regulation paved basketball courts with floodlights for evening games and spectator bleachers.',
-    openingHours: '06:00 AM – 07:00 PM (Daily)',
-    // TODO: verify coordinates
-    lat: 0.26383,
-    // TODO: verify coordinates
-    lng: 35.08365,
-    latitude: 0.26383,
-    longitude: 35.08365,
-    photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Spectator gate access into the enclosed basketball court facility',
-      interior: IMAGES.baratonRoadRace.url,
-    },
-    todayClasses: [],
-  },
-
-  // 14. Soccer Field
-  {
-    id: 'venue-soccer-field',
-    name: 'Soccer Field',
-    code: 'SOC-01',
-    category: 'sports',
-    building: 'Athletic Track & Main Sports Field',
-    floor: 'Outdoor Ground Level',
-    capacity: 1200,
-    hasProjector: false,
-    hasPowerSockets: false,
-    hasWifi: false,
-    isAccessible: true,
-    indoorHint: 'Championship standard natural grass soccer pitch enclosed by a 400m running athletics track and grandstand.',
-    indoorHints: 'Championship standard natural grass soccer pitch enclosed by a 400m running athletics track and grandstand.',
-    openingHours: '06:00 AM – 07:00 PM',
-    // TODO: verify coordinates
-    lat: 0.26402,
-    // TODO: verify coordinates
-    lng: 35.08650,
-    latitude: 0.26402,
-    longitude: 35.08650,
-    photos: {
-      exterior: IMAGES.baratonRoadRace.url,
-      exteriorAlt: 'Official Baraton Road Race and Fun Run campus event',
-      entranceDoor: IMAGES.venueDoorStandard.url,
-      entranceDoorAlt: 'Athletic grandstand gate entrance and team locker room passage',
-      interior: IMAGES.baratonRoadRace.url,
-    },
-    todayClasses: [],
-  },
+  location('ueab-gate', 'UEAB Main Gate', 'facilities', 0.254552, 35.081636),
+  location('church-fountain', 'UEAB Church Fountain', 'worship', 0.25486, 35.0816846, 'https://maps.app.goo.gl/7kcpwENfhCqFmnmS8'),
+  location('university-church', 'Baraton University Church', 'worship', 0.255071, 35.0814546, 'https://maps.app.goo.gl/DNcumB6uUCHZWz7f6'),
+  location('ueab-admin', 'UEAB Administration', 'administration', 0.2553484, 35.0826976, 'https://maps.app.goo.gl/XwwNqUfNnu2u1ruv8'),
+  location('tupande-duka', 'Tupande Duka Baraton', 'food_dining', 0.2551325, 35.0829279, 'https://maps.app.goo.gl/mgeizfLhYLSQcfHQ8'),
+  location('ueab-fountain', 'UEAB Fountain', 'landmarks', 0.2561943, 35.0829663, 'https://maps.app.goo.gl/UfqWHXgfRbJx4vUV9'),
+  location('baptism-pool', 'UEAB Baptism Pool', 'worship', 0.2561193, 35.0832054, 'https://maps.app.goo.gl/FXdHm7VNB2R3XaeZ8'),
+  location('ueab-parking', 'UEAB Parking', 'facilities', 0.2560571, 35.0835898, 'https://maps.app.goo.gl/PSfGg7LHpQzKJE366'),
+  location('yearbook', 'Yearbook', 'academic', 0.2562717, 35.0836664, 'https://maps.app.goo.gl/hvUAF4R5XEgDgpGA9'),
+  location('cafeteria', 'UEAB Cafeteria', 'food_dining', 0.2564392, 35.0837783, 'https://maps.app.goo.gl/VjWE9kU4vZ4HndUw7'),
+  location('student-center', 'UEAB Student Center', 'student_services', null, null, 'https://maps.app.goo.gl/VjWE9kU4vZ4HndUw7'),
+  location('jeremic-medical', 'Jeremic Medical Centre', 'health_services', 0.2560103, 35.0810901, 'https://maps.app.goo.gl/xooXAwvkDynXW5s56'),
+  location('ueab-jerusalem', 'UEAB Jerusalem', 'landmarks', 0.257056, 35.0813108, 'https://maps.app.goo.gl/mwRkUhYhgQwAA45N7'),
+  location('ueab-park', 'UEAB Park', 'landmarks', 0.2561917, 35.0818388, 'https://maps.app.goo.gl/bKnP8GeMKzcPC8ii6'),
+  location('international-school', 'Baraton International School', 'academic', 0.2576698, 35.0816754, 'https://maps.app.goo.gl/6tygwdVHMoBrUCd79'),
+  location('technology-building', 'UEAB Technology Building', 'academic', 0.2572578, 35.0822519, 'https://maps.app.goo.gl/PCk1paC3gndsVmF18'),
+  location('communication-tower', 'UEAB Communication Tower', 'facilities', 0.2575017, 35.0823056, 'https://maps.app.goo.gl/bhFqtm1TZyf4M8S1A'),
+  location('family-consumer-science', 'Family and Consumer Science Department', 'academic', 0.256494, 35.0829682, 'https://maps.app.goo.gl/bCQtdyiJBhRHUJwL8'),
+  location('ueab-sacco', 'UEAB SACCO', 'student_services', 0.2564346, 35.0826913, 'https://maps.app.goo.gl/ZM2BhAi2ZcBmHgpM7'),
+  location('ueab-library', 'UEAB Library', 'academic', 0.2571103, 35.0836962, 'https://maps.app.goo.gl/deAJ27eHXjD456A68'),
+  location('amphitheatre', 'UEAB Amphitheatre', 'facilities', 0.2570949, 35.0839289, 'https://maps.app.goo.gl/disErGP5uVrchVeL6'),
+  location('ueab-auditorium', 'UEAB Auditorium', 'academic', 0.2565337, 35.084458, 'https://maps.app.goo.gl/kLq8PX72HogWf1Gd8'),
+  location('basketball-court', 'UEAB Basketball Court', 'sports', 0.2568347, 35.0847937, 'https://maps.app.goo.gl/7ReD7b3uPoyQq6Me8'),
+  location('ladies-dorm', 'UEAB Ladies Dormitory', 'accommodation', 0.2564804, 35.0855567, 'https://maps.app.goo.gl/w4Lqc1X1L9Ud3ArK7'),
+  location('cool-place', 'UEAB Cool Place (Gazebo)', 'landmarks', 0.2557468, 35.0841683, 'https://maps.app.goo.gl/KkBpEHwefPqfV3WU8'),
+  location('graduation-square', 'UEAB Graduation Square', 'facilities', 0.2556016, 35.0850947, 'https://maps.app.goo.gl/fy66gybdFfxVPLVS8'),
+  location('community-centre', 'UEAB Community Centre', 'student_services', 0.2557746, 35.0869364, 'https://maps.app.goo.gl/wzBTTH4xDgft2ikE6'),
+  location('water-treatment', 'UEAB Water Treatment Plant', 'facilities', 0.2581825, 35.0862127, 'https://maps.app.goo.gl/x6Nr2UWvnoDCyVha6'),
+  location('old-mens-dorm', "UEAB Old Men's Dormitory", 'accommodation', 0.2583399, 35.0840304, 'https://maps.app.goo.gl/XnvzkamhtCntJF5j6'),
+  location('mens-dorm', "UEAB Men's Dormitory", 'accommodation', 0.258491, 35.0837188, 'https://maps.app.goo.gl/M9Eu6wwEZqsq3TpJ6'),
+  location('senior-flats', 'UEAB Senior Flats', 'accommodation', 0.2593951, 35.0829448, 'https://maps.app.goo.gl/2eJbXPU45XR8RGnw5'),
+  location('splendid-scrolls', 'Splendid Scrolls Media', 'landmarks', 0.26156, 35.084012, 'https://maps.app.goo.gl/LensopyjoCag2Xzv8'),
+  location('ueab-farm', 'UEAB Farm', 'facilities', 0.261486, 35.0869866, 'https://maps.app.goo.gl/2JCnMjY5oi4UVAqh6'),
 ];
