@@ -5,6 +5,11 @@
  * Camera-first reporting, secret verification quiz, handover desk routing, and match algorithms.
  */
 
+import studentIdPhoto from '../assets/images/pastedimage.png';
+import calculatorPhoto from '../assets/images/calc.png';
+import lenovoChargerPhoto from '../assets/images/Lenovocharger.png';
+import scientificPhoto from '../assets/images/scientific.jpg';
+
 export interface LostFoundItem {
   id: string;
   type: 'lost' | 'found';
@@ -39,7 +44,7 @@ export const LOST_FOUND_ITEMS: LostFoundItem[] = [
     locationFoundOrLost: 'Science Complex Auditorium (SCA-101), Row 4 under seat 18',
     venueCode: 'SCA-101',
     dateReported: new Date(Date.now() - 3 * 3600 * 1000).toISOString(),
-    photoUrl: 'https://www.tiktok.com/discover/baraton-university-hostels',
+    photoUrl: calculatorPhoto,
     reporterName: 'Emmanuel Kiprono',
     reporterRole: 'Student, Mathematics',
     status: 'match_suggested',
@@ -63,7 +68,7 @@ export const LOST_FOUND_ITEMS: LostFoundItem[] = [
     locationFoundOrLost: 'Library Learning Commons East, 2nd Floor Study Carrel',
     venueCode: 'CLB-204',
     dateReported: new Date(Date.now() - 14 * 3600 * 1000).toISOString(),
-    photoUrl: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    photoUrl: studentIdPhoto,
     reporterName: 'Faith Chelagat',
     reporterRole: 'Library Student Assistant',
     status: 'unclaimed',
@@ -75,12 +80,12 @@ export const LOST_FOUND_ITEMS: LostFoundItem[] = [
   {
     id: 'lf-3',
     type: 'lost',
-    title: 'Blue Leather Keychain with Room & Postbox Keys',
-    category: 'Keys',
+    title: 'Mans Search for Meaning by Viktor Frankl',
+    category: 'Books & Stationery',
     locationFoundOrLost: 'Between Student Centre Cafeteria Veranda and University Church',
     venueCode: 'SC-MPH',
     dateReported: new Date(Date.now() - 24 * 3600 * 1000).toISOString(),
-    photoUrl: '/src/assets/images/ueab_student_life_1793989896360.jpg',
+    photoUrl: scientificPhoto,
     reporterName: 'Dennis Kimutai',
     reporterRole: 'Student, Technology',
     status: 'unclaimed',
@@ -97,7 +102,7 @@ export const LOST_FOUND_ITEMS: LostFoundItem[] = [
     locationFoundOrLost: 'Main Computing Lab B (CLB-204), Terminal 22',
     venueCode: 'CLB-204',
     dateReported: new Date(Date.now() - 48 * 3600 * 1000).toISOString(),
-    photoUrl: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    photoUrl: lenovoChargerPhoto,
     reporterName: 'Lab Attendant Wesley',
     reporterRole: 'ICT Staff',
     status: 'handed_over',
