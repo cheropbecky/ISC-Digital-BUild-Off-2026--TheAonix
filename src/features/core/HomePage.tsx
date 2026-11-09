@@ -118,13 +118,6 @@ export const HomePage: React.FC = () => {
         <div className="pointer-events-none absolute -right-10 -top-16 h-48 w-48 rounded-full border-[24px] border-[#F2B705]/10" />
         <div className="pointer-events-none absolute -bottom-24 right-24 h-44 w-44 rounded-full bg-[#F2B705]/10 blur-2xl" />
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="flex items-center gap-2 text-xs font-bold text-[#F2B705] tracking-wide uppercase">
-              <img src={UEAB_LOGO_URL} alt="University of Eastern Africa, Baraton" className="h-5 w-auto brightness-0 invert" />
-              UEAB Baraton · Nandi County
-            </span>
-            <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse" />
-          </div>
           <div className="flex items-center gap-2 text-xs font-semibold text-blue-100 mb-2">
             <Sun className="w-3.5 h-3.5 text-[#F2B705]" />
             {todayLabel}
@@ -213,7 +206,7 @@ export const HomePage: React.FC = () => {
               className="h-full w-full object-cover"
             />
             <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-[#071B4A]/90 to-transparent px-3 pb-3 pt-8 text-[11px] font-bold text-white">
-              New campus signage
+              Research and learning
             </div>
           </div>
           <div className="relative min-h-44 overflow-hidden rounded-xl sm:min-h-56">

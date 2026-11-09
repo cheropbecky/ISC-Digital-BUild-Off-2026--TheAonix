@@ -1,34 +1,55 @@
 /**
  * @license
  * SPDX-License-Identifier: Apache-2.0
- * Kampas Timetable Page
+ * Kampas Class Timetable & Academic Calendar Page
+ * University of Eastern Africa, Baraton (Nandi County, Kenya)
+ * Features:
+ * - Tab switcher between Class Timetable and Academic Calendar
+ * - Day, Week and List views with animated indicator
+ * - Week view time grid with live "now" line, current class highlighted, color per unit
+ * - Interactive tap opens ClassDetailDrawer with exterior & door photos
+ * - Filters by unit, search box, previous/next week with "Today" button
+ * - Schedule clash warnings and red "Venue Changed" relocation badges
+ * - Export to RFC-compliant ICS and Share as Image (PNG canvas generator)
  */
 
-import React, { useMemo, useState } from 'react';
-import { motion } from 'motion/react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { motion, AnimatePresence } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import { PERMISSIONS } from '../../lib/permissions';
+import { getTimetableDayIndex, TIMETABLE_ENTRIES, TimetableEntry, detectClashes } from '../../data/timetable';
+import { VENUES, VenueData } from '../../data/venues';
+import { ACADEMIC_UNITS, AcademicUnit } from '../../data/units';
+import { DEADLINES, AcademicDeadline } from '../../data/deadlines';
+import { CAMPUS_CALENDAR_EVENTS } from '../../data/events';
+import { timetableService } from '../../services/timetableService';
+import { ClassDetailDrawer } from './ClassDetailDrawer';
+import { CalendarView } from './CalendarView';
+import { formatTimeOnly } from '../../lib/utils';
 import {
   AlertTriangle,
-  ArrowRight,
-  Calendar,
-  CheckCircle2,
-  Clock3,
+  Calendar as CalendarIcon,
+  Clock,
   Download,
-  Edit3,
-  ExternalLink,
-  MapPin,
-  Navigation,
   Share2,
-  Sparkles,
+  Search,
+  Filter,
+  ChevronLeft,
+  ChevronRight,
+  MapPin,
   Users,
-  X,
+  Navigation,
+  Sparkles,
+  CheckCircle2,
+  Flame,
+  Layers,
+  FileText,
+  DoorOpen,
 } from 'lucide-react';
-import { formatTimeOnly, generateICS, downloadICSFile } from '../../lib/utils';
-import { TimetableEntry } from '../../lib/types';
 
 const DAYS = [
   { id: 1, name: 'Monday', short: 'Mon' },
@@ -36,11 +57,12 @@ const DAYS = [
   { id: 3, name: 'Wednesday', short: 'Wed' },
   { id: 4, name: 'Thursday', short: 'Thu' },
   { id: 5, name: 'Friday', short: 'Fri' },
+  { id: 6, name: 'Saturday', short: 'Sat (Sabbath)' },
 ];
 
 const START_HOUR = 7;
-const END_HOUR = 18;
-const HOUR_HEIGHT = 64;
+const END_HOUR = 19; // 07:00 to 19:00 covers evening vespers
+const HOUR_HEIGHT = 68;
 
 const toMinutes = (time: string) => {
   const [hours, minutes] = time.split(':').map(Number);
@@ -50,7 +72,9 @@ const toMinutes = (time: string) => {
 const getWeekStart = (date: Date) => {
   const result = new Date(date);
   const day = result.getDay();
-  result.setDate(result.getDate() - (day === 0 ? 6 : day - 1));
+  // Monday as index 1
+  const diff = day === 0 ? 6 : day - 1;
+  result.setDate(result.getDate() - diff);
   result.setHours(0, 0, 0, 0);
   return result;
 };
@@ -58,183 +82,823 @@ const getWeekStart = (date: Date) => {
 const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-const getEventStyle = (entry: TimetableEntry) => {
-  const top = ((toMinutes(entry.startTime) - START_HOUR * 60) / 60) * HOUR_HEIGHT;
-  const height = Math.max(((toMinutes(entry.endTime) - toMinutes(entry.startTime)) / 60) * HOUR_HEIGHT, 58);
-  return { top, height };
-};
-
 export const TimetablePage: React.FC = () => {
-  const { timetable, timetableLoading, timetableError, venues, user, changeVenue } = useKampasStore();
-  const [viewMode, setViewMode] = useState<'day' | 'week' | 'list'>('week');
-  const today = new Date().getDay();
-  const [selectedDay, setSelectedDay] = useState(today >= 1 && today <= 5 ? today : 1);
-  const [selectedEntry, setSelectedEntry] = useState<TimetableEntry | null>(null);
-  const [editingEntry, setEditingEntry] = useState<TimetableEntry | null>(null);
-  const [newVenueId, setNewVenueId] = useState('');
-  const [venueChangeReason, setVenueChangeReason] = useState('Air conditioning maintenance and practical SQL lab requirement.');
-  const canEdit = PERMISSIONS.canChangeVenue(user.role);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const tabParam = searchParams.get('tab');
 
-  const weekStart = useMemo(() => getWeekStart(new Date()), []);
-  const weekLabel = `${formatDate(weekStart)} – ${formatDate(new Date(weekStart.getTime() + 4 * 86400000))}`;
+  // Main Page Tabs: 'timetable' | 'calendar'
+  const [mainTab, setMainTab] = useState<'timetable' | 'calendar'>(
+    tabParam === 'calendar' ? 'calendar' : 'timetable'
+  );
+
+  // Timetable View Mode: 'week' | 'day' | 'list'
+  const [viewMode, setViewMode] = useState<'week' | 'day' | 'list'>('week');
+
+  const { user, changeVenue } = useKampasStore();
+  const [rawEntries, setRawEntries] = useState<TimetableEntry[]>(TIMETABLE_ENTRIES);
+  const [venuesList, setVenuesList] = useState<VenueData[]>(VENUES);
+  const [unitsList, setUnitsList] = useState<AcademicUnit[]>(ACADEMIC_UNITS);
+  const [deadlinesList, setDeadlinesList] = useState<AcademicDeadline[]>(DEADLINES);
+  const [loading, setLoading] = useState(true);
+
+  // Week navigation
+  const [currentWeekOffset, setCurrentWeekOffset] = useState<number>(0);
+
+  // Selected Date / Day
+  const todayDay = new Date().getDay();
+  const [selectedDay, setSelectedDay] = useState<number>(
+    todayDay >= 1 && todayDay <= 6 ? todayDay : 1
+  );
+
+  // Interactive drawer inspection
+  const [inspectedEntry, setInspectedEntry] = useState<TimetableEntry | null>(null);
+
+  // Filters & Search
+  const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  // Live "now" line time state
+  const [currentNowMinutes, setCurrentNowMinutes] = useState<number>(() => {
+    const d = new Date();
+    return d.getHours() * 60 + d.getMinutes();
+  });
+
+  // Update live clock every minute
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const d = new Date();
+      setCurrentNowMinutes(d.getHours() * 60 + d.getMinutes());
+    }, 60000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Sync tab with URL
+  useEffect(() => {
+    if (tabParam === 'calendar' && mainTab !== 'calendar') {
+      setMainTab('calendar');
+    }
+  }, [tabParam, mainTab]);
+
+  // Load real data asynchronously through the service layer
+  useEffect(() => {
+    let isMounted = true;
+    setLoading(true);
+
+    Promise.all([
+      timetableService.getRawTimetable(),
+      timetableService.getVenues(),
+      timetableService.getUnits(),
+      timetableService.getDeadlines(),
+    ])
+      .then(([entries, venues, units, deadlines]) => {
+        if (!isMounted) return;
+        setRawEntries(entries);
+        setVenuesList(venues);
+        setUnitsList(units);
+        setDeadlinesList(deadlines);
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  // Compute Week Start based on offset
+  const weekStart = useMemo(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + currentWeekOffset * 7);
+    return getWeekStart(d);
+  }, [currentWeekOffset]);
+
+  const weekLabel = useMemo(() => {
+    const end = new Date(weekStart.getTime() + 5 * 86400000);
+    return `${formatDate(weekStart)} – ${formatDate(end)}`;
+  }, [weekStart]);
+
+  // Detect Clashes dynamically
   const clashes = useMemo(() => {
-    const result: Array<[TimetableEntry, TimetableEntry]> = [];
-    timetable.forEach((a, index) => timetable.slice(index + 1).forEach((b) => {
-      if (a.dayOfWeek === b.dayOfWeek && a.startTime < b.endTime && a.endTime > b.startTime) result.push([a, b]);
-    }));
-    return result;
-  }, [timetable]);
+    return detectClashes(rawEntries);
+  }, [rawEntries]);
 
+  // Unique Enrolled Units
+  const enrolledUnits = useMemo(() => {
+    const map = new Map<string, TimetableEntry>();
+    rawEntries.forEach((e) => {
+      if (!map.has(e.unitCode)) map.set(e.unitCode, e);
+    });
+    return Array.from(map.values());
+  }, [rawEntries]);
+
+  // Filtered Timetable Entries
+  const filteredEntries = useMemo(() => {
+    return rawEntries.filter((entry) => {
+      // Unit filter
+      if (selectedUnitFilter !== 'all' && entry.unitCode !== selectedUnitFilter) {
+        return false;
+      }
+      // Search text query
+      if (searchQuery.trim()) {
+        const q = searchQuery.toLowerCase();
+        const match =
+          entry.unitCode.toLowerCase().includes(q) ||
+          entry.unitName.toLowerCase().includes(q) ||
+          entry.lecturer.toLowerCase().includes(q) ||
+          entry.venueName.toLowerCase().includes(q) ||
+          entry.venueCode.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      return true;
+    });
+  }, [rawEntries, selectedUnitFilter, searchQuery]);
+
+  // Determine which class is currently in session
+  const activeClassNow = useMemo(() => {
+    if (currentWeekOffset !== 0) return null;
+    const nowDay = new Date().getDay();
+    return rawEntries.find((entry) => {
+      if (getTimetableDayIndex(entry.dayOfWeek) !== nowDay) return false;
+      const start = toMinutes(entry.startTime);
+      const end = toMinutes(entry.endTime);
+      return currentNowMinutes >= start && currentNowMinutes < end;
+    });
+  }, [rawEntries, currentNowMinutes, currentWeekOffset]);
+
+  // Next class
   const nextClass = useMemo(() => {
-    const now = new Date();
-    const day = now.getDay() >= 1 && now.getDay() <= 5 ? now.getDay() : 1;
-    const current = now.getHours() * 60 + now.getMinutes();
-    return timetable
-      .filter((entry) => entry.dayOfWeek === day && toMinutes(entry.endTime) >= current)
-      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0];
-  }, [timetable]);
+    const nowDay = new Date().getDay();
+    const remainingToday = rawEntries
+      .filter((e) => getTimetableDayIndex(e.dayOfWeek) === nowDay && toMinutes(e.startTime) > currentNowMinutes)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
-  const activeEntry = selectedEntry || nextClass || timetable[0];
-  const enrolledUnits = Array.from(new Map(timetable.map((entry) => [entry.unitCode, entry])).values());
+    if (remainingToday.length > 0) return remainingToday[0];
+    return rawEntries.sort((a, b) => getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) || a.startTime.localeCompare(b.startTime))[0];
+  }, [rawEntries, currentNowMinutes]);
 
+  // Export ICS
   const handleExportICS = () => {
-    const text = timetable.map((entry) => generateICS({
-      title: `${entry.unitCode} - ${entry.unitName}`,
-      description: `Lecturer: ${entry.lecturerName}. Trimester 1, UEAB Baraton.`,
-      location: entry.venueName,
-      startTime: entry.startTime,
-      endTime: entry.endTime,
-      dayOfWeek: entry.dayOfWeek,
-    })).join('\r\n');
-    downloadICSFile('UEAB_Baraton_Timetable.ics', text);
+    const text = timetableService.exportTimetableICS(filteredEntries);
+    const blob = new Blob([text], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', 'UEAB_Baraton_Class_Timetable.ics');
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
-  const handleVenueChangeSubmit = (event: React.FormEvent) => {
-    event.preventDefault();
-    if (!editingEntry || !newVenueId) return;
-    changeVenue(editingEntry.id, newVenueId, venueChangeReason);
-    setEditingEntry(null);
+  // Share as Image via HTML5 Canvas
+  const handleShareAsImage = () => {
+    const canvas = document.createElement('canvas');
+    canvas.width = 1200;
+    canvas.height = 760;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    // Background Gradient (UEAB Navy to Dark)
+    const grad = ctx.createLinearGradient(0, 0, 1200, 760);
+    grad.addColorStop(0, '#071B4A');
+    grad.addColorStop(1, '#0B2A6F');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, 1200, 760);
+
+    // Header Branding
+    ctx.fillStyle = '#F2B705';
+    ctx.font = 'bold 16px Inter, sans-serif';
+    ctx.fillText('UNIVERSITY OF EASTERN AFRICA, BARATON • NANDI COUNTY', 40, 50);
+
+    ctx.fillStyle = '#FFFFFF';
+    ctx.font = 'bold 30px Inter, sans-serif';
+    ctx.fillText('Student Class Timetable — 1st Trimester 2026/27', 40, 90);
+
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = '14px Inter, sans-serif';
+    ctx.fillText(`Student: Becky Cherop • BSc Software Engineering (Year 3) • ${weekLabel}`, 40, 118);
+
+    // Draw Timetable Cards on Grid
+    const cardWidth = 175;
+    const daysX = [40, 230, 420, 610, 800, 990];
+
+    DAYS.forEach((d, idx) => {
+      const x = daysX[idx];
+      // Day header
+      ctx.fillStyle = '#1E3158';
+      ctx.beginPath();
+      ctx.roundRect(x, 150, cardWidth, 34, 8);
+      ctx.fill();
+
+      ctx.fillStyle = '#FFFFFF';
+      ctx.font = 'bold 13px Inter, sans-serif';
+      ctx.fillText(d.short.toUpperCase(), x + 12, 172);
+
+      // Render day classes
+      const dayClasses = rawEntries
+        .filter((e) => getTimetableDayIndex(e.dayOfWeek) === d.id)
+        .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+      let curY = 195;
+      dayClasses.forEach((cls) => {
+        ctx.fillStyle = '#0F265C';
+        ctx.strokeStyle = cls.color || '#3B82F6';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.roundRect(x, curY, cardWidth, 90, 8);
+        ctx.fill();
+        ctx.stroke();
+
+        // Accent top bar
+        ctx.fillStyle = cls.color || '#3B82F6';
+        ctx.fillRect(x + 2, curY + 2, cardWidth - 4, 4);
+
+        // Unit code
+        ctx.fillStyle = '#F2B705';
+        ctx.font = 'bold 12px monospace';
+        ctx.fillText(cls.unitCode, x + 10, curY + 24);
+
+        // Unit name
+        ctx.fillStyle = '#FFFFFF';
+        ctx.font = 'bold 11px Inter, sans-serif';
+        const truncatedName = cls.unitName.length > 22 ? cls.unitName.slice(0, 20) + '…' : cls.unitName;
+        ctx.fillText(truncatedName, x + 10, curY + 42);
+
+        // Time & Venue
+        ctx.fillStyle = '#94A3B8';
+        ctx.font = '10px Inter, sans-serif';
+        ctx.fillText(`${cls.startTime} - ${cls.endTime}`, x + 10, curY + 60);
+        ctx.fillText(cls.venueCode || cls.venueName.slice(0, 20), x + 10, curY + 76);
+
+        curY += 100;
+      });
+    });
+
+    // Footer
+    ctx.fillStyle = '#64748B';
+    ctx.font = '11px Inter, sans-serif';
+    ctx.fillText('Generated via Kampas Student Platform • Official Baraton Campus GIS Synced', 40, 725);
+
+    // Download PNG
+    const link = document.createElement('a');
+    link.download = 'UEAB_Timetable_BeckyCherop.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
   };
 
-  const handleLocateVenue = (entry: TimetableEntry) => {
-    const query = encodeURIComponent(`${entry.venueName}, University of Eastern Africa, Baraton, Kenya`);
-    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, '_blank', 'noopener,noreferrer');
+  const handleNavigateVenue = (venueId: string) => {
+    navigate(`/campus/map?venue=${encodeURIComponent(venueId)}`);
   };
 
-  const renderEvent = (entry: TimetableEntry, compact = false) => {
-    const eventStyle = getEventStyle(entry);
-    const isSelected = activeEntry?.id === entry.id;
+  // Toggle Deadline Completion
+  const handleToggleDeadline = (id: string) => {
+    setDeadlinesList((prev) =>
+      prev.map((d) => (d.id === id ? { ...d, isCompleted: !d.isCompleted } : d))
+    );
+  };
+
+  // Calculate top & height for week time-grid item
+  const getEventStyle = (entry: TimetableEntry) => {
+    const startMin = toMinutes(entry.startTime);
+    const endMin = toMinutes(entry.endTime);
+    const top = ((startMin - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+    const height = Math.max(((endMin - startMin) / 60) * HOUR_HEIGHT, 56);
+    return { top, height };
+  };
+
+  // Live "Now" line style in the week grid
+  const liveNowStyle = useMemo(() => {
+    if (currentNowMinutes < START_HOUR * 60 || currentNowMinutes > END_HOUR * 60) return null;
+    const top = ((currentNowMinutes - START_HOUR * 60) / 60) * HOUR_HEIGHT;
+    return { top };
+  }, [currentNowMinutes]);
+
+  const activeVenueForDrawer = useMemo(() => {
+    if (!inspectedEntry) return null;
+    return venuesList.find((v) => v.id === inspectedEntry.venueId) || null;
+  }, [inspectedEntry, venuesList]);
+
+  const activeUnitForDrawer = useMemo(() => {
+    if (!inspectedEntry) return null;
+    return unitsList.find((u) => u.code === inspectedEntry.unitCode) || null;
+  }, [inspectedEntry, unitsList]);
+
+  // Render a single class block
+  const renderClassBlock = (entry: TimetableEntry, compact = false) => {
+    const isNow = activeClassNow?.id === entry.id;
+    const isSelected = inspectedEntry?.id === entry.id;
+
     return (
       <motion.button
         layout
         key={entry.id}
         type="button"
-        onClick={() => setSelectedEntry(entry)}
-        style={compact ? undefined : eventStyle}
-        className={`text-left rounded-lg border p-2 overflow-hidden transition-shadow ${
-          compact ? 'relative min-h-[92px] w-full' : 'absolute inset-x-1'
+        onClick={() => setInspectedEntry(entry)}
+        style={compact ? undefined : getEventStyle(entry)}
+        whileHover={{ scale: 1.01 }}
+        whileTap={{ scale: 0.98 }}
+        className={`text-left rounded-xl border p-2.5 overflow-hidden transition-all duration-150 relative group ${
+          compact ? 'relative min-h-[92px] w-full' : 'absolute inset-x-1.5'
         } ${
-          entry.isVenueChanged
-            ? 'border-red-300 bg-red-50 text-red-950 dark:bg-red-950/30 dark:text-red-100'
+          entry.isRelocated
+            ? 'border-red-400 bg-red-50 text-red-950 dark:bg-red-950/40 dark:text-red-100 shadow-xs'
+            : isNow
+            ? 'border-[#F2B705] bg-[#E8EEFF] text-[#071B4A] dark:bg-[#102B62] dark:text-white ring-2 ring-[#F2B705] shadow-md'
             : isSelected
-              ? 'border-[#0B2A6F] bg-[#E8EEFF] text-[#071B4A] shadow-md dark:bg-[#102B62] dark:text-white'
-              : 'border-[#C9D5F5] bg-[#E9EEFF] text-[#071B4A] hover:border-[#0B2A6F] dark:bg-[#102B62] dark:text-white'
+            ? 'border-[#0B2A6F] bg-[#E8EEFF] text-[#071B4A] dark:bg-[#102B62] dark:text-white shadow-xs'
+            : 'border-slate-200 dark:border-slate-700 bg-white/95 dark:bg-[#0C1D3D] text-[#071B4A] hover:border-[#0B2A6F] dark:hover:border-[#F2B705] dark:text-white shadow-xs'
         }`}
       >
-        <div className="text-[10px] font-black uppercase tracking-wide">{entry.unitCode}</div>
-        <div className="mt-1 text-[11px] font-bold leading-tight line-clamp-2">{entry.unitName}</div>
-        <div className="mt-2 text-[10px] font-mono">{formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}</div>
-        <div className="mt-1 truncate text-[10px] text-slate-600 dark:text-slate-300">{entry.venueName}</div>
-        {entry.isVenueChanged && <span className="mt-1 inline-flex items-center gap-1 text-[9px] font-bold text-red-600"><AlertTriangle className="h-3 w-3" /> Relocated</span>}
+        {/* Left Color Accent Line */}
+        <span
+          className="absolute left-0 top-0 bottom-0 w-1.5 rounded-l-xl"
+          style={{ backgroundColor: entry.color || '#0B2A6F' }}
+        />
+
+        <div className="pl-1">
+          {/* Top Bar with Unit Code and Badges */}
+          <div className="flex items-center justify-between gap-1">
+            <span
+              className="text-[11px] font-black font-mono tracking-wide px-1.5 py-0.2 rounded"
+              style={{ backgroundColor: `${entry.color}20`, color: entry.color }}
+            >
+              {entry.unitCode}
+            </span>
+
+            {isNow && (
+              <span className="flex items-center gap-1 text-[9px] font-black text-[#0B2A6F] dark:text-[#F2B705] bg-[#F2B705]/20 dark:bg-[#F2B705]/30 px-1.5 py-0.2 rounded-full animate-pulse">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                NOW
+              </span>
+            )}
+
+            {entry.isRelocated && (
+              <span className="text-[9px] font-black text-red-700 dark:text-red-300 bg-red-100 dark:bg-red-900/60 px-1.5 py-0.2 rounded-full">
+                RELOCATED
+              </span>
+            )}
+          </div>
+
+          {/* Unit Name */}
+          <div className="mt-1 text-xs font-bold leading-tight line-clamp-1 group-hover:text-[#0B2A6F] dark:group-hover:text-[#F2B705]">
+            {entry.unitName}
+          </div>
+
+          {/* Time & Venue */}
+          <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-300 font-mono">
+            <span>{formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}</span>
+            <span className="truncate max-w-[90px] font-sans font-semibold text-slate-600 dark:text-slate-400">
+              {entry.venueCode || entry.venueName.split(' ')[0]}
+            </span>
+          </div>
+        </div>
       </motion.button>
     );
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex flex-col gap-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2 rounded-xl bg-[#E8EEFF] p-1 dark:bg-[#102B62]">
-            {(['day', 'week', 'list'] as const).map((mode) => (
-              <button
-                key={mode}
-                type="button"
-                onClick={() => setViewMode(mode)}
-                className={`rounded-lg px-3 py-1.5 text-xs font-bold capitalize transition ${
-                  viewMode === mode ? 'bg-white text-[#071B4A] shadow-sm dark:bg-[#071B4A] dark:text-white' : 'text-[#42527A] dark:text-slate-300'
-                }`}
-              >
-                {mode === 'week' ? '▥  Week' : mode === 'day' ? '▣  Day' : '▤  List'}
-              </button>
-            ))}
+    <div className="space-y-6">
+      {/* 1. Page Header & Top Tab Switcher */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-3 border-b border-[#E3E8F0] dark:border-[#1E3158]">
+        <div>
+          <div className="flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-[#0B2A6F] text-[#F2B705]">
+              <CalendarIcon className="w-5 h-5" />
+            </span>
+            <h1 className="text-2xl sm:text-3xl font-black text-[#071B4A] dark:text-white tracking-tight">
+              Class Timetable &amp; Schedule
+            </h1>
+            <Badge variant="academic">Trimester 1 • Week 8</Badge>
           </div>
-          <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="secondary" onClick={handleExportICS}><Calendar className="h-3.5 w-3.5" /> Add to calendar (ICS)</Button>
-            <Button size="sm" variant="primary"><Share2 className="h-3.5 w-3.5" /> Share as image</Button>
-          </div>
+          <p className="text-xs sm:text-sm text-[#5B6475] dark:text-slate-300 mt-1">
+            Real-time schedule with live class tracking, venue door visual guides, and clash alerts.
+          </p>
         </div>
-        <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-500">
-          <span className="inline-flex items-center gap-1 rounded-full bg-[#ECFDF3] px-2.5 py-1 font-semibold text-[#15803D]"><CheckCircle2 className="h-3 w-3" /> Synced · Offline: showing saved timetable</span>
-          <span className="rounded-full bg-slate-100 px-2.5 py-1 dark:bg-slate-800">Week 8 · {weekLabel}</span>
+
+        {/* Master Tab Switcher: [Class Timetable] vs [Academic Calendar] */}
+        <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 self-start sm:self-auto">
+          <button
+            onClick={() => {
+              setMainTab('timetable');
+              setSearchParams({});
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all ${
+              mainTab === 'timetable'
+                ? 'bg-[#0B2A6F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-[#0B2A6F]'
+            }`}
+          >
+            Class Timetable
+          </button>
+          <button
+            onClick={() => {
+              setMainTab('calendar');
+              setSearchParams({ tab: 'calendar' });
+            }}
+            className={`px-4 py-2 rounded-lg text-xs font-extrabold transition-all flex items-center gap-1.5 ${
+              mainTab === 'calendar'
+                ? 'bg-[#0B2A6F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-300 hover:text-[#0B2A6F]'
+            }`}
+          >
+            <span>Academic Calendar</span>
+            <span className="w-2 h-2 rounded-full bg-[#F2B705]" />
+          </button>
         </div>
       </div>
 
-      {timetableError && <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs text-amber-900">{timetableError} Showing the saved schedule.</div>}
+      {/* ================= TAB 1: CLASS TIMETABLE ================= */}
+      {mainTab === 'timetable' && (
+        <div className="space-y-5">
+          {/* Controls Bar: View Switcher, Week Navigation, Filters, Export & Share */}
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0C1D3D] p-4 rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-xs">
+            {/* View Mode Switcher with animated pill */}
+            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+              {(['week', 'day', 'list'] as const).map((mode) => (
+                <button
+                  key={mode}
+                  type="button"
+                  onClick={() => setViewMode(mode)}
+                  className={`relative px-3.5 py-1.5 text-xs font-extrabold capitalize transition-all ${
+                    viewMode === mode
+                      ? 'text-[#071B4A] dark:text-[#F2B705]'
+                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+                  }`}
+                >
+                  {viewMode === mode && (
+                    <motion.div
+                      layoutId="activeTimetableViewTab"
+                      className="absolute inset-0 bg-white dark:bg-[#071B4A] rounded-lg shadow-xs -z-10"
+                      transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                    />
+                  )}
+                  <span>{mode === 'week' ? '▥ Week Grid' : mode === 'day' ? '▣ Day View' : '▤ List View'}</span>
+                </button>
+              ))}
+            </div>
 
-      {clashes.length > 0 && (
-        <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-[#FFFAEB] p-3 text-xs text-amber-950 dark:bg-amber-950/20 dark:text-amber-100">
-          <AlertTriangle className="h-5 w-5 shrink-0 text-amber-600" />
-          <div className="flex-1"><strong>Schedule conflict detected.</strong> {clashes[0][0].unitCode} overlaps with {clashes[0][1].unitCode}.</div>
-          <X className="h-4 w-4 text-slate-400" />
-        </div>
-      )}
+            {/* Previous / Next Week Navigation & Range */}
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                <button
+                  onClick={() => setCurrentWeekOffset((prev) => prev - 1)}
+                  className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
+                  title="Previous Week"
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => setCurrentWeekOffset(0)}
+                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
+                    currentWeekOffset === 0
+                      ? 'bg-white dark:bg-[#071B4A] text-[#0B2A6F] dark:text-[#F2B705] shadow-xs'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  Current Week
+                </button>
+                <button
+                  onClick={() => setCurrentWeekOffset((prev) => prev + 1)}
+                  className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
+                  title="Next Week"
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </button>
+              </div>
 
-      {timetableLoading ? (
-        <Card className="py-16 text-center text-xs text-slate-500">Loading your timetable…</Card>
-      ) : (
-        <div className="grid min-w-0 gap-4 lg:grid-cols-[minmax(0,1fr)_280px]">
-          <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E3E8F0] bg-white shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
-            {viewMode === 'list' && <div className="space-y-2 p-4">{timetable.sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime)).map((entry) => renderEvent(entry, true))}</div>}
-            {viewMode === 'day' && (
-              <div className="p-4">
-                <div className="mb-3 flex gap-1 overflow-x-auto">{DAYS.map((day) => <button key={day.id} type="button" onClick={() => setSelectedDay(day.id)} className={`rounded-lg px-3 py-2 text-xs font-bold ${selectedDay === day.id ? 'bg-[#0B2A6F] text-white' : 'bg-slate-100 text-slate-600'}`}>{day.name}</button>)}</div>
-                <div className="space-y-2">{timetable.filter((entry) => entry.dayOfWeek === selectedDay).sort((a, b) => a.startTime.localeCompare(b.startTime)).map((entry) => renderEvent(entry, true))}</div>
+              <span className="text-xs font-extrabold text-[#071B4A] dark:text-white px-2 hidden sm:inline-block">
+                {weekLabel}
+              </span>
+            </div>
+
+            {/* Filter by Unit & Search Box */}
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="relative">
+                <select
+                  value={selectedUnitFilter}
+                  onChange={(e) => setSelectedUnitFilter(e.target.value)}
+                  className="h-9 pl-3 pr-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
+                >
+                  <option value="all">All Units ({enrolledUnits.length})</option>
+                  {enrolledUnits.map((u) => (
+                    <option key={u.unitCode} value={u.unitCode}>
+                      {u.unitCode}
+                    </option>
+                  ))}
+                </select>
               </div>
-            )}
-            {viewMode === 'week' && (
-              <div className="overflow-x-auto">
-                <div className="min-w-[680px]">
-                <div className="grid grid-cols-[58px_repeat(5,minmax(0,1fr))] border-b border-slate-200 dark:border-slate-700">
-                  <div className="p-3 text-[9px] font-bold uppercase text-slate-400">Time / day</div>
-                  {DAYS.map((day) => <button key={day.id} type="button" onClick={() => setSelectedDay(day.id)} className={`border-l border-slate-100 p-2 text-center dark:border-slate-700 ${selectedDay === day.id ? 'bg-[#F4F7FF] dark:bg-[#102B62]' : ''}`}><div className="text-[10px] font-bold uppercase text-slate-500">{day.short}</div><div className="text-xs font-black text-[#071B4A] dark:text-white">{formatDate(new Date(weekStart.getTime() + (day.id - 1) * 86400000))}</div></button>)}
-                </div>
-                <div className="grid grid-cols-[58px_repeat(5,minmax(0,1fr))]">
-                  <div className="relative">{Array.from({ length: END_HOUR - START_HOUR }, (_, index) => <div key={index} style={{ height: HOUR_HEIGHT }} className="border-b border-slate-100 pr-2 pt-1 text-right text-[9px] font-mono text-slate-400 dark:border-slate-800">{formatTimeOnly(`${String(START_HOUR + index).padStart(2, '0')}:00`)}</div>)}</div>
-                  {DAYS.map((day) => <div key={day.id} className="relative border-l border-slate-100 dark:border-slate-800" style={{ height: (END_HOUR - START_HOUR) * HOUR_HEIGHT, backgroundImage: 'linear-gradient(to bottom, transparent 63px, #eef2f8 64px)', backgroundSize: `100% ${HOUR_HEIGHT}px` }}>{timetable.filter((entry) => entry.dayOfWeek === day.id).map((entry) => renderEvent(entry))}</div>)}
-                </div>
-                </div>
+
+              <div className="relative">
+                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search lecturer, hall..."
+                  className="h-9 pl-8 pr-3 w-36 sm:w-44 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
+                />
               </div>
-            )}
+
+              {/* Action Buttons: ICS Export & Share Image */}
+              <Button size="sm" variant="secondary" onClick={handleExportICS} className="text-xs">
+                <Download className="w-3.5 h-3.5 mr-1" />
+                ICS
+              </Button>
+              <Button size="sm" variant="gold" onClick={handleShareAsImage} className="text-xs font-bold">
+                <Share2 className="w-3.5 h-3.5 mr-1" />
+                Share Image
+              </Button>
+            </div>
           </div>
 
-          <aside className="min-w-0 space-y-4 lg:sticky lg:top-24 lg:self-start">
-            <Card padding="sm">
-              <div className="mb-3 flex items-center justify-between"><h2 className="text-sm font-black text-[#071B4A] dark:text-white">My enrolled units</h2><Badge variant="academic">{enrolledUnits.length} registered</Badge></div>
-              <div className="space-y-2">{enrolledUnits.map((entry) => <button key={entry.unitCode} type="button" onClick={() => setSelectedEntry(entry)} className={`w-full rounded-xl border p-3 text-left transition ${activeEntry?.unitCode === entry.unitCode ? 'border-[#0B2A6F] bg-[#F4F7FF] dark:bg-[#102B62]' : 'border-slate-200 dark:border-slate-700'}`}><div className="flex items-center gap-2"><span className="rounded-md bg-[#0B2A6F] px-2 py-1 text-[10px] font-black text-white">{entry.unitCode.split(' ')[0]}</span><span className="text-[10px] font-bold text-slate-500">{entry.unitCode.split(' ')[1]}</span></div><p className="mt-2 text-xs font-bold text-[#071B4A] dark:text-white line-clamp-2">{entry.unitName}</p><div className="mt-2 h-1 rounded-full bg-[#C7D2FE]" /></button>)}</div>
-            </Card>
-            {activeEntry && <Card padding="sm"><div className="mb-3 flex items-start justify-between"><div><p className="text-[10px] font-bold uppercase text-slate-500">Active selection</p><h2 className="mt-1 text-sm font-black text-[#071B4A] dark:text-white">{activeEntry.unitCode}: {activeEntry.unitName}</h2></div><Sparkles className="h-4 w-4 text-[#F2B705]" /></div><div className="space-y-2 text-xs text-slate-600 dark:text-slate-300"><span className="flex items-center gap-2"><Clock3 className="h-3.5 w-3.5" />{DAYS.find((day) => day.id === activeEntry.dayOfWeek)?.name} · {formatTimeOnly(activeEntry.startTime)} – {formatTimeOnly(activeEntry.endTime)}</span><span className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" />{activeEntry.venueName}</span><span className="flex items-center gap-2"><Users className="h-3.5 w-3.5" />{activeEntry.lecturerName}</span></div>{activeEntry.isVenueChanged && <div className="mt-3 rounded-lg bg-red-50 p-3 text-xs text-red-800 dark:bg-red-950/30 dark:text-red-100"><strong>Relocation notice</strong><br />{activeEntry.venueChangeNote}</div>}<div className="mt-3 flex flex-wrap gap-2"><Button size="sm" variant="primary" onClick={() => handleLocateVenue(activeEntry)}><Navigation className="h-3.5 w-3.5" /> Locate venue</Button>{canEdit && <Button size="sm" variant="ghost" onClick={() => { setEditingEntry(activeEntry); setNewVenueId(venues[0]?.id || ''); }}><Edit3 className="h-3.5 w-3.5" /> Relocate</Button>}</div></Card>}
-          </aside>
-        </div>
-      )}
+          {/* Clash Alert Warning Banner */}
+          {clashes.length > 0 && (
+            <motion.div
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="flex items-center gap-3 p-3.5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-100 text-xs"
+            >
+              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+              <div className="flex-1">
+                <strong>Schedule Conflict Detected: </strong>
+                {clashes.map(([a, b], idx) => (
+                  <span key={idx} className="mr-2">
+                    {a.unitCode} ({a.startTime}-{a.endTime}) overlaps with {b.unitCode} on {a.dayOfWeek}.
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
 
-      {editingEntry && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl dark:bg-[#0C1D3D]">
-            <div className="mb-4 flex items-center justify-between"><h3 className="text-lg font-bold dark:text-white">Relocate Lecture Hall</h3><Badge variant="academic">Lecturer mode</Badge></div>
-            <form onSubmit={handleVenueChangeSubmit} className="space-y-4"><select value={newVenueId} onChange={(event) => setNewVenueId(event.target.value)} className="h-11 w-full rounded-lg border bg-slate-50 px-3 text-sm dark:bg-slate-900">{venues.map((venue) => <option key={venue.id} value={venue.id}>{venue.name}</option>)}</select><input value={venueChangeReason} onChange={(event) => setVenueChangeReason(event.target.value)} className="h-11 w-full rounded-lg border bg-slate-50 px-3 text-sm dark:bg-slate-900" /><div className="flex justify-end gap-2"><Button type="button" variant="ghost" onClick={() => setEditingEntry(null)}>Cancel</Button><Button type="submit">Broadcast Venue Shift</Button></div></form>
+          {/* Main Content: Timetable Views & Enrolled Units Side Panel */}
+          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+            {/* Left: Time Grid or List */}
+            <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white shadow-sm dark:bg-[#0C1D3D]">
+              {loading ? (
+                <div className="p-16 text-center space-y-3">
+                  <div className="w-8 h-8 rounded-full border-2 border-[#0B2A6F] border-t-transparent animate-spin mx-auto" />
+                  <p className="text-xs text-slate-400">Loading your verified schedule...</p>
+                </div>
+              ) : (
+                <>
+                  {/* ================= 1. WEEK VIEW TIME GRID ================= */}
+                  {viewMode === 'week' && (
+                    <div className="overflow-x-auto">
+                      <div className="min-w-[780px]">
+                        {/* Day Column Headers */}
+                        <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40">
+                          <div className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">
+                            Time
+                          </div>
+                          {DAYS.map((day) => {
+                            const colDate = new Date(weekStart.getTime() + (day.id - 1) * 86400000);
+                            const isColToday =
+                              currentWeekOffset === 0 && new Date().getDay() === day.id;
+
+                            return (
+                              <button
+                                key={day.id}
+                                type="button"
+                                onClick={() => {
+                                  setSelectedDay(day.id);
+                                  setViewMode('day');
+                                }}
+                                className={`border-l border-slate-100 dark:border-slate-800 p-2.5 text-center transition ${
+                                  isColToday ? 'bg-[#E8EEFF]/70 dark:bg-[#102B62]/60' : 'hover:bg-slate-100/50'
+                                }`}
+                              >
+                                <div className="text-[10px] font-black uppercase text-slate-500">
+                                  {day.short}
+                                </div>
+                                <div className="text-xs font-black text-[#071B4A] dark:text-white flex items-center justify-center gap-1">
+                                  <span>{formatDate(colDate)}</span>
+                                  {isColToday && (
+                                    <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
+                                  )}
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {/* Grid Body */}
+                        <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] relative">
+                          {/* Time Labels Column */}
+                          <div className="relative select-none">
+                            {Array.from({ length: END_HOUR - START_HOUR }, (_, index) => (
+                              <div
+                                key={index}
+                                style={{ height: HOUR_HEIGHT }}
+                                className="border-b border-slate-100 dark:border-slate-800/80 pr-2 pt-1.5 text-right text-[10px] font-mono text-slate-400"
+                              >
+                                {formatTimeOnly(`${String(START_HOUR + index).padStart(2, '0')}:00`)}
+                              </div>
+                            ))}
+                          </div>
+
+                          {/* 6 Day Columns */}
+                          {DAYS.map((day) => {
+                            const isColToday =
+                              currentWeekOffset === 0 && new Date().getDay() === day.id;
+                            const dayEntries = filteredEntries.filter((e) => getTimetableDayIndex(e.dayOfWeek) === day.id);
+
+                            return (
+                              <div
+                                key={day.id}
+                                className={`relative border-l border-slate-100 dark:border-slate-800/80 ${
+                                  isColToday ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
+                                }`}
+                                style={{
+                                  height: (END_HOUR - START_HOUR) * HOUR_HEIGHT,
+                                  backgroundImage:
+                                    'linear-gradient(to bottom, transparent 67px, #f1f5f9 68px)',
+                                  backgroundSize: `100% ${HOUR_HEIGHT}px`,
+                                }}
+                              >
+                                {/* Live "Now" Indicator Line on Today's Column */}
+                                {isColToday && liveNowStyle && (
+                                  <div
+                                    style={{ top: liveNowStyle.top }}
+                                    className="absolute inset-x-0 z-20 pointer-events-none flex items-center"
+                                  >
+                                    <span className="w-2.5 h-2.5 -ml-1 rounded-full bg-red-600 ring-2 ring-white shadow-xs" />
+                                    <div className="h-[2px] w-full bg-red-500 shadow-xs" />
+                                  </div>
+                                )}
+
+                                {/* Classes for this Day */}
+                                {dayEntries.map((entry) => renderClassBlock(entry))}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ================= 2. DAY VIEW ================= */}
+                  {viewMode === 'day' && (
+                    <div className="p-4 sm:p-5 space-y-4">
+                      {/* Day Pill Selector */}
+                      <div className="flex gap-1.5 overflow-x-auto pb-1">
+                        {DAYS.map((day) => (
+                          <button
+                            key={day.id}
+                            type="button"
+                            onClick={() => setSelectedDay(day.id)}
+                            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
+                              selectedDay === day.id
+                                ? 'bg-[#0B2A6F] text-white shadow-xs'
+                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
+                            }`}
+                          >
+                            {day.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      <div className="space-y-2.5 pt-2">
+                        {filteredEntries.filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay).length === 0 ? (
+                          <div className="text-center py-12 text-slate-400 text-xs">
+                            No classes scheduled for {DAYS.find((d) => d.id === selectedDay)?.name}.
+                          </div>
+                        ) : (
+                          filteredEntries
+                            .filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay)
+                            .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                            .map((entry) => renderClassBlock(entry, true))
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* ================= 3. LIST VIEW ================= */}
+                  {viewMode === 'list' && (
+                    <div className="p-4 sm:p-5 space-y-3">
+                      {filteredEntries
+                        .sort((a, b) => getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) || a.startTime.localeCompare(b.startTime))
+                        .map((entry) => renderClassBlock(entry, true))}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+
+            {/* Right: Enrolled Units Inspector & Active Class Summary */}
+            <aside className="space-y-4 min-w-0">
+              {/* Enrolled Units Card */}
+              <Card padding="md" className="space-y-3">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                  <h3 className="text-sm font-black text-[#071B4A] dark:text-white">
+                    Enrolled Courses
+                  </h3>
+                  <Badge variant="academic">{enrolledUnits.length} Units</Badge>
+                </div>
+
+                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                  {enrolledUnits.map((u) => (
+                    <button
+                      key={u.unitCode}
+                      onClick={() => setInspectedEntry(u)}
+                      className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between gap-2 ${
+                        inspectedEntry?.unitCode === u.unitCode
+                          ? 'bg-[#E8EEFF] dark:bg-[#102B62] border-[#0B2A6F] dark:border-[#F2B705]'
+                          : 'border-slate-200 dark:border-slate-700 hover:border-[#0B2A6F]'
+                      }`}
+                    >
+                      <div className="min-w-0">
+                        <span
+                          className="font-mono text-[10px] font-black px-1.5 py-0.2 rounded"
+                          style={{ backgroundColor: `${u.color}20`, color: u.color }}
+                        >
+                          {u.unitCode}
+                        </span>
+                        <div className="text-xs font-bold text-[#071B4A] dark:text-white truncate mt-1">
+                          {u.unitName}
+                        </div>
+                        <div className="text-[10px] text-slate-400">{u.lecturer}</div>
+                      </div>
+                      <span
+                        className="w-2.5 h-2.5 rounded-full shrink-0"
+                        style={{ backgroundColor: u.color }}
+                      />
+                    </button>
+                  ))}
+                </div>
+              </Card>
+
+              {/* Next Upcoming Class Quick Spotlight */}
+              {nextClass && (
+                <Card padding="md" className="space-y-2.5 bg-gradient-to-br from-blue-50/70 to-slate-50 dark:from-blue-950/20 dark:to-slate-900">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705] flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" /> Next Up
+                    </span>
+                    <span className="text-[10px] font-mono text-slate-500 font-bold">
+                      {nextClass.startTime}
+                    </span>
+                  </div>
+
+                  <h4 className="text-xs font-black text-[#071B4A] dark:text-white line-clamp-1">
+                    {nextClass.unitCode}: {nextClass.unitName}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-[#0B2A6F] dark:text-[#F2B705]" />
+                    <span>{nextClass.venueName}</span>
+                  </p>
+
+                  <div className="pt-1 flex items-center justify-between">
+                    <button
+                      onClick={() => setInspectedEntry(nextClass)}
+                      className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline"
+                    >
+                      View Door &amp; Details →
+                    </button>
+                    <Button
+                      size="sm"
+                      variant="gold"
+                      onClick={() => handleNavigateVenue(nextClass.venueId)}
+                      className="text-[10px] font-bold"
+                    >
+                      <Navigation className="w-3 h-3 mr-1" />
+                      Route
+                    </Button>
+                  </div>
+                </Card>
+              )}
+            </aside>
           </div>
         </div>
       )}
+
+      {/* ================= TAB 2: ACADEMIC CALENDAR ================= */}
+      {mainTab === 'calendar' && (
+        <CalendarView
+          timetableEntries={rawEntries}
+          deadlines={deadlinesList}
+          campusEvents={CAMPUS_CALENDAR_EVENTS}
+          onToggleDeadline={handleToggleDeadline}
+          onNavigateVenue={handleNavigateVenue}
+        />
+      )}
+
+      {/* Slide-in Class Detail Drawer */}
+      <ClassDetailDrawer
+        entry={inspectedEntry}
+        venue={activeVenueForDrawer}
+        unit={activeUnitForDrawer}
+        isOpen={Boolean(inspectedEntry)}
+        onClose={() => setInspectedEntry(null)}
+        onNavigateToMap={handleNavigateVenue}
+        hasClash={clashes.some(([a, b]) => a.id === inspectedEntry?.id || b.id === inspectedEntry?.id)}
+        clashEntry={
+          clashes.find(([a, b]) => a.id === inspectedEntry?.id)?.[1] ||
+          clashes.find(([a, b]) => b.id === inspectedEntry?.id)?.[0] ||
+          null
+        }
+      />
     </div>
   );
 };
