@@ -21,6 +21,7 @@ import { WifiOff } from 'lucide-react';
 export const Layout: React.FC = () => {
   const location = useLocation();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isOnline, setIsOnline] = useState(navigator.onLine);
 
   useEffect(() => {
@@ -64,8 +65,8 @@ export const Layout: React.FC = () => {
 
       <div className="flex-1 flex w-full relative pt-14 sm:pt-[68px]">
         {/* Persistent FIXED Left Sidebar on Desktop (1024px+): does NOT scroll with page */}
-        <div className="hidden lg:block fixed left-0 top-14 sm:top-[68px] bottom-0 z-30 w-56">
-          <Sidebar />
+        <div className={`hidden lg:block fixed left-0 top-14 sm:top-[68px] bottom-0 z-30 transition-[width] duration-300 ease-out ${isSidebarCollapsed ? 'w-20' : 'w-56'}`}>
+          <Sidebar isCollapsed={isSidebarCollapsed} onCollapsedChange={setIsSidebarCollapsed} />
         </div>
 
         {/* Mobile Slide-Out Drawer */}
@@ -91,7 +92,9 @@ export const Layout: React.FC = () => {
 
         {/* Main Content Viewport: Offset beside fixed sidebar on desktop */}
         <main
-          className={`flex-1 min-w-0 w-full max-w-none mx-0 px-3 sm:px-5 pt-5 sm:pt-5 lg:pt-6 pb-24 md:pb-10 lg:pl-[calc(14rem+1.5rem)] lg:pr-6 ${
+          className={`flex-1 min-w-0 w-full max-w-none mx-0 px-3 sm:px-5 pt-5 sm:pt-5 lg:pt-6 pb-24 md:pb-10 transition-[padding-left] duration-300 ease-out ${
+            isSidebarCollapsed ? 'lg:pl-[calc(5rem+1.5rem)]' : 'lg:pl-[calc(14rem+1.5rem)]'
+          } ${
             location.hash.includes('/campus/timetable') ? 'lg:pr-0' : ''
           }`}
         >

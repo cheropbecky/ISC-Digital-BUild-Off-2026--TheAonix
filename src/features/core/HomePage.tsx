@@ -222,7 +222,7 @@ export const HomePage: React.FC = () => {
           <div className="mb-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <span className="h-5 w-1 rounded-full bg-[#1769FF]" />
-              <h2 className="text-lg font-black text-[#071B4A] dark:text-white">Yesterday's Event Pictures</h2>
+              <h2 className="text-lg font-black text-[#071B4A] dark:text-white">Latest Updates</h2>
             </div>
             <a href={UEAB_GALLERY_URL} target="_blank" rel="noreferrer" className="text-[11px] font-bold text-[#1769FF] hover:underline dark:text-[#F2B705]">
               View All <ArrowRight className="ml-1 inline h-3.5 w-3.5" />

@@ -11,6 +11,14 @@
 
 import { IMAGES } from './images';
 
+// OSM way 218276680 centroid: the single campus reference point used by the map.
+// Keep these editable here so map, routing, and venue tooling share one source of truth.
+export const UEAB_CAMPUS_CENTER: [number, number] = [0.25766, 35.08578];
+
+// Existing main-gate pin used by the campus road geometry and routing fallback origin.
+// Confirm this entrance pin with UEAB Security/OSM before using it for production turn-by-turn navigation.
+export const UEAB_MAIN_GATE: [number, number] = [0.25889, 35.08298];
+
 export type VenueCategory = 'academic' | 'services' | 'worship' | 'sports' | 'events' | 'lost_found';
 
 export interface VenuePhotos {

@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Campus GIS Map
  * University of Eastern Africa, Baraton (Nandi County, Kenya)
- * Center: [0.1836, 35.1269], Zoom: 17, minZoom: 14, maxBounds: ~2 km
+ * Center: OSM campus centroid [0.25766, 35.08578], Zoom: 17, minZoom: 14
  * Base layers: OpenStreetMap & Esri World Imagery (Satellite)
  * Features:
  * - Custom UEAB blue & gold markers with category icons
@@ -17,7 +17,7 @@
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import L from 'leaflet';
-import { VENUES, VenueData, VenueCategory } from '../../data/venues';
+import { VENUES, VenueData, VenueCategory, UEAB_CAMPUS_CENTER, UEAB_MAIN_GATE } from '../../data/venues';
 import { ImageWithFallback } from '../ui/ImageWithFallback';
 import { Button } from '../ui/Button';
 import {
@@ -56,9 +56,8 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-// Primary campus center at real University of Eastern Africa, Baraton (Academic Quadrangle)
-export const UEAB_CENTER: [number, number] = [0.2622, 35.0848];
-export const UEAB_MAIN_GATE: [number, number] = [0.25889, 35.08298];
+// Backwards-compatible export for consumers that imported the map constant.
+export const UEAB_CENTER = UEAB_CAMPUS_CENTER;
 
 // ~2 km bounding box around UEAB Baraton campus
 const MAX_BOUNDS: L.LatLngBoundsExpression = [
@@ -140,13 +139,14 @@ export const CampusMap: React.FC<CampusMapProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersLayerGroupRef = useRef<L.LayerGroup | null>(null);
   const routeLayerRef = useRef<L.Polyline | null>(null);
+  const routingAbortRef = useRef<AbortController | null>(null);
   const osmTileLayerRef = useRef<L.TileLayer | null>(null);
   const satelliteTileLayerRef = useRef<L.TileLayer | null>(null);
   const esriTileLayerRef = useRef<L.TileLayer | null>(null);
   const labelsTileLayerRef = useRef<L.TileLayer | null>(null);
   const userLocationMarkerRef = useRef<L.Marker | null>(null);
 
-  // Tile layer mode: 'satellite' (2026 HD Hybrid) | 'osm' (Street Map) | 'aerial' (Esri Imagery)
+  // Tile layer mode: Esri imagery, OpenStreetMap, or Esri imagery with labels.
   const [baseMapType, setBaseMapType] = useState<BaseMapType>('satellite');
 
   // Layer filter
@@ -160,9 +160,10 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     venue: VenueData;
     distanceMeters: number;
     durationMinutes: number;
-    isFallback: boolean;
+    originLabel: string;
   } | null>(null);
   const [isRoutingLoading, setIsRoutingLoading] = useState(false);
+  const [mapStatusMessage, setMapStatusMessage] = useState<string | null>(null);
 
   // User live location
   const [userLocation, setUserLocation] = useState<[number, number] | null>(null);
@@ -282,13 +283,14 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       zoomControl: false, // Custom touch-friendly 44px controls
     });
 
-    // Layer 1: Modern 2026 High-Resolution Hybrid Satellite (Imagery + Roads + Landmarks)
+    // Esri World Imagery is used instead of an undocumented Google tile URL.
+    // The aerial mode adds the public Esri reference-label layer below.
     const hybridSatelliteLayer = L.tileLayer(
-      'https://mt{s}.google.com/vt/lyrs=y&x={x}&y={y}&z={z}',
+      'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
-        subdomains: ['0', '1', '2', '3'],
-        attribution: 'Imagery &copy; 2026 Google, Maxar',
-        maxZoom: 20,
+        attribution: 'Tiles &copy; Esri',
+        maxNativeZoom: 17,
+        maxZoom: 19,
       }
     );
 
@@ -298,7 +300,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       maxZoom: 19,
     });
 
-    // Layer 3: Esri World Imagery (Aerial Archive)
+    // Layer 3: Esri imagery used for the labelled aerial mode.
     const esriLayer = L.tileLayer(
       'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
       {
@@ -319,13 +321,18 @@ export const CampusMap: React.FC<CampusMapProps> = ({
       }
     );
 
-    // Start with 2026 Hybrid Satellite
+    // Start with Esri World Imagery.
     hybridSatelliteLayer.addTo(map);
 
     satelliteTileLayerRef.current = hybridSatelliteLayer;
     osmTileLayerRef.current = osmLayer;
     esriTileLayerRef.current = esriLayer;
     labelsTileLayerRef.current = labelsLayer;
+
+    const handleTileError = () => {
+      setMapStatusMessage('Map imagery is temporarily unavailable. Try switching to Map or retrying shortly.');
+    };
+    [hybridSatelliteLayer, osmLayer, esriLayer, labelsLayer].forEach((layer) => layer.on('tileerror', handleTileError));
 
     // Draw Official UEAB Baraton 339-Acre Campus Perimeter Boundary (OSM Way 218276680)
     L.polygon(UEAB_CAMPUS_BOUNDARY, {
@@ -391,9 +398,14 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     resizeObserver.observe(mapContainerRef.current);
 
     return () => {
+      routingAbortRef.current?.abort();
+      [hybridSatelliteLayer, osmLayer, esriLayer, labelsLayer].forEach((layer) => layer.off('tileerror', handleTileError));
       resizeObserver.disconnect();
       map.remove();
       mapInstanceRef.current = null;
+      routeLayerRef.current = null;
+      markersLayerGroupRef.current = null;
+      userLocationMarkerRef.current = null;
     };
   }, []);
 
@@ -474,105 +486,73 @@ export const CampusMap: React.FC<CampusMapProps> = ({
     [onVenueSelect, triggerInvalidateSize]
   );
 
-  // Calculate walking distance via haversine for fallback
-  const calculateHaversineDistance = (
-    lat1: number,
-    lon1: number,
-    lat2: number,
-    lon2: number
-  ) => {
-    const R = 6371e3; // meters
-    const phi1 = (lat1 * Math.PI) / 180;
-    const phi2 = (lat2 * Math.PI) / 180;
-    const deltaPhi = ((lat2 - lat1) * Math.PI) / 180;
-    const deltaLambda = ((lon2 - lon1) * Math.PI) / 180;
-
-    const a =
-      Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
-      Math.cos(phi1) * Math.cos(phi2) * Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return Math.round(R * c);
-  };
-
-  // Draw walking route with OSRM (or fallback)
+  // Draw a genuine walking route from the live GPS position or the UEAB Main Gate.
   const handleDrawDirections = useCallback(
     async (targetVenue: VenueData) => {
       const map = mapInstanceRef.current;
       if (!map) return;
 
+      routingAbortRef.current?.abort();
+      const controller = new AbortController();
+      routingAbortRef.current = controller;
       setIsRoutingLoading(true);
+      setMapStatusMessage(null);
 
-      const origin: [number, number] = userLocation || UEAB_MAIN_GATE;
-      const destination: [number, number] = [targetVenue.lat, targetVenue.lng];
-
-      let routeCoords: [number, number][] = [];
-      let distanceMeters = 0;
-      let durationMinutes = 0;
-      let isFallback = false;
-
-      try {
-        const url = `https://router.project-osrm.org/route/v1/foot/${origin[1]},${origin[0]};${destination[1]},${destination[0]}?overview=full&geometries=geojson`;
-        const res = await fetch(url, { signal: AbortSignal.timeout(3500) });
-
-        if (!res.ok) throw new Error('OSRM routing failed');
-        const json = await res.json();
-
-        if (json.routes && json.routes[0]) {
-          const route = json.routes[0];
-          distanceMeters = Math.round(route.distance);
-          durationMinutes = Math.max(1, Math.round(route.duration / 60));
-          // GeoJSON is [lng, lat], Leaflet needs [lat, lng]
-          routeCoords = route.geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng]);
-        } else {
-          throw new Error('No route geometry');
-        }
-      } catch (err) {
-        // Fallback: Straight dashed line with subtle intermediate bend
-        isFallback = true;
-        const straightDistance = calculateHaversineDistance(
-          origin[0],
-          origin[1],
-          destination[0],
-          destination[1]
-        );
-        distanceMeters = straightDistance;
-        // Estimate walking pace ~80 meters per minute (4.8 km/h)
-        durationMinutes = Math.max(1, Math.round(straightDistance / 80));
-
-        const midPoint: [number, number] = [
-          (origin[0] + destination[0]) / 2,
-          (origin[1] + destination[1]) / 2 + 0.0003,
-        ];
-        routeCoords = [origin, midPoint, destination];
-      } finally {
-        setIsRoutingLoading(false);
-      }
-
-      // Remove existing route polyline
       if (routeLayerRef.current) {
         map.removeLayer(routeLayerRef.current);
         routeLayerRef.current = null;
       }
+      setActiveRoute(null);
 
-      // Add route polyline to map
-      const polyline = L.polyline(routeCoords, {
-        color: isFallback ? '#DC2626' : '#F2B705',
-        weight: 6,
-        dashArray: isFallback ? '6, 8' : '10, 8',
-        opacity: 0.95,
-      }).addTo(map);
+      const origin: [number, number] = userLocation || UEAB_MAIN_GATE;
+      const destination: [number, number] = [targetVenue.lat, targetVenue.lng];
+      let timeoutId: number | undefined;
 
-      routeLayerRef.current = polyline;
-      map.fitBounds(polyline.getBounds(), { padding: [60, 60] });
+      try {
+        // FOSSGIS hosts a dedicated pedestrian OSRM graph. The /routed-foot
+        // service is important: the public car OSRM endpoint can ignore /foot.
+        const url = `https://routing.openstreetmap.de/routed-foot/route/v1/driving/${origin[1]},${origin[0]};${destination[1]},${destination[0]}?overview=full&geometries=geojson&steps=false`;
+        timeoutId = window.setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(url, { signal: controller.signal });
 
-      setActiveRoute({
-        venue: targetVenue,
-        distanceMeters,
-        durationMinutes,
-        isFallback,
-      });
+        if (!res.ok) throw new Error(`Walking route service returned ${res.status}`);
+        const json = await res.json();
+        const route = json.routes?.[0];
+        const coordinates = route?.geometry?.coordinates;
 
-      triggerInvalidateSize();
+        if (!route || !Array.isArray(coordinates) || coordinates.length < 2) {
+          throw new Error('No pedestrian route geometry returned');
+        }
+
+        // GeoJSON is [lng, lat], Leaflet needs [lat, lng].
+        const routeCoords: [number, number][] = coordinates.map(([lng, lat]: [number, number]) => [lat, lng]);
+        const polyline = L.polyline(routeCoords, {
+          color: '#F2B705',
+          weight: 6,
+          dashArray: '10, 8',
+          opacity: 0.95,
+        }).addTo(map);
+
+        routeLayerRef.current = polyline;
+        map.fitBounds(polyline.getBounds(), { padding: [60, 60] });
+        setActiveRoute({
+          venue: targetVenue,
+          distanceMeters: Math.round(route.distance),
+          durationMinutes: Math.max(1, Math.round(route.duration / 60)),
+          originLabel: userLocation ? 'your location' : 'UEAB Main Gate',
+        });
+        triggerInvalidateSize();
+      } catch (error) {
+        if (!controller.signal.aborted) {
+          setMapStatusMessage('Walking directions are temporarily unavailable. No straight-line estimate was shown.');
+        }
+      } finally {
+        if (timeoutId !== undefined) window.clearTimeout(timeoutId);
+        if (routingAbortRef.current === controller) {
+          routingAbortRef.current = null;
+          setIsRoutingLoading(false);
+        }
+      }
     },
     [userLocation, triggerInvalidateSize]
   );
@@ -749,6 +729,18 @@ export const CampusMap: React.FC<CampusMapProps> = ({
         </div>
       )}
 
+      {mapStatusMessage && (
+        <div className="z-30 flex items-center justify-between gap-3 bg-[#0B2A6F] px-4 py-2 text-xs font-medium text-white shadow-md animate-in fade-in duration-200">
+          <div className="flex min-w-0 items-center gap-2">
+            <AlertCircle className="h-4 w-4 shrink-0 text-[#F2B705]" />
+            <span className="truncate">{mapStatusMessage}</span>
+          </div>
+          <button onClick={() => setMapStatusMessage(null)} className="shrink-0 p-1 text-white/80 hover:text-white" aria-label="Dismiss map status message">
+            ✕
+          </button>
+        </div>
+      )}
+
       {/* Top Map Toolbar: Layer Chips & Satellite Switcher */}
       <div className="absolute top-3 left-3 right-3 z-20 flex flex-wrap items-center justify-between gap-2 pointer-events-none">
         {/* Layer Filter Chips */}
@@ -788,7 +780,7 @@ export const CampusMap: React.FC<CampusMapProps> = ({
             <span>2026 Campus GIS</span>
           </div>
 
-          {/* Base Layer Switcher: 2026 Satellite vs Map vs Aerial */}
+          {/* Base Layer Switcher: imagery, street map, or imagery with labels */}
           <div className="bg-white/95 dark:bg-[#071B4A]/95 backdrop-blur-md p-1 rounded-xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-md flex items-center gap-0.5">
             <button
               onClick={() => setBaseMapType('satellite')}
@@ -797,9 +789,9 @@ export const CampusMap: React.FC<CampusMapProps> = ({
                   ? 'bg-[#0B2A6F] text-[#F2B705] shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white'
               }`}
-              title="Modern 2026 High-Resolution Hybrid Satellite with campus walkways and landmark overlays"
+              title="Esri World Imagery satellite tiles"
             >
-              2026 Satellite
+              Satellite
             </button>
             <button
               onClick={() => setBaseMapType('osm')}
@@ -907,14 +899,9 @@ export const CampusMap: React.FC<CampusMapProps> = ({
               <span className="text-xs font-black text-[#071B4A] dark:text-white truncate">
                 To {activeRoute.venue.name}
               </span>
-              {activeRoute.isFallback && (
-                <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.2 rounded font-bold">
-                  Direct Line
-                </span>
-              )}
             </div>
             <p className="text-[11px] text-slate-500 dark:text-slate-300">
-              {activeRoute.distanceMeters} m • ~{activeRoute.durationMinutes} min walk from Gate
+              {activeRoute.distanceMeters} m • ~{activeRoute.durationMinutes} min walk from {activeRoute.originLabel}
             </p>
           </div>
           <button
