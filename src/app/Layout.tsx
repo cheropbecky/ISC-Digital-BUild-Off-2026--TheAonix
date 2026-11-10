@@ -60,10 +60,11 @@ export const Layout: React.FC = () => {
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      {/* PWA banner sits below the fixed header so it cannot be covered by navigation. */}
-      <div className="pt-14 sm:pt-[68px]">
-        <PWAInstallPrompt />
-      </div>
+      {location.pathname === '/home' && (
+        <div className="pt-14 sm:pt-[68px]">
+          <PWAInstallPrompt className={`mx-auto max-w-5xl transition-[margin] duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-56'}`} />
+        </div>
+      )}
 
       <div className="flex-1 flex w-full relative">
         {/* Persistent FIXED Left Sidebar on Desktop (1024px+): does NOT scroll with page */}

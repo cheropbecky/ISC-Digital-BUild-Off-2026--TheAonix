@@ -127,7 +127,7 @@ export const InstitutionalHeader: React.FC<InstitutionalHeaderProps> = ({ onOpen
           {/* UEAB Crest Emblem & University Name */}
           <Link to="/" className="flex items-center gap-2.5 sm:gap-3 group shrink-0">
             <img
-              src="/brand/kampas-wordmark.png"
+              src="/brand/kampas-header-logo.png"
               alt="Kampas, the campus in one place"
               className="h-10 w-auto max-w-[190px] rounded-lg object-contain transition-transform group-hover:scale-[1.02] sm:h-12 sm:max-w-[230px]"
             />

@@ -21,6 +21,7 @@ import {
   Building,
   FileText,
   Users,
+  GraduationCap,
   Compass,
   SearchCheck,
   ChevronLeft,
@@ -104,6 +105,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
                 <NavLink
                   key={to}
                   to={to}
+                  end={to === '/community'}
                   onClick={handleLinkClick}
                   className={({ isActive }) =>
                     `group relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 ${
@@ -175,6 +177,27 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
             </p>
           </div>
         )}
+
+        <NavLink
+          to="/community/alumni"
+          onClick={handleLinkClick}
+          title={isCollapsed ? 'Alumni' : undefined}
+          aria-label={isCollapsed ? 'Alumni' : undefined}
+          className={({ isActive }) =>
+            `group flex items-center gap-3 rounded-xl border px-3 py-2.5 text-xs font-extrabold transition-all duration-200 ${
+              isActive
+                ? 'border-[#F2B705] bg-[#F2B705] text-[#071B4A] shadow-[0_8px_22px_rgba(242,183,5,0.2)]'
+                : 'border-[#F2B705]/25 bg-[#F2B705]/10 text-[#F2B705] hover:bg-[#F2B705]/20'
+            } ${isCollapsed && !isMobileDrawer ? 'justify-center px-0' : ''}`
+          }
+        >
+          {({ isActive }) => (
+            <>
+              <GraduationCap className={`h-5 w-5 shrink-0 ${isActive ? 'text-[#071B4A]' : 'text-[#F2B705]'}`} />
+              {(!isCollapsed || isMobileDrawer) && <span className="truncate">Alumni</span>}
+            </>
+          )}
+        </NavLink>
 
         {!isMobileDrawer && (
           <button
