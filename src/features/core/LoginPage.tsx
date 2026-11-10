@@ -169,7 +169,6 @@ export const LoginPage: React.FC = () => {
             <div className="my-3 flex items-center gap-3 text-[11px] font-semibold text-[#5B6475] dark:text-slate-400"><span className="h-px flex-1 bg-[#D5DEEF] dark:bg-[#2D4575]" /><span>{mode === 'signin' ? 'New to Kampas?' : 'Already have an account?'}</span><span className="h-px flex-1 bg-[#D5DEEF] dark:bg-[#2D4575]" /></div>
             <button type="button" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} className="mx-auto flex items-center gap-1 text-sm font-extrabold text-[#1769FF] hover:underline">{mode === 'signin' ? 'Create an account' : 'Sign in instead'} <ArrowRight className="h-4 w-4" /></button>
 
-            <div className="mt-3 rounded-2xl border border-blue-100 bg-blue-50/70 px-3 py-2 text-center text-[10px] text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200"><div className="font-black">Presentation demo account</div><div className="mt-0.5 font-mono">S21/04589 &nbsp;·&nbsp; kampas123</div></div>
             <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-[#5B6475] dark:text-slate-400"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /><span>Secure student portal access</span></div>
           </div>
         </section>
