@@ -2,232 +2,185 @@
 
 > **The campus, in one place.**
 
-Kampas is a responsive student platform and Progressive Web App for the
-University of Eastern Africa, Baraton (UEAB), Nandi County, Kenya. It brings
-campus navigation, timetables, housing, study resources, community activities,
-and lost-and-found services into one student-focused interface.
+Kampas is a responsive student platform and Progressive Web App (PWA) built specifically for the **University of Eastern Africa, Baraton (UEAB)** in Nandi County, Kenya. Developed for the **ISC Digital Build-Off Hackathon 2026** under the *Campus Problems* theme, Kampas integrates campus navigation, timetables, housing, study resources, community activities, and lost-and-found services into a single offline-first student interface designed to perform reliably even on weak campus data.
 
-## Features
+---
 
-### Campus Home
+## 👥 Project Team & Roles
 
-- At-a-glance dashboard for upcoming classes, deadlines, events, and housing.
-- Interactive daily timetable overview.
-- Official UEAB Baraton imagery and links to the university gallery.
-- Responsive layout with dark mode, motion effects, and mobile navigation.
+| Name | Student ID | Assigned Project Role | Core Responsibilities & Contributions |
+| --- | --- | --- | --- |
+| **Becky Cherop** *(Team Leader)* | SKIPCH2511 | Frontend Developer & UI Specialist | Designed and implemented responsive user interfaces, navigation layouts, campus maps, timetable viewers, and the feedback module using React, Tailwind CSS, and Vite. |
+| **Jacob Sihul** | SSIHOT2511 | Backend & API Developer | Handled backend routing, authentication workflows, Supabase replication logic, and M-Pesa Daraja payment integration endpoints. |
+| **Nathan Kimutai** | SKIMNA2511 | Database Engineer | Architected the Supabase PostgreSQL database schema, relational tables, indexing, and offline-first SQLite-Wasm local caching layers. |
+| **Thabita Jeptoo** | STHAJE2511 | DevOps & QA Specialist | Managed GitHub branch workflows (`Becky`), Vercel production deployments, quality assurance, cross-device testing, and artifact documentation. |
 
-### Timetable and Calendar
+---
 
-- Weekly, daily, and list timetable views.
-- Search and course filtering.
-- Next-class and current-class indicators.
-- Clash detection for overlapping classes.
-- Venue relocation notices.
-- Calendar events, deadlines, personal events, and ICS export.
+## 📌 Problem Statement and Research
 
-### UEAB Baraton Campus Map
+### The Challenge
 
-- Dedicated campus map centered on University of Eastern Africa, Baraton.
-- Leaflet and OpenStreetMap tiles with required attribution.
-- UEAB Baraton venue directory sourced from `src/data/venues.ts`.
-- Searchable venue markers and venue detail cards.
-- Venue photos loaded from official UEAB online image URLs.
-- Walking directions through the public OSRM routing service.
-- Browser geolocation with a permission-denied message.
-- Marker clustering, touch controls, resize handling, and offline tile errors.
+Students at UEAB face a fragmented digital ecosystem where critical academic and campus life information is scattered across disparate noticeboards, unoptimized manual schedules, social media groups, and offline word-of-mouth. Key pain points identified through campus interviews and student surveys include:
 
-### Other Student Services
+- **Timetable & Venue Confusion:** Frequent last-minute venue changes and overlapping class schedules leading to missed CATs and lectures.
+- **Housing Inefficiencies:** Difficulty finding verified, secure off-campus rentals without exorbitant broker fees or unreliable listings.
+- **Resource Isolation:** Scattered lecture notes, past papers, and study groups making collaborative learning difficult.
+- **Connectivity Barriers:** Standard web portals failing or lagging during peak hours due to unreliable campus bandwidth.
 
-- Off-campus housing listings and comparison tools.
-- Study notes, past papers, bookmarks, and study groups.
-- Campus events, clubs, mentorship, and referrals.
-- Lost-and-found item reporting and matching.
-- Role-aware demo controls for testing interactive flows.
+### Target Audience
 
-## Technology
+- **Undergraduate & Postgraduate Students:** Needing quick access to academic schedules, GPS campus guidance, and verified housing.
+- **Lecturers & Faculty:** Managing venue updates, notices, and class rosters.
+- **Landlords & Alumni:** Offering verified student rentals, mentorship, and career referrals.
 
-- React 19
-- TypeScript
-- Vite
-- React Router
-- Tailwind CSS v4
-- Motion
-- Leaflet and React Leaflet
-- Leaflet MarkerCluster
-- OpenStreetMap
-- OSRM routing
-- Clerk authentication integration
-- Supabase integration
-- Zod validation
-- Vite PWA
+---
 
-## Project Structure
+## 🚀 Proposed Solution & Core Features
+
+- **Campus Home Dashboard:** At-a-glance overview of upcoming classes, pending deadlines, campus events, and housing highlights.
+- **Timetable & Calendar:** Weekly and daily schedules with automated clash detection, venue relocation alerts, personal event creation, and ICS export.
+- **UEAB Campus GIS Map:** Interactive Leaflet and OpenStreetMap interface centered on Baraton with searchable venue markers, walking directions via OSRM, and official campus imagery.
+- **House Find (Off-Campus Rentals):** Verified student housing directory with neighborhood filters, water/Wi-Fi badges, and secure direct inquiry messaging.
+- **Share Hub (Notes Library):** Collaborative repository for lecture notes, past papers, revision summaries, and study group matchmaking.
+- **Community & Events Hub:** School-filtered club activities, alumni career directories, referral flows, and event RSVPs.
+- **Lost & Found Desk:** Camera-first item reporting with automated match suggestions and secure verification questions.
+- **Feedback & Support Portal:** Direct student-to-developer feedback channel for bug reports and UI suggestions with satisfaction ratings.
+
+---
+
+## 📐 System Design & Architecture
+
+### 1. Use Case Diagram
+
+The system actors (Student, Lecturer, Alumni, Landlord, and Admin) interact with Kampas modules ranging from timetable management to housing and community moderation.
+
+![Use Case Diagram](Kampas-UseCase%20Diagram.png)
+
+### 2. Data Flow Diagram (DFD)
+
+Illustrates how data moves between external entities (Students, Lecturers, Admin, Alumni, Landlords), central processes (Timetable, Navigation, Housing, Share Hub, Lost & Found), and data stores (D1 to D9).
+
+![Data Flow Diagram](Kampas%20DFD.png)
+
+### 3. Entity-Relationship Diagram (ERD / EER)
+
+The relational schema powering Kampas, featuring normalized tables for units, timetable entries, housing listings, lost and found items, user profiles, and audit logs.
+
+![ERD Schema](Untitled%20(1).png)
+
+### 4. Low-Fidelity Wireframes
+
+UI wireframes mapping out the desktop (1440x900) layout across all core modules.
+
+![Wireframes](wireframes.png)
+
+---
+
+## 🛠️ Technology Stack
+
+| Layer | Tools |
+| --- | --- |
+| **Frontend** | React 19, TypeScript, Vite, React Router, Tailwind CSS v4, Motion (Framer Motion) |
+| **Mapping & GIS** | Leaflet, React Leaflet, Leaflet MarkerCluster, OpenStreetMap tiles, OSRM routing |
+| **Database & Storage** | Supabase (PostgreSQL), SQLite-Wasm / sql.js for offline-first local persistence |
+| **Authentication & Validation** | Clerk, Zod |
+| **Deployment & Tooling** | Vercel, Vite PWA, Git |
+
+---
+
+## 📂 Project Structure
 
 ```text
 src/
-├── app/                 # Application layout and routing
-├── components/          # Shared UI and map components
-├── data/                # UEAB venues, timetable, events, images, and mock data
-├── features/            # Home, navigation, housing, sharing, community, and lost-found
-├── lib/                 # Store, permissions, Supabase client, and utilities
-└── services/            # Timetable, search, and application service layers
+├── app/                 # Application layout, routing, and protected shells
+├── components/          # Shared UI elements, navigation sidebar, and map wrappers
+├── data/                # UEAB venues, timetable, events, images, and mock datasets
+├── features/            # Modular features: home, navigate, housing, share, community, found, feedback
+├── lib/                 # Global store, Supabase client, utilities, and permissions
+└── services/            # Timetable, search, and application service logic
 ```
 
-Important files:
+### Key Source Files
 
-- `src/features/core/HomePage.tsx` — Campus Home dashboard.
-- `src/features/navigate/TimetablePage.tsx` — timetable and calendar interface.
-- `src/features/navigate/CampusMapPage.tsx` — dedicated campus map page.
-- `src/components/map/CampusMap.tsx` — Leaflet map, layers, markers, and routing.
-- `src/data/venues.ts` — UEAB Baraton venue directory and coordinates.
-- `src/data/images.ts` — central image URL registry and alt text.
-- `src/services/timetableService.ts` — timetable data and timetable operations.
+- `src/features/core/HomePage.tsx`: Campus Home dashboard.
+- `src/features/core/FeedbackPage.tsx`: User feedback and support portal.
+- `src/features/navigate/TimetablePage.tsx`: Timetable, clash detection, and calendar interface.
+- `src/features/navigate/CampusMapPage.tsx`: Dedicated campus GIS map.
+- `src/components/layout/Sidebar.tsx`: Fixed desktop sidebar with collapsible navigation.
+- `src/data/venues.ts`: UEAB Baraton venue directory and GPS coordinates.
 
-## Getting Started
+---
 
-### Requirements
+## 🎥 Video Walkthrough & Live Demo
 
-- Node.js 18 or newer
-- npm
+- **YouTube Demo Walkthrough:** [https://youtu.be/oVPTXHhnves](https://youtu.be/oVPTXHhnves)
+- **Live Vercel Deployment:** [Insert Live App URL Here]
 
-### Install
+---
+
+## ⚙️ How to Run the Project
+
+### Prerequisites
+
+- Node.js (v18 or newer)
+- npm package manager
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/cheropbecky/KAMPAS.git
+cd KAMPAS
+git checkout Becky
+```
+
+### 2. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### Configure environment variables
+### 3. Configure Environment Variables
 
-Copy the example file:
+Copy the example configuration file:
 
 ```bash
 cp .env.example .env
 ```
 
-The application can run in demo mode without Clerk or Supabase credentials.
-For connected authentication and persistence, configure the variables described
-in `.env.example`.
+> **Note:** Kampas runs fully in offline/demo mode without API keys, using local reactive stores. For connected persistence and authentication, populate your Supabase and Clerk keys in `.env`.
 
-### Run the development server
+### 4. Run the Development Server
 
 ```bash
 npm run dev
 ```
 
-Open `http://localhost:3000`.
+Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-### Validate and build
+### 5. Build for Production
 
 ```bash
 npm run lint
 npm run build
-```
-
-To preview the production build:
-
-```bash
 npm run preview
 ```
 
-## Map Data and External Services
+---
 
-The campus map uses:
+## 📊 Testing and User Feedback
 
-- OpenStreetMap tiles:
-  `https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png`
-- OpenStreetMap attribution: `© OpenStreetMap contributors`
-- OSRM walking routes:
-  `https://router.project-osrm.org/route/v1/foot/`
+During prototype testing with two UEAB student groups:
 
-The map requires no Google Maps API key, account, or billing. Venue coordinates
-are maintained in `src/data/venues.ts` and are positioned around UEAB Baraton
-in Nandi County, approximately `0.2589343, 35.0864822`.
+- **Feedback received:** Students noted that finding off-campus housing required too many clicks on mobile devices.
+- **Improvements made:** Streamlined the `HouseFindPage` with quick pill filters for water, Wi-Fi, and distance to campus, and added direct landlord calling buttons.
 
-Venue imagery is referenced as online URLs from the official UEAB website and
-is registered centrally in `src/data/images.ts`. Images should include
-descriptive alt text and must not be presented as facility-specific unless the
-source identifies the facility.
+---
 
-## Environment Variables
+## 📜 Credits and License
 
-Available variables are documented in `.env.example`:
+Developed with passion by the Kampas Team at the University of Eastern Africa, Baraton.
 
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `VITE_CLERK_PUBLISHABLE_KEY` | No | Clerk authentication in connected mode |
-| `VITE_SUPABASE_URL` | No | Supabase project URL |
-| `VITE_SUPABASE_ANON_KEY` | No | Supabase anonymous client key |
-| `VITE_DEV_ROLE_SWITCHER` | No | Enables development role switching |
-| `APP_URL` | No | Production URL and OAuth redirect base |
+**Third-party tools and assets:** React, Vite, Tailwind CSS, Lucide Icons, Leaflet, OpenStreetMap © OpenStreetMap contributors, OSRM, and Supabase. AI-assisted development tools (Google AI Studio, Claude) were used under team supervision.
 
-Do not commit real credentials or secret keys.
-
-## Design and Accessibility
-
-- UEAB-inspired blue and gold visual system.
-- Responsive desktop, tablet, and mobile layouts.
-- Touch targets sized for mobile interaction.
-- Dark mode support.
-- Descriptive image alt text.
-- Keyboard-friendly controls where applicable.
-- Graceful fallback states for unavailable images, tiles, and routes.
-
-## Data and Demo Mode
-
-When external services are not configured, Kampas uses local data and an
-in-memory reactive store so the core application remains usable for
-development and demonstrations. Personal calendar data is persisted locally in
-the browser.
-
-## Screenshots
-
-The following screenshots show the current Kampas interface:
-
-| Campus Home | Campus Map |
-| --- | --- |
-| ![Campus Home](README-assets/screenshots/campus-home.png) | ![Campus Map](README-assets/screenshots/campus-map.png) |
-
-| Timetable | Academic Calendar |
-| --- | --- |
-| ![Timetable](README-assets/screenshots/timetable.png) | ![Academic Calendar](README-assets/screenshots/calendar.png) |
-
-| Housing | Share Hub |
-| --- | --- |
-| ![Housing](README-assets/screenshots/housing.png) | ![Share Hub](README-assets/screenshots/share-hub.png) |
-
-| Community | Lost and Found |
-| --- | --- |
-| ![Community](README-assets/screenshots/community.png) | ![Lost and Found](README-assets/screenshots/lost-found.png) |
-
-![Kampas Dashboard](README-assets/screenshots/dashboard.png)
-
-## Team
-
-| Name | Student ID | Assigned Project Role | Core Responsibilities & Contributions |
-| --- | --- | --- | --- |
-| Becky Cherop | SKIPCH2511 | Frontend Developer & UI Specialist | Designed responsive user interfaces and visual features with React, Tailwind CSS, and Vite, including campus maps and calendars. |
-| Jacob Sihul | SSIHOT2511 | Backend & API Developer | Handled backend routing, authentication workflows, and API integrations. |
-| Nathan Kimutai | SKIMNA2511 | Database Engineer | Architected the PostgreSQL/Supabase database schema, tables, and search indexing. |
-| Thabita Jeptoo | STHAJE2511 | DevOps & QA Specialist | Managed GitHub branch workflows, deployments, quality assurance, and testing. |
-
-## Current Project Details
-
-- Institution: University of Eastern Africa, Baraton (UEAB)
-- Location: Nandi County, Kenya
-- Git branch used for current work: `Becky`
-- Repository: `cheropbecky/KAMPAS`
-
-## Credits and Licence
-
-Third-party: React, Vite, Tailwind CSS, Lucide, Motion, Leaflet,
-[OpenStreetMap](https://www.openstreetmap.org/copyright) © OpenStreetMap
-contributors, OSRM, and Supabase.
-
-AI-assisted tools were used and understood by the whole team, including
-Google Stitch, Google AI Studio, and Claude.
-
-All sample data is invented. Images are sourced from the official University
-of Eastern Africa, Baraton website and credited in the application image
-registry.
-
-Licensed under the MIT Licence.
+Licensed under the **MIT License**.

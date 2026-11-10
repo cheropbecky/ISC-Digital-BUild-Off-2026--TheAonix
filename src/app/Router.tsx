@@ -1,10 +1,11 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * Kampas React Router Configuration (Student-Side Prototype)
- * Strictly student-side: No admin/staff management screens or employer portals.
- * Free rooms feature/layer completely removed.
- * Includes House Find (/housing, /housing/:id) and Campus GIS Map (/campus/map).
+- 
+@license
+- SPDX-License-Identifier: Apache-2.0
+- Kampas React Router Configuration (Student-Side Prototype)
+- Strictly student-side: No admin/staff management screens or employer portals.
+- Free rooms feature/layer completely removed.
+- Includes House Find (/housing, /housing/:id) and Campus GIS Map (/campus/map).
  */
 
 import React from 'react';
@@ -34,6 +35,7 @@ import { LostFoundPage } from '../features/found/LostFoundPage';
 import { NotificationsPage } from '../features/core/NotificationsPage';
 import { SearchResultsPage } from '../features/core/SearchResultsPage';
 import { ProfilePage } from '../features/core/ProfilePage';
+import { FeedbackPage } from '../features/core/FeedbackPage';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated } = useKampasStore();
@@ -82,8 +84,8 @@ export const AppRouter: React.FC = () => {
         <Route path="/share/groups/:id" element={<StudyGroupsPage />} />
 
         {/* 4. Community Module (Events, Clubs, Alumni Network, Opportunities) */}
-          <Route path="/community" element={<CommunityEventsPage />} />
-          <Route path="/community/events" element={<EventsPage />} />
+        <Route path="/community" element={<CommunityEventsPage />} />
+        <Route path="/community/events" element={<EventsPage />} />
         <Route path="/community/events/:id" element={<EventsPage />} />
         <Route path="/community/clubs" element={<ClubsPage />} />
         <Route path="/community/alumni" element={<AlumniDirectoryPage />} />
@@ -93,10 +95,11 @@ export const AppRouter: React.FC = () => {
         {/* 5. Lost & Found Module */}
         <Route path="/found" element={<LostFoundPage />} />
 
-        {/* 6. Core Student Utilities */}
+        {/* 6. Core Student Utilities & Feedback */}
         <Route path="/notifications" element={<NotificationsPage />} />
         <Route path="/search" element={<SearchResultsPage />} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/feedback" element={<FeedbackPage />} />
 
         {/* Catch-all redirect to Home */}
         <Route path="*" element={<Navigate to="/home" replace />} />
