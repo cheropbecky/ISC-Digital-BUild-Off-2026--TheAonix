@@ -11,22 +11,23 @@
  * - Filters by unit, search box, previous/next week with "Today" button
  * - Schedule clash warnings and red "Venue Changed" relocation badges
  * - Export to RFC-compliant ICS and Share as Image (PNG canvas generator)
+ * - Real in-browser timetable scanning (Tesseract.js OCR, no backend)
  */
 
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { PERMISSIONS } from '../../lib/permissions';
 import { getTimetableDayIndex, TIMETABLE_ENTRIES, TimetableEntry, detectClashes } from '../../data/timetable';
 import { VENUES, VenueData } from '../../data/venues';
 import { ACADEMIC_UNITS, AcademicUnit } from '../../data/units';
 import { DEADLINES, AcademicDeadline } from '../../data/deadlines';
 import { CAMPUS_CALENDAR_EVENTS } from '../../data/events';
 import { timetableService } from '../../services/timetableService';
+import { scanTimetableImage } from '../../lib/scanTimetable';
 import { notify } from '../../lib/notify';
 import { ClassDetailDrawer } from './ClassDetailDrawer';
 import { CalendarView } from './CalendarView';
@@ -34,24 +35,15 @@ import { formatTimeOnly } from '../../lib/utils';
 import {
   AlertTriangle,
   Calendar as CalendarIcon,
-  Clock,
   Download,
   Share2,
   Search,
-  Filter,
   ChevronLeft,
   ChevronRight,
   MapPin,
-  Users,
   Navigation,
   Sparkles,
-  CheckCircle2,
-  Flame,
-  Layers,
-  FileText,
-  DoorOpen,
   UploadCloud,
-  Image as ImageIcon,
   X,
   RotateCcw,
   Check,
@@ -91,6 +83,7 @@ const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
 const TIMETABLE_UPLOAD_KEY = 'kampas_timetable_upload';
+const SCANNED_ENTRIES_KEY = 'kampas_scanned_entries';
 const SCAN_STAGES = [
   'Uploading timetable',
   'Scanning timetable image',
@@ -109,7 +102,18 @@ interface TimetableUploadState {
 const readSavedUpload = (): TimetableUploadState | null => {
   try {
     const saved = localStorage.getItem(TIMETABLE_UPLOAD_KEY);
-    return saved ? JSON.parse(saved) as TimetableUploadState : null;
+    return saved ? (JSON.parse(saved) as TimetableUploadState) : null;
+  } catch {
+    return null;
+  }
+};
+
+const readSavedEntries = (): TimetableEntry[] | null => {
+  try {
+    const saved = localStorage.getItem(SCANNED_ENTRIES_KEY);
+    if (!saved) return null;
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as TimetableEntry[]) : null;
   } catch {
     return null;
   }
@@ -128,8 +132,12 @@ export const TimetablePage: React.FC = () => {
   // Timetable View Mode: 'week' | 'day' | 'list'
   const [viewMode, setViewMode] = useState<'week' | 'day' | 'list'>('week');
 
-  const { user, changeVenue } = useKampasStore();
-  const [rawEntries, setRawEntries] = useState<TimetableEntry[]>(TIMETABLE_ENTRIES);
+  const { user } = useKampasStore();
+
+  // If the student already scanned a timetable, start from those entries
+  const [rawEntries, setRawEntries] = useState<TimetableEntry[]>(
+    () => readSavedEntries() ?? TIMETABLE_ENTRIES
+  );
   const [venuesList, setVenuesList] = useState<VenueData[]>(VENUES);
   const [unitsList, setUnitsList] = useState<AcademicUnit[]>(ACADEMIC_UNITS);
   const [deadlinesList, setDeadlinesList] = useState<AcademicDeadline[]>(DEADLINES);
@@ -151,15 +159,13 @@ export const TimetablePage: React.FC = () => {
   const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  // Frontend-only timetable scanner state. The extracted schedule is always the
-  // fixed TIMETABLE_ENTRIES sample; the image only drives the presentation flow.
+  // Timetable scanner state (real OCR, runs fully in the browser)
   const [uploadState, setUploadState] = useState<TimetableUploadState | null>(readSavedUpload);
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStage, setScanStage] = useState(0);
   const [uploadError, setUploadError] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const scanTimerRef = useRef<number | null>(null);
 
   // Live "now" line time state
   const [currentNowMinutes, setCurrentNowMinutes] = useState<number>(() => {
@@ -176,10 +182,6 @@ export const TimetablePage: React.FC = () => {
     return () => clearInterval(interval);
   }, []);
 
-  useEffect(() => () => {
-    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
-  }, []);
-
   const persistUpload = (next: TimetableUploadState | null) => {
     setUploadState(next);
     if (!next) {
@@ -193,9 +195,17 @@ export const TimetablePage: React.FC = () => {
     }
   };
 
+  const clearScannedEntries = () => {
+    localStorage.removeItem(SCANNED_ENTRIES_KEY);
+    setRawEntries(TIMETABLE_ENTRIES);
+    setSelectedUnitFilter('all');
+    setInspectedEntry(null);
+  };
+
   const handleTimetableFile = (file?: File) => {
     if (!file) return;
-    const isSupported = ['image/png', 'image/jpeg'].includes(file.type) || /\.(png|jpe?g)$/i.test(file.name);
+    const isSupported =
+      ['image/png', 'image/jpeg'].includes(file.type) || /\.(png|jpe?g)$/i.test(file.name);
     if (!isSupported) {
       setUploadError('Please upload a PNG, JPG, or JPEG image.');
       return;
@@ -209,6 +219,8 @@ export const TimetablePage: React.FC = () => {
         setUploadError('We could not read that image. Please try another file.');
         return;
       }
+      // A new image invalidates any previously scanned result
+      clearScannedEntries();
       persistUpload({ image, fileName: file.name, scanned: false });
       setScanProgress(0);
       setScanStage(0);
@@ -217,43 +229,67 @@ export const TimetablePage: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleScanTimetable = () => {
+  const handleScanTimetable = async () => {
     if (!uploadState?.image || isScanning) return;
-    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
     setIsScanning(true);
+    setUploadError('');
     setScanProgress(4);
     setScanStage(0);
 
-    let step = 0;
-    scanTimerRef.current = window.setInterval(() => {
-      step += 1;
-      const nextProgress = Math.min(step * 20, 100);
-      setScanProgress(nextProgress);
-      setScanStage(Math.min(Math.floor(step / 1.1), SCAN_STAGES.length - 1));
+    try {
+      setScanStage(1);
+      const entries = await scanTimetableImage(uploadState.image, venuesList, (p) => {
+        setScanProgress(Math.max(4, Math.round(p * 90)));
+        setScanStage(p < 0.9 ? 1 : 2);
+      });
 
-      if (nextProgress >= 100) {
-        if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
-        scanTimerRef.current = null;
-        setIsScanning(false);
-        persistUpload({ ...uploadState, scanned: true, scannedAt: new Date().toISOString() });
-        sessionStorage.removeItem('kampas_timetable_home_notice_seen');
-        notify({
+      if (entries.length === 0) {
+        setUploadError(
+          "We couldn't find any classes in that image. Try a clearer, full-width screenshot of the table."
+        );
+        return;
+      }
+
+      setScanStage(3);
+      setRawEntries(entries);
+      setSelectedUnitFilter('all');
+      setSearchQuery('');
+      try {
+        localStorage.setItem(SCANNED_ENTRIES_KEY, JSON.stringify(entries));
+      } catch {
+        // Entries still show this session even if they can't be saved
+      }
+
+      setScanProgress(100);
+      setScanStage(4);
+      persistUpload({ ...uploadState, scanned: true, scannedAt: new Date().toISOString() });
+      notify(
+        {
           type: 'timetable_scanned',
           title: 'Timetable posted to your Home dashboard',
           body: 'Your lessons are now live on Home. Tap the new timetable update to view today’s schedule.',
           link: '/home',
           priority: 'important',
-        }, user);
-      }
-    }, 700);
+        },
+        user
+      );
+    } catch (e: any) {
+      setUploadError(
+        e?.message === 'HEADER_NOT_FOUND'
+          ? 'Could not find the table headers. Please upload a screenshot that includes the full header row (Course Code, Lecturer, Room, Days, Start, End).'
+          : 'Scanning failed. Please try again with a clearer image.'
+      );
+    } finally {
+      setIsScanning(false);
+    }
   };
 
   const handleRemoveUpload = () => {
-    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
-    scanTimerRef.current = null;
     setIsScanning(false);
     setScanProgress(0);
     setScanStage(0);
+    setUploadError('');
+    clearScannedEntries();
     persistUpload(null);
   };
 
@@ -262,6 +298,7 @@ export const TimetablePage: React.FC = () => {
     setUploadError('');
     setScanProgress(0);
     setScanStage(0);
+    clearScannedEntries();
     persistUpload({ ...uploadState, scanned: false, scannedAt: undefined });
   };
 
@@ -272,7 +309,7 @@ export const TimetablePage: React.FC = () => {
     }
   }, [tabParam, mainTab]);
 
-  // Load real data asynchronously through the service layer
+  // Load supporting data through the service layer
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
@@ -285,7 +322,8 @@ export const TimetablePage: React.FC = () => {
     ])
       .then(([entries, venues, units, deadlines]) => {
         if (!isMounted) return;
-        setRawEntries(entries);
+        // Scanned entries always win over the service's sample data
+        setRawEntries(readSavedEntries() ?? entries);
         setVenuesList(venues);
         setUnitsList(units);
         setDeadlinesList(deadlines);
@@ -328,11 +366,9 @@ export const TimetablePage: React.FC = () => {
   // Filtered Timetable Entries
   const filteredEntries = useMemo(() => {
     return rawEntries.filter((entry) => {
-      // Unit filter
       if (selectedUnitFilter !== 'all' && entry.unitCode !== selectedUnitFilter) {
         return false;
       }
-      // Search text query
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const match =
@@ -340,7 +376,7 @@ export const TimetablePage: React.FC = () => {
           entry.unitName.toLowerCase().includes(q) ||
           entry.lecturer.toLowerCase().includes(q) ||
           entry.venueName.toLowerCase().includes(q) ||
-          entry.venueCode.toLowerCase().includes(q);
+          (entry.venueCode || '').toLowerCase().includes(q);
         if (!match) return false;
       }
       return true;
@@ -363,11 +399,17 @@ export const TimetablePage: React.FC = () => {
   const nextClass = useMemo(() => {
     const nowDay = new Date().getDay();
     const remainingToday = rawEntries
-      .filter((e) => getTimetableDayIndex(e.dayOfWeek) === nowDay && toMinutes(e.startTime) > currentNowMinutes)
+      .filter(
+        (e) => getTimetableDayIndex(e.dayOfWeek) === nowDay && toMinutes(e.startTime) > currentNowMinutes
+      )
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     if (remainingToday.length > 0) return remainingToday[0];
-    return rawEntries.sort((a, b) => getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) || a.startTime.localeCompare(b.startTime))[0];
+    return [...rawEntries].sort(
+      (a, b) =>
+        getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) ||
+        a.startTime.localeCompare(b.startTime)
+    )[0];
   }, [rawEntries, currentNowMinutes]);
 
   // Export ICS
@@ -481,6 +523,7 @@ export const TimetablePage: React.FC = () => {
   };
 
   const handleNavigateVenue = (venueId: string) => {
+    if (!venueId) return; // scanned rooms that didn't match a known venue have no map target
     navigate(`/campus/map?venue=${encodeURIComponent(venueId)}`);
   };
 
@@ -580,7 +623,9 @@ export const TimetablePage: React.FC = () => {
 
           {/* Time & Venue */}
           <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 dark:text-slate-300 font-mono">
-            <span>{formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}</span>
+            <span>
+              {formatTimeOnly(entry.startTime)} – {formatTimeOnly(entry.endTime)}
+            </span>
             <span className="truncate max-w-[90px] font-sans font-semibold text-slate-600 dark:text-slate-400">
               {entry.venueCode || entry.venueName.split(' ')[0]}
             </span>
@@ -641,466 +686,596 @@ export const TimetablePage: React.FC = () => {
         </div>
       </div>
 
-      {mainTab === 'timetable' && (
-        uploadState?.scanned && !isScanning ? (
-          <div className="flex items-center justify-end rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
-            <Button size="sm" variant="gold" onClick={handleRescan} className="font-black"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Rescan</Button>
+      {mainTab === 'timetable' &&
+        (uploadState?.scanned && !isScanning ? (
+          <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#071B4A] dark:text-white">
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-white">
+                <Check className="h-3.5 w-3.5" />
+              </span>
+              <span className="truncate">
+                Scanned from {uploadState.fileName} • {rawEntries.length} classes
+              </span>
+            </div>
+            <Button size="sm" variant="gold" onClick={handleRescan} className="font-black">
+              <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+              Rescan
+            </Button>
           </div>
         ) : (
-        <section className="relative overflow-hidden rounded-3xl border border-[#CBD9F5] bg-gradient-to-br from-[#F5F8FF] via-white to-[#FFF9E6] p-4 shadow-sm dark:border-[#1E3158] dark:from-[#0C1D3D] dark:via-[#071B4A] dark:to-[#2A2508] sm:p-6">
-          <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#1769FF]/10 blur-3xl" />
-          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-            <div className="max-w-xl">
-              <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#1769FF] dark:text-blue-300">
-                <WandSparkles className="h-3.5 w-3.5" /> Smart timetable scanner
+          <section className="relative overflow-hidden rounded-3xl border border-[#CBD9F5] bg-gradient-to-br from-[#F5F8FF] via-white to-[#FFF9E6] p-4 shadow-sm dark:border-[#1E3158] dark:from-[#0C1D3D] dark:via-[#071B4A] dark:to-[#2A2508] sm:p-6">
+            <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#1769FF]/10 blur-3xl" />
+            <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="max-w-xl">
+                <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#1769FF] dark:text-blue-300">
+                  <WandSparkles className="h-3.5 w-3.5" /> Smart timetable scanner
+                </div>
+                <h2 className="text-xl font-black tracking-tight text-[#071B4A] dark:text-white sm:text-2xl">
+                  Turn your timetable screenshot into a clear weekly plan
+                </h2>
+                <p className="mt-1.5 text-xs leading-relaxed text-[#5B6475] dark:text-slate-300 sm:text-sm">
+                  Upload a screenshot of your timetable and Kampas will read your courses, lecturers, rooms and
+                  times, then arrange them into your weekly schedule. Everything is processed on your device.
+                </p>
               </div>
-              <h2 className="text-xl font-black tracking-tight text-[#071B4A] dark:text-white sm:text-2xl">
-                Turn your timetable screenshot into a clear weekly plan
-              </h2>
-              <p className="mt-1.5 text-xs leading-relaxed text-[#5B6475] dark:text-slate-300 sm:text-sm">
-                Upload a timetable image and watch Kampas organise your classes into the campus schedule view.
-                This presentation demo uses the official sample timetable after scanning.
-              </p>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+                className="hidden"
+                onChange={(event) => {
+                  handleTimetableFile(event.target.files?.[0]);
+                  event.currentTarget.value = '';
+                }}
+              />
+
+              {!uploadState ? (
+                <div
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => fileInputRef.current?.click()}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
+                  }}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    handleTimetableFile(event.dataTransfer.files?.[0]);
+                  }}
+                  className="flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#AFC3ED] bg-white/70 px-5 py-6 text-center transition hover:border-[#1769FF] hover:bg-white dark:border-[#2D4575] dark:bg-[#0C1D3D]/70 dark:hover:border-[#F2B705] lg:max-w-sm"
+                >
+                  <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]">
+                    <UploadCloud className="h-5 w-5" />
+                  </span>
+                  <span className="text-sm font-extrabold text-[#071B4A] dark:text-white">
+                    Drop your timetable here
+                  </span>
+                  <span className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">
+                    PNG, JPG or JPEG • or click to browse
+                  </span>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    onClick={(event) => {
+                      event.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="mt-3"
+                  >
+                    Browse files
+                  </Button>
+                </div>
+              ) : (
+                <div className="w-full lg:max-w-sm">
+                  <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-[#0C1D3D]">
+                    <div className="relative h-36 bg-slate-100 dark:bg-slate-900">
+                      <img
+                        src={uploadState.image}
+                        alt="Uploaded timetable preview"
+                        className="h-full w-full object-contain"
+                      />
+                      <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">
+                        <Check className="h-3 w-3" /> Image uploaded
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleRemoveUpload}
+                        disabled={isScanning}
+                        className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-red-600 disabled:opacity-50"
+                        aria-label="Remove timetable image"
+                      >
+                        <X className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center justify-between gap-2 p-3">
+                      <div className="min-w-0">
+                        <div className="truncate text-xs font-bold text-[#071B4A] dark:text-white">
+                          {uploadState.fileName}
+                        </div>
+                        <div className="text-[10px] text-slate-500">Ready to scan</div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isScanning}
+                        className="shrink-0 text-[11px] font-bold text-[#0B2A6F] hover:underline disabled:opacity-50 dark:text-blue-300"
+                      >
+                        Replace
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
-              className="hidden"
-              onChange={(event) => {
-                handleTimetableFile(event.target.files?.[0]);
-                event.currentTarget.value = '';
-              }}
-            />
-
-            {!uploadState ? (
-              <div
-                role="button"
-                tabIndex={0}
-                onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(event) => {
-                  if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
-                }}
-                onDragOver={(event) => event.preventDefault()}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  handleTimetableFile(event.dataTransfer.files?.[0]);
-                }}
-                className="flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#AFC3ED] bg-white/70 px-5 py-6 text-center transition hover:border-[#1769FF] hover:bg-white dark:border-[#2D4575] dark:bg-[#0C1D3D]/70 dark:hover:border-[#F2B705] lg:max-w-sm"
-              >
-                <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]"><UploadCloud className="h-5 w-5" /></span>
-                <span className="text-sm font-extrabold text-[#071B4A] dark:text-white">Drop your timetable here</span>
-                <span className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">PNG, JPG or JPEG • or click to browse</span>
-                <Button type="button" size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="mt-3">Browse files</Button>
+            {uploadError && (
+              <div className="relative mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">
+                {uploadError}
               </div>
-            ) : (
-              <div className="w-full lg:max-w-sm">
-                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-[#0C1D3D]">
-                  <div className="relative h-36 bg-slate-100 dark:bg-slate-900">
-                    <img src={uploadState.image} alt="Uploaded timetable preview" className="h-full w-full object-contain" />
-                    <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow"><Check className="h-3 w-3" /> Image uploaded</div>
-                    <button type="button" onClick={handleRemoveUpload} className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-red-600" aria-label="Remove timetable image"><X className="h-3.5 w-3.5" /></button>
+            )}
+
+            {uploadState && !uploadState.scanned && !isScanning && (
+              <div className="relative mt-5 flex flex-col gap-3 rounded-2xl border border-[#BFD0F2] bg-white/80 p-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#2D4575] dark:bg-[#0C1D3D]/80">
+                <div className="flex items-center gap-2.5">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2B705]/20 text-[#0B2A6F] dark:text-[#F2B705]">
+                    <ScanLine className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <div className="text-xs font-black text-[#071B4A] dark:text-white">Ready to scan</div>
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Include the full table with its header row for the best results.
+                    </div>
                   </div>
-                  <div className="flex items-center justify-between gap-2 p-3">
-                    <div className="min-w-0"><div className="truncate text-xs font-bold text-[#071B4A] dark:text-white">{uploadState.fileName}</div><div className="text-[10px] text-slate-500">Ready for presentation scan</div></div>
-                    <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-[11px] font-bold text-[#0B2A6F] hover:underline dark:text-blue-300">Replace</button>
+                </div>
+                <Button size="sm" variant="gold" onClick={handleScanTimetable} className="font-black">
+                  <ScanLine className="mr-1.5 h-3.5 w-3.5" />
+                  Scan My Timetable
+                </Button>
+              </div>
+            )}
+
+            {isScanning && (
+              <div className="relative mt-5 rounded-2xl border border-[#BFD0F2] bg-white/85 p-4 dark:border-[#2D4575] dark:bg-[#0C1D3D]/85">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <div>
+                    <div className="text-xs font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705]">
+                      Kampas is arranging your timetable
+                    </div>
+                    <div className="mt-1 text-sm font-bold text-[#071B4A] dark:text-white">
+                      {SCAN_STAGES[scanStage]}…
+                    </div>
                   </div>
+                  <span className="font-mono text-sm font-black text-[#1769FF] dark:text-blue-300">
+                    {scanProgress}%
+                  </span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700">
+                  <motion.div
+                    className="h-full rounded-full bg-gradient-to-r from-[#1769FF] via-[#0B2A6F] to-[#F2B705]"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${scanProgress}%` }}
+                    transition={{ duration: 0.35 }}
+                  />
+                </div>
+                <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {SCAN_STAGES.map((stage, index) => (
+                    <div
+                      key={stage}
+                      className={`flex items-center gap-1.5 text-[10px] font-bold ${
+                        index <= scanStage ? 'text-[#0B2A6F] dark:text-blue-200' : 'text-slate-400'
+                      }`}
+                    >
+                      <span
+                        className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${
+                          index < scanStage
+                            ? 'bg-emerald-500 text-white'
+                            : index === scanStage
+                            ? 'bg-[#F2B705] text-[#071B4A]'
+                            : 'bg-slate-200 text-slate-500 dark:bg-slate-700'
+                        }`}
+                      >
+                        {index < scanStage ? <Check className="h-3 w-3" /> : index + 1}
+                      </span>
+                      <span className="leading-tight">{stage}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
-
-          {uploadError && <div className="relative mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">{uploadError}</div>}
-
-          {uploadState && !uploadState.scanned && !isScanning && (
-            <div className="relative mt-5 flex flex-col gap-3 rounded-2xl border border-[#BFD0F2] bg-white/80 p-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#2D4575] dark:bg-[#0C1D3D]/80">
-              <div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2B705]/20 text-[#0B2A6F] dark:text-[#F2B705]"><ScanLine className="h-4 w-4" /></span><div><div className="text-xs font-black text-[#071B4A] dark:text-white">Ready to scan</div><div className="text-[11px] text-slate-500 dark:text-slate-400">Your image will be matched to the fixed UEAB sample schedule.</div></div></div>
-              <Button size="sm" variant="gold" onClick={handleScanTimetable} className="font-black"><ScanLine className="mr-1.5 h-3.5 w-3.5" />Scan My Timetable</Button>
-            </div>
-          )}
-
-          {isScanning && (
-            <div className="relative mt-5 rounded-2xl border border-[#BFD0F2] bg-white/85 p-4 dark:border-[#2D4575] dark:bg-[#0C1D3D]/85">
-              <div className="mb-3 flex items-center justify-between gap-3"><div><div className="text-xs font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705]">Kampas is arranging your timetable</div><div className="mt-1 text-sm font-bold text-[#071B4A] dark:text-white">{SCAN_STAGES[scanStage]}…</div></div><span className="font-mono text-sm font-black text-[#1769FF] dark:text-blue-300">{scanProgress}%</span></div>
-              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><motion.div className="h-full rounded-full bg-gradient-to-r from-[#1769FF] via-[#0B2A6F] to-[#F2B705]" initial={{ width: 0 }} animate={{ width: `${scanProgress}%` }} transition={{ duration: 0.35 }} /></div>
-              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{SCAN_STAGES.map((stage, index) => <div key={stage} className={`flex items-center gap-1.5 text-[10px] font-bold ${index <= scanStage ? 'text-[#0B2A6F] dark:text-blue-200' : 'text-slate-400'}`}><span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${index < scanStage ? 'bg-emerald-500 text-white' : index === scanStage ? 'bg-[#F2B705] text-[#071B4A]' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>{index < scanStage ? <Check className="h-3 w-3" /> : index + 1}</span><span className="leading-tight">{stage}</span></div>)}</div>
-            </div>
-          )}
-
-        </section>
-        )
-      )}
+          </section>
+        ))}
 
       {/* ================= TAB 1: CLASS TIMETABLE ================= */}
       {mainTab === 'timetable' && (
         <div className="space-y-5">
           {!uploadState?.scanned ? (
             <Card padding="lg" className="flex min-h-[260px] flex-col items-center justify-center text-center">
-              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]"><CalendarIcon className="h-7 w-7" /></span>
-              <h3 className="text-lg font-black text-[#071B4A] dark:text-white">Your organised timetable will appear here</h3>
-              <p className="mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400">Upload your timetable image above, then start the scan to arrange the official sample schedule into this timetable view.</p>
-            </Card>
-          ) : <>
-          {/* Controls Bar: View Switcher, Week Navigation, Filters, Export & Share */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0C1D3D] p-4 rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-xs">
-            {/* View Mode Switcher with animated pill */}
-            <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
-              {(['week', 'day', 'list'] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setViewMode(mode)}
-                  className={`relative px-3.5 py-1.5 text-xs font-extrabold capitalize transition-all ${
-                    viewMode === mode
-                      ? 'text-[#071B4A] dark:text-[#F2B705]'
-                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
-                  }`}
-                >
-                  {viewMode === mode && (
-                    <motion.div
-                      layoutId="activeTimetableViewTab"
-                      className="absolute inset-0 bg-white dark:bg-[#071B4A] rounded-lg shadow-xs -z-10"
-                      transition={{ type: 'spring', damping: 25, stiffness: 350 }}
-                    />
-                  )}
-                  <span>{mode === 'week' ? '▥ Week Grid' : mode === 'day' ? '▣ Day View' : '▤ List View'}</span>
-                </button>
-              ))}
-            </div>
-
-            {/* Previous / Next Week Navigation & Range */}
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                <button
-                  onClick={() => setCurrentWeekOffset((prev) => prev - 1)}
-                  className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
-                  title="Previous Week"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setCurrentWeekOffset(0)}
-                  className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
-                    currentWeekOffset === 0
-                      ? 'bg-white dark:bg-[#071B4A] text-[#0B2A6F] dark:text-[#F2B705] shadow-xs'
-                      : 'text-slate-600 dark:text-slate-300'
-                  }`}
-                >
-                  Current Week
-                </button>
-                <button
-                  onClick={() => setCurrentWeekOffset((prev) => prev + 1)}
-                  className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
-                  title="Next Week"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
-
-              <span className="text-xs font-extrabold text-[#071B4A] dark:text-white px-2 hidden sm:inline-block">
-                {weekLabel}
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]">
+                <CalendarIcon className="h-7 w-7" />
               </span>
-            </div>
-
-            {/* Filter by Unit & Search Box */}
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="relative">
-                <select
-                  value={selectedUnitFilter}
-                  onChange={(e) => setSelectedUnitFilter(e.target.value)}
-                  className="h-9 pl-3 pr-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
-                >
-                  <option value="all">All Units ({enrolledUnits.length})</option>
-                  {enrolledUnits.map((u) => (
-                    <option key={u.unitCode} value={u.unitCode}>
-                      {u.unitCode}
-                    </option>
+              <h3 className="text-lg font-black text-[#071B4A] dark:text-white">
+                Your organised timetable will appear here
+              </h3>
+              <p className="mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400">
+                Upload your timetable image above, then start the scan. Your classes will be read from the
+                image and arranged into this timetable view.
+              </p>
+            </Card>
+          ) : (
+            <>
+              {/* Controls Bar: View Switcher, Week Navigation, Filters, Export & Share */}
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0C1D3D] p-4 rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-xs">
+                {/* View Mode Switcher with animated pill */}
+                <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800 rounded-xl">
+                  {(['week', 'day', 'list'] as const).map((mode) => (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setViewMode(mode)}
+                      className={`relative px-3.5 py-1.5 text-xs font-extrabold capitalize transition-all ${
+                        viewMode === mode
+                          ? 'text-[#071B4A] dark:text-[#F2B705]'
+                          : 'text-slate-500 dark:text-slate-400 hover:text-slate-800'
+                      }`}
+                    >
+                      {viewMode === mode && (
+                        <motion.div
+                          layoutId="activeTimetableViewTab"
+                          className="absolute inset-0 bg-white dark:bg-[#071B4A] rounded-lg shadow-xs -z-10"
+                          transition={{ type: 'spring', damping: 25, stiffness: 350 }}
+                        />
+                      )}
+                      <span>
+                        {mode === 'week' ? '▥ Week Grid' : mode === 'day' ? '▣ Day View' : '▤ List View'}
+                      </span>
+                    </button>
                   ))}
-                </select>
-              </div>
-
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search lecturer, hall..."
-                  className="h-9 pl-8 pr-3 w-36 sm:w-44 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
-                />
-              </div>
-
-              {/* Action Buttons: ICS Export & Share Image */}
-              <Button size="sm" variant="secondary" onClick={handleExportICS} className="text-xs">
-                <Download className="w-3.5 h-3.5 mr-1" />
-                ICS
-              </Button>
-              <Button size="sm" variant="gold" onClick={handleShareAsImage} className="text-xs font-bold">
-                <Share2 className="w-3.5 h-3.5 mr-1" />
-                Share Image
-              </Button>
-            </div>
-          </div>
-
-          {/* Clash Alert Warning Banner */}
-          {clashes.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: -6 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="flex items-center gap-3 p-3.5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-100 text-xs"
-            >
-              <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
-              <div className="flex-1">
-                <strong>Schedule Conflict Detected: </strong>
-                {clashes.map(([a, b], idx) => (
-                  <span key={idx} className="mr-2">
-                    {a.unitCode} ({a.startTime}-{a.endTime}) overlaps with {b.unitCode} on {a.dayOfWeek}.
-                  </span>
-                ))}
-              </div>
-            </motion.div>
-          )}
-
-          {/* Main Content: Timetable Views & Enrolled Units Side Panel */}
-          <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
-            {/* Left: Time Grid or List */}
-            <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white shadow-sm dark:bg-[#0C1D3D]">
-              {loading ? (
-                <div className="p-16 text-center space-y-3">
-                  <div className="w-8 h-8 rounded-full border-2 border-[#0B2A6F] border-t-transparent animate-spin mx-auto" />
-                  <p className="text-xs text-slate-400">Loading your verified schedule...</p>
                 </div>
-              ) : (
-                <>
-                  {/* ================= 1. WEEK VIEW TIME GRID ================= */}
-                  {viewMode === 'week' && (
-                    <div className="overflow-x-auto">
-                      <div className="min-w-[780px]">
-                        {/* Day Column Headers */}
-                        <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40">
-                          <div className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">
-                            Time
-                          </div>
-                          {DAYS.map((day) => {
-                            const colDate = new Date(weekStart.getTime() + (day.id - 1) * 86400000);
-                            const isColToday =
-                              currentWeekOffset === 0 && new Date().getDay() === day.id;
 
-                            return (
+                {/* Previous / Next Week Navigation & Range */}
+                <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                    <button
+                      onClick={() => setCurrentWeekOffset((prev) => prev - 1)}
+                      className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
+                      title="Previous Week"
+                    >
+                      <ChevronLeft className="w-4 h-4" />
+                    </button>
+                    <button
+                      onClick={() => setCurrentWeekOffset(0)}
+                      className={`px-2.5 py-1 text-xs font-bold rounded-lg transition ${
+                        currentWeekOffset === 0
+                          ? 'bg-white dark:bg-[#071B4A] text-[#0B2A6F] dark:text-[#F2B705] shadow-xs'
+                          : 'text-slate-600 dark:text-slate-300'
+                      }`}
+                    >
+                      Current Week
+                    </button>
+                    <button
+                      onClick={() => setCurrentWeekOffset((prev) => prev + 1)}
+                      className="p-1.5 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-[#071B4A] transition"
+                      title="Next Week"
+                    >
+                      <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+
+                  <span className="text-xs font-extrabold text-[#071B4A] dark:text-white px-2 hidden sm:inline-block">
+                    {weekLabel}
+                  </span>
+                </div>
+
+                {/* Filter by Unit & Search Box */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="relative">
+                    <select
+                      value={selectedUnitFilter}
+                      onChange={(e) => setSelectedUnitFilter(e.target.value)}
+                      className="h-9 pl-3 pr-8 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
+                    >
+                      <option value="all">All Units ({enrolledUnits.length})</option>
+                      {enrolledUnits.map((u) => (
+                        <option key={u.unitCode} value={u.unitCode}>
+                          {u.unitCode}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-2.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      placeholder="Search lecturer, hall..."
+                      className="h-9 pl-8 pr-3 w-36 sm:w-44 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-[#071B4A] dark:text-white focus:outline-none focus:border-[#0B2A6F]"
+                    />
+                  </div>
+
+                  {/* Action Buttons: ICS Export & Share Image */}
+                  <Button size="sm" variant="secondary" onClick={handleExportICS} className="text-xs">
+                    <Download className="w-3.5 h-3.5 mr-1" />
+                    ICS
+                  </Button>
+                  <Button size="sm" variant="gold" onClick={handleShareAsImage} className="text-xs font-bold">
+                    <Share2 className="w-3.5 h-3.5 mr-1" />
+                    Share Image
+                  </Button>
+                </div>
+              </div>
+
+              {/* Clash Alert Warning Banner */}
+              {clashes.length > 0 && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-3 p-3.5 rounded-2xl border border-amber-300 dark:border-amber-800 bg-amber-50 dark:bg-amber-950/40 text-amber-950 dark:text-amber-100 text-xs"
+                >
+                  <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <div className="flex-1">
+                    <strong>Schedule Conflict Detected: </strong>
+                    {clashes.map(([a, b], idx) => (
+                      <span key={idx} className="mr-2">
+                        {a.unitCode} ({a.startTime}-{a.endTime}) overlaps with {b.unitCode} on {a.dayOfWeek}.
+                      </span>
+                    ))}
+                  </div>
+                </motion.div>
+              )}
+
+              {/* Main Content: Timetable Views & Enrolled Units Side Panel */}
+              <div className="grid min-w-0 gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+                {/* Left: Time Grid or List */}
+                <div className="min-w-0 overflow-hidden rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] bg-white shadow-sm dark:bg-[#0C1D3D]">
+                  {loading ? (
+                    <div className="p-16 text-center space-y-3">
+                      <div className="w-8 h-8 rounded-full border-2 border-[#0B2A6F] border-t-transparent animate-spin mx-auto" />
+                      <p className="text-xs text-slate-400">Loading your verified schedule...</p>
+                    </div>
+                  ) : (
+                    <>
+                      {/* ================= 1. WEEK VIEW TIME GRID ================= */}
+                      {viewMode === 'week' && (
+                        <div className="overflow-x-auto">
+                          <div className="min-w-[780px]">
+                            {/* Day Column Headers */}
+                            <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] border-b border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/40">
+                              <div className="p-3 text-[10px] font-black uppercase text-slate-400 text-center">
+                                Time
+                              </div>
+                              {DAYS.map((day) => {
+                                const colDate = new Date(weekStart.getTime() + (day.id - 1) * 86400000);
+                                const isColToday =
+                                  currentWeekOffset === 0 && new Date().getDay() === day.id;
+
+                                return (
+                                  <button
+                                    key={day.id}
+                                    type="button"
+                                    onClick={() => {
+                                      setSelectedDay(day.id);
+                                      setViewMode('day');
+                                    }}
+                                    className={`border-l border-slate-100 dark:border-slate-800 p-2.5 text-center transition ${
+                                      isColToday
+                                        ? 'bg-[#E8EEFF]/70 dark:bg-[#102B62]/60'
+                                        : 'hover:bg-slate-100/50'
+                                    }`}
+                                  >
+                                    <div className="text-[10px] font-black uppercase text-slate-500">
+                                      {day.short}
+                                    </div>
+                                    <div className="text-xs font-black text-[#071B4A] dark:text-white flex items-center justify-center gap-1">
+                                      <span>{formatDate(colDate)}</span>
+                                      {isColToday && <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />}
+                                    </div>
+                                  </button>
+                                );
+                              })}
+                            </div>
+
+                            {/* Grid Body */}
+                            <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] relative">
+                              {/* Time Labels Column */}
+                              <div className="relative select-none">
+                                {Array.from({ length: END_HOUR - START_HOUR }, (_, index) => (
+                                  <div
+                                    key={index}
+                                    style={{ height: HOUR_HEIGHT }}
+                                    className="border-b border-slate-100 dark:border-slate-800/80 pr-2 pt-1.5 text-right text-[10px] font-mono text-slate-400"
+                                  >
+                                    {formatTimeOnly(`${String(START_HOUR + index).padStart(2, '0')}:00`)}
+                                  </div>
+                                ))}
+                              </div>
+
+                              {/* 6 Day Columns */}
+                              {DAYS.map((day) => {
+                                const isColToday =
+                                  currentWeekOffset === 0 && new Date().getDay() === day.id;
+                                const dayEntries = filteredEntries.filter(
+                                  (e) => getTimetableDayIndex(e.dayOfWeek) === day.id
+                                );
+
+                                return (
+                                  <div
+                                    key={day.id}
+                                    className={`relative border-l border-slate-100 dark:border-slate-800/80 ${
+                                      isColToday ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
+                                    }`}
+                                    style={{
+                                      height: (END_HOUR - START_HOUR) * HOUR_HEIGHT,
+                                      backgroundImage:
+                                        'linear-gradient(to bottom, transparent 67px, #f1f5f9 68px)',
+                                      backgroundSize: `100% ${HOUR_HEIGHT}px`,
+                                    }}
+                                  >
+                                    {/* Live "Now" Indicator Line on Today's Column */}
+                                    {isColToday && liveNowStyle && (
+                                      <div
+                                        style={{ top: liveNowStyle.top }}
+                                        className="absolute inset-x-0 z-20 pointer-events-none flex items-center"
+                                      >
+                                        <span className="w-2.5 h-2.5 -ml-1 rounded-full bg-red-600 ring-2 ring-white shadow-xs" />
+                                        <div className="h-[2px] w-full bg-red-500 shadow-xs" />
+                                      </div>
+                                    )}
+
+                                    {/* Classes for this Day */}
+                                    {dayEntries.map((entry) => renderClassBlock(entry))}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* ================= 2. DAY VIEW ================= */}
+                      {viewMode === 'day' && (
+                        <div className="p-4 sm:p-5 space-y-4">
+                          {/* Day Pill Selector */}
+                          <div className="flex gap-1.5 overflow-x-auto pb-1">
+                            {DAYS.map((day) => (
                               <button
                                 key={day.id}
                                 type="button"
-                                onClick={() => {
-                                  setSelectedDay(day.id);
-                                  setViewMode('day');
-                                }}
-                                className={`border-l border-slate-100 dark:border-slate-800 p-2.5 text-center transition ${
-                                  isColToday ? 'bg-[#E8EEFF]/70 dark:bg-[#102B62]/60' : 'hover:bg-slate-100/50'
+                                onClick={() => setSelectedDay(day.id)}
+                                className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
+                                  selectedDay === day.id
+                                    ? 'bg-[#0B2A6F] text-white shadow-xs'
+                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                                 }`}
                               >
-                                <div className="text-[10px] font-black uppercase text-slate-500">
-                                  {day.short}
-                                </div>
-                                <div className="text-xs font-black text-[#071B4A] dark:text-white flex items-center justify-center gap-1">
-                                  <span>{formatDate(colDate)}</span>
-                                  {isColToday && (
-                                    <span className="w-1.5 h-1.5 rounded-full bg-[#16A34A]" />
-                                  )}
-                                </div>
+                                {day.name}
                               </button>
-                            );
-                          })}
-                        </div>
-
-                        {/* Grid Body */}
-                        <div className="grid grid-cols-[64px_repeat(6,minmax(0,1fr))] relative">
-                          {/* Time Labels Column */}
-                          <div className="relative select-none">
-                            {Array.from({ length: END_HOUR - START_HOUR }, (_, index) => (
-                              <div
-                                key={index}
-                                style={{ height: HOUR_HEIGHT }}
-                                className="border-b border-slate-100 dark:border-slate-800/80 pr-2 pt-1.5 text-right text-[10px] font-mono text-slate-400"
-                              >
-                                {formatTimeOnly(`${String(START_HOUR + index).padStart(2, '0')}:00`)}
-                              </div>
                             ))}
                           </div>
 
-                          {/* 6 Day Columns */}
-                          {DAYS.map((day) => {
-                            const isColToday =
-                              currentWeekOffset === 0 && new Date().getDay() === day.id;
-                            const dayEntries = filteredEntries.filter((e) => getTimetableDayIndex(e.dayOfWeek) === day.id);
-
-                            return (
-                              <div
-                                key={day.id}
-                                className={`relative border-l border-slate-100 dark:border-slate-800/80 ${
-                                  isColToday ? 'bg-blue-50/20 dark:bg-blue-950/10' : ''
-                                }`}
-                                style={{
-                                  height: (END_HOUR - START_HOUR) * HOUR_HEIGHT,
-                                  backgroundImage:
-                                    'linear-gradient(to bottom, transparent 67px, #f1f5f9 68px)',
-                                  backgroundSize: `100% ${HOUR_HEIGHT}px`,
-                                }}
-                              >
-                                {/* Live "Now" Indicator Line on Today's Column */}
-                                {isColToday && liveNowStyle && (
-                                  <div
-                                    style={{ top: liveNowStyle.top }}
-                                    className="absolute inset-x-0 z-20 pointer-events-none flex items-center"
-                                  >
-                                    <span className="w-2.5 h-2.5 -ml-1 rounded-full bg-red-600 ring-2 ring-white shadow-xs" />
-                                    <div className="h-[2px] w-full bg-red-500 shadow-xs" />
-                                  </div>
-                                )}
-
-                                {/* Classes for this Day */}
-                                {dayEntries.map((entry) => renderClassBlock(entry))}
+                          <div className="space-y-2.5 pt-2">
+                            {filteredEntries.filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay)
+                              .length === 0 ? (
+                              <div className="text-center py-12 text-slate-400 text-xs">
+                                No classes scheduled for {DAYS.find((d) => d.id === selectedDay)?.name}.
                               </div>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ================= 2. DAY VIEW ================= */}
-                  {viewMode === 'day' && (
-                    <div className="p-4 sm:p-5 space-y-4">
-                      {/* Day Pill Selector */}
-                      <div className="flex gap-1.5 overflow-x-auto pb-1">
-                        {DAYS.map((day) => (
-                          <button
-                            key={day.id}
-                            type="button"
-                            onClick={() => setSelectedDay(day.id)}
-                            className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition ${
-                              selectedDay === day.id
-                                ? 'bg-[#0B2A6F] text-white shadow-xs'
-                                : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
-                            }`}
-                          >
-                            {day.name}
-                          </button>
-                        ))}
-                      </div>
-
-                      <div className="space-y-2.5 pt-2">
-                        {filteredEntries.filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay).length === 0 ? (
-                          <div className="text-center py-12 text-slate-400 text-xs">
-                            No classes scheduled for {DAYS.find((d) => d.id === selectedDay)?.name}.
+                            ) : (
+                              filteredEntries
+                                .filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay)
+                                .sort((a, b) => a.startTime.localeCompare(b.startTime))
+                                .map((entry) => renderClassBlock(entry, true))
+                            )}
                           </div>
-                        ) : (
-                          filteredEntries
-                            .filter((e) => getTimetableDayIndex(e.dayOfWeek) === selectedDay)
-                            .sort((a, b) => a.startTime.localeCompare(b.startTime))
-                            .map((entry) => renderClassBlock(entry, true))
-                        )}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* ================= 3. LIST VIEW ================= */}
-                  {viewMode === 'list' && (
-                    <div className="p-4 sm:p-5 space-y-3">
-                      {filteredEntries
-                        .sort((a, b) => getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) || a.startTime.localeCompare(b.startTime))
-                        .map((entry) => renderClassBlock(entry, true))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Right: Enrolled Units Inspector & Active Class Summary */}
-            <aside className="space-y-4 min-w-0">
-              {/* Enrolled Units Card */}
-              <Card padding="md" className="space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                  <h3 className="text-sm font-black text-[#071B4A] dark:text-white">
-                    Enrolled Courses
-                  </h3>
-                  <Badge variant="academic">{enrolledUnits.length} Units</Badge>
-                </div>
-
-                <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                  {enrolledUnits.map((u) => (
-                    <button
-                      key={u.unitCode}
-                      onClick={() => setInspectedEntry(u)}
-                      className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between gap-2 ${
-                        inspectedEntry?.unitCode === u.unitCode
-                          ? 'bg-[#E8EEFF] dark:bg-[#102B62] border-[#0B2A6F] dark:border-[#F2B705]'
-                          : 'border-slate-200 dark:border-slate-700 hover:border-[#0B2A6F]'
-                      }`}
-                    >
-                      <div className="min-w-0">
-                        <span
-                          className="font-mono text-[10px] font-black px-1.5 py-0.2 rounded"
-                          style={{ backgroundColor: `${u.color}20`, color: u.color }}
-                        >
-                          {u.unitCode}
-                        </span>
-                        <div className="text-xs font-bold text-[#071B4A] dark:text-white truncate mt-1">
-                          {u.unitName}
                         </div>
-                        <div className="text-[10px] text-slate-400">{u.lecturer}</div>
-                      </div>
-                      <span
-                        className="w-2.5 h-2.5 rounded-full shrink-0"
-                        style={{ backgroundColor: u.color }}
-                      />
-                    </button>
-                  ))}
+                      )}
+
+                      {/* ================= 3. LIST VIEW ================= */}
+                      {viewMode === 'list' && (
+                        <div className="p-4 sm:p-5 space-y-3">
+                          {[...filteredEntries]
+                            .sort(
+                              (a, b) =>
+                                getTimetableDayIndex(a.dayOfWeek) - getTimetableDayIndex(b.dayOfWeek) ||
+                                a.startTime.localeCompare(b.startTime)
+                            )
+                            .map((entry) => renderClassBlock(entry, true))}
+                        </div>
+                      )}
+                    </>
+                  )}
                 </div>
-              </Card>
 
-              {/* Next Upcoming Class Quick Spotlight */}
-              {nextClass && (
-                <Card padding="md" className="space-y-2.5 bg-gradient-to-br from-blue-50/70 to-slate-50 dark:from-blue-950/20 dark:to-slate-900">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705] flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" /> Next Up
-                    </span>
-                    <span className="text-[10px] font-mono text-slate-500 font-bold">
-                      {nextClass.startTime}
-                    </span>
-                  </div>
+                {/* Right: Enrolled Units Inspector & Active Class Summary */}
+                <aside className="space-y-4 min-w-0">
+                  {/* Enrolled Units Card */}
+                  <Card padding="md" className="space-y-3">
+                    <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                      <h3 className="text-sm font-black text-[#071B4A] dark:text-white">Enrolled Courses</h3>
+                      <Badge variant="academic">{enrolledUnits.length} Units</Badge>
+                    </div>
 
-                  <h4 className="text-xs font-black text-[#071B4A] dark:text-white line-clamp-1">
-                    {nextClass.unitCode}: {nextClass.unitName}
-                  </h4>
-                  <p className="text-[11px] text-slate-500 flex items-center gap-1">
-                    <MapPin className="w-3 h-3 text-[#0B2A6F] dark:text-[#F2B705]" />
-                    <span>{nextClass.venueName}</span>
-                  </p>
+                    <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                      {enrolledUnits.map((u) => (
+                        <button
+                          key={u.unitCode}
+                          onClick={() => setInspectedEntry(u)}
+                          className={`w-full p-2.5 rounded-xl border text-left transition flex items-center justify-between gap-2 ${
+                            inspectedEntry?.unitCode === u.unitCode
+                              ? 'bg-[#E8EEFF] dark:bg-[#102B62] border-[#0B2A6F] dark:border-[#F2B705]'
+                              : 'border-slate-200 dark:border-slate-700 hover:border-[#0B2A6F]'
+                          }`}
+                        >
+                          <div className="min-w-0">
+                            <span
+                              className="font-mono text-[10px] font-black px-1.5 py-0.2 rounded"
+                              style={{ backgroundColor: `${u.color}20`, color: u.color }}
+                            >
+                              {u.unitCode}
+                            </span>
+                            <div className="text-xs font-bold text-[#071B4A] dark:text-white truncate mt-1">
+                              {u.unitName}
+                            </div>
+                            <div className="text-[10px] text-slate-400">{u.lecturer}</div>
+                          </div>
+                          <span
+                            className="w-2.5 h-2.5 rounded-full shrink-0"
+                            style={{ backgroundColor: u.color }}
+                          />
+                        </button>
+                      ))}
+                    </div>
+                  </Card>
 
-                  <div className="pt-1 flex items-center justify-between">
-                    <button
-                      onClick={() => setInspectedEntry(nextClass)}
-                      className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline"
+                  {/* Next Upcoming Class Quick Spotlight */}
+                  {nextClass && (
+                    <Card
+                      padding="md"
+                      className="space-y-2.5 bg-gradient-to-br from-blue-50/70 to-slate-50 dark:from-blue-950/20 dark:to-slate-900"
                     >
-                      View Door &amp; Details →
-                    </button>
-                    <Button
-                      size="sm"
-                      variant="gold"
-                      onClick={() => handleNavigateVenue(nextClass.venueId)}
-                      className="text-[10px] font-bold"
-                    >
-                      <Navigation className="w-3 h-3 mr-1" />
-                      Route
-                    </Button>
-                  </div>
-                </Card>
-              )}
-            </aside>
-          </div>
-          </>}
+                      <div className="flex items-center justify-between">
+                        <span className="text-[10px] font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705] flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" /> Next Up
+                        </span>
+                        <span className="text-[10px] font-mono text-slate-500 font-bold">
+                          {nextClass.startTime}
+                        </span>
+                      </div>
+
+                      <h4 className="text-xs font-black text-[#071B4A] dark:text-white line-clamp-1">
+                        {nextClass.unitCode}: {nextClass.unitName}
+                      </h4>
+                      <p className="text-[11px] text-slate-500 flex items-center gap-1">
+                        <MapPin className="w-3 h-3 text-[#0B2A6F] dark:text-[#F2B705]" />
+                        <span>{nextClass.venueName}</span>
+                      </p>
+
+                      <div className="pt-1 flex items-center justify-between">
+                        <button
+                          onClick={() => setInspectedEntry(nextClass)}
+                          className="text-xs font-bold text-[#0B2A6F] dark:text-[#F2B705] hover:underline"
+                        >
+                          View Door &amp; Details →
+                        </button>
+                        <Button
+                          size="sm"
+                          variant="gold"
+                          disabled={!nextClass.venueId}
+                          onClick={() => handleNavigateVenue(nextClass.venueId)}
+                          className="text-[10px] font-bold"
+                        >
+                          <Navigation className="w-3 h-3 mr-1" />
+                          Route
+                        </Button>
+                      </div>
+                    </Card>
+                  )}
+                </aside>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -1130,7 +1305,6 @@ export const TimetablePage: React.FC = () => {
           null
         }
       />
-
     </div>
   );
 };
