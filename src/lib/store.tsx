@@ -50,9 +50,45 @@ interface ToastMessage {
   timestamp: number;
 }
 
+interface DemoAccount {
+  studentId: string;
+  password: string;
+  profile: UserProfile;
+}
+
+const DEMO_ACCOUNTS_KEY = 'kampas_demo_accounts';
+const DEMO_SESSION_KEY = 'kampas_session_student_id';
+const normalizeStudentId = (studentId: string) => studentId.trim().toUpperCase();
+
+const getDemoAccounts = (): DemoAccount[] => {
+  try {
+    const saved = localStorage.getItem(DEMO_ACCOUNTS_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved) as DemoAccount[];
+      if (Array.isArray(parsed)) return parsed;
+    }
+  } catch {
+    // Fall through to the seeded presentation account.
+  }
+
+  return [{
+    studentId: normalizeStudentId(INITIAL_USER_PROFILE.studentId || 'S21/04589'),
+    password: 'kampas123',
+    profile: INITIAL_USER_PROFILE,
+  }];
+};
+
+const saveDemoAccounts = (accounts: DemoAccount[]) => {
+  localStorage.setItem(DEMO_ACCOUNTS_KEY, JSON.stringify(accounts));
+};
+
 interface KampasContextType {
   // Current user & role
   user: UserProfile;
+  isAuthenticated: boolean;
+  signIn: (studentId: string, password: string) => { ok: boolean; error?: string };
+  signUp: (studentId: string, password: string, firstName: string, lastName: string) => { ok: boolean; error?: string };
+  logout: () => void;
   setUser: React.Dispatch<React.SetStateAction<UserProfile>>;
   setRole: (role: KampasRole) => void;
   updateProfile: (updates: Partial<UserProfile>) => void;
@@ -115,9 +151,17 @@ interface KampasContextType {
 const KampasContext = createContext<KampasContextType | null>(null);
 
 export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    const sessionId = localStorage.getItem(DEMO_SESSION_KEY);
+    return Boolean(sessionId && getDemoAccounts().some((account) => account.studentId === normalizeStudentId(sessionId)));
+  });
+
   const [user, setUser] = useState<UserProfile>(() => {
-    const saved = localStorage.getItem('kampas_user');
-    return saved ? JSON.parse(saved) : INITIAL_USER_PROFILE;
+    const sessionId = localStorage.getItem(DEMO_SESSION_KEY);
+    const account = sessionId
+      ? getDemoAccounts().find((item) => item.studentId === normalizeStudentId(sessionId))
+      : undefined;
+    return account?.profile || INITIAL_USER_PROFILE;
   });
 
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -168,8 +212,18 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
   // Persist user changes
   useEffect(() => {
-    localStorage.setItem('kampas_user', JSON.stringify(user));
-  }, [user]);
+    if (isAuthenticated) {
+      localStorage.setItem('kampas_user', JSON.stringify(user));
+      const sessionId = normalizeStudentId(user.studentId || '');
+      const accounts = getDemoAccounts();
+      const updatedAccounts = accounts.map((account) => (
+        account.studentId === sessionId ? { ...account, profile: user } : account
+      ));
+      saveDemoAccounts(updatedAccounts);
+    } else {
+      localStorage.removeItem('kampas_user');
+    }
+  }, [user, isAuthenticated]);
 
   useEffect(() => {
     let active = true;
@@ -224,6 +278,59 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   };
 
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
+
+  const signIn = (studentId: string, password: string) => {
+    const normalizedId = normalizeStudentId(studentId);
+    const account = getDemoAccounts().find((item) => item.studentId === normalizedId);
+
+    if (!account || account.password !== password) {
+      return { ok: false, error: 'That Student ID or password is incorrect. Please try again.' };
+    }
+
+    localStorage.setItem(DEMO_SESSION_KEY, normalizedId);
+    setUser(account.profile);
+    setIsAuthenticated(true);
+    return { ok: true };
+  };
+
+  const signUp = (studentId: string, password: string, firstName: string, lastName: string) => {
+    const normalizedId = normalizeStudentId(studentId);
+    if (!normalizedId) return { ok: false, error: 'Enter your Student ID to continue.' };
+    if (password.length < 6) return { ok: false, error: 'Your password must be at least 6 characters.' };
+    if (!firstName.trim() || !lastName.trim()) return { ok: false, error: 'Enter your first and last name to create your profile.' };
+
+    const accounts = getDemoAccounts();
+    if (accounts.some((account) => account.studentId === normalizedId)) {
+      return { ok: false, error: 'An account with that Student ID already exists. Sign in instead.' };
+    }
+
+    const profile: UserProfile = {
+      ...INITIAL_USER_PROFILE,
+      id: `usr-${normalizedId.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`,
+      studentId: normalizedId,
+      fullName: `${firstName.trim()} ${lastName.trim()}`,
+      email: `${normalizedId.toLowerCase().replace(/[^a-z0-9]+/g, '.')}@student.ueab.ac.ke`,
+      phone: undefined,
+      avatarUrl: '',
+      interests: [],
+      skills: [],
+      isOnboarded: true,
+      createdAt: new Date().toISOString(),
+    };
+
+    saveDemoAccounts([...accounts, { studentId: normalizedId, password, profile }]);
+    localStorage.setItem(DEMO_SESSION_KEY, normalizedId);
+    setUser(profile);
+    setIsAuthenticated(true);
+    return { ok: true };
+  };
+
+  const logout = () => {
+    localStorage.removeItem(DEMO_SESSION_KEY);
+    localStorage.removeItem('kampas_user');
+    setIsAuthenticated(false);
+    setUser(INITIAL_USER_PROFILE);
+  };
 
   const setRole = (newRole: KampasRole) => {
     setUser((prev) => ({
@@ -684,6 +791,10 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     <KampasContext.Provider
       value={{
         user,
+        isAuthenticated,
+        signIn,
+        signUp,
+        logout,
         setUser,
         setRole,
         updateProfile,

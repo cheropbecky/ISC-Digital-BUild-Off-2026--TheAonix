@@ -6,7 +6,7 @@
  * dark mode, text-only low-data mode
  */
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
@@ -22,6 +22,7 @@ import {
   QrCode,
   CheckCircle2,
   Lock,
+  Save,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -33,6 +34,25 @@ export const ProfilePage: React.FC = () => {
     lowDataMode,
     setLowDataMode,
   } = useKampasStore();
+
+  const [firstName, setFirstName] = useState(user.fullName.split(/\s+/)[0] || '');
+  const [lastName, setLastName] = useState(user.fullName.split(/\s+/).slice(1).join(' '));
+  const [profileSaved, setProfileSaved] = useState(false);
+
+  useEffect(() => {
+    const names = user.fullName.trim().split(/\s+/);
+    setFirstName(names[0] || '');
+    setLastName(names.slice(1).join(' '));
+  }, [user.fullName]);
+
+  const saveProfile = (event: React.FormEvent) => {
+    event.preventDefault();
+    const fullName = `${firstName.trim()} ${lastName.trim()}`.trim();
+    if (!fullName) return;
+    updateProfile({ fullName });
+    setProfileSaved(true);
+    window.setTimeout(() => setProfileSaved(false), 2200);
+  };
 
   const toggleVisibility = (field: keyof typeof user.visibilitySettings) => {
     updateProfile({
@@ -149,6 +169,21 @@ export const ProfilePage: React.FC = () => {
 
         {/* Right: Settings & Visibility Toggles (7 cols) */}
         <div className="lg:col-span-7 space-y-4">
+          <Card padding="md">
+            <div className="mb-3 flex items-center gap-2 border-b border-slate-100 pb-2 dark:border-slate-800">
+              <GraduationCap className="h-4 w-4 text-[#0B2A6F] dark:text-[#F2B705]" />
+              <h2 className="text-sm font-bold uppercase tracking-wider text-[#071B4A] dark:text-white">Personal details</h2>
+            </div>
+            <form onSubmit={saveProfile} className="space-y-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                <label className="text-xs font-bold text-[#071B4A] dark:text-slate-200">First name<input value={firstName} onChange={(event) => setFirstName(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#0B2A6F] focus:ring-2 focus:ring-[#F2B705] dark:border-slate-700 dark:bg-slate-900 dark:text-white" required /></label>
+                <label className="text-xs font-bold text-[#071B4A] dark:text-slate-200">Last name<input value={lastName} onChange={(event) => setLastName(event.target.value)} className="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm font-normal text-slate-900 outline-none focus:border-[#0B2A6F] focus:ring-2 focus:ring-[#F2B705] dark:border-slate-700 dark:bg-slate-900 dark:text-white" required /></label>
+              </div>
+              <label className="block text-xs font-bold text-[#071B4A] dark:text-slate-200">Student ID <input value={user.studentId || ''} readOnly className="mt-1.5 h-10 w-full cursor-not-allowed rounded-lg border border-slate-200 bg-slate-100 px-3 font-mono text-sm text-slate-500 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-400" /></label>
+              <div className="flex items-center justify-between gap-3 pt-1"><p className="text-[11px] text-slate-500">Your Student ID is the account identifier and cannot be changed.</p><Button type="submit" size="sm" variant="primary"><Save className="mr-1.5 h-3.5 w-3.5" />{profileSaved ? 'Saved' : 'Save changes'}</Button></div>
+            </form>
+          </Card>
+
           {/* Privacy & Visibility Toggles */}
           <Card padding="md">
             <div className="flex items-center gap-2 mb-3 pb-2 border-b border-slate-100 dark:border-slate-800">
