@@ -236,6 +236,7 @@ export const TimetablePage: React.FC = () => {
         scanTimerRef.current = null;
         setIsScanning(false);
         persistUpload({ ...uploadState, scanned: true, scannedAt: new Date().toISOString() });
+        sessionStorage.removeItem('kampas_timetable_home_notice_seen');
         notify({
           type: 'timetable_scanned',
           title: 'Timetable posted to your Home dashboard',

@@ -10,7 +10,7 @@
  *   - Community event RSVP
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
@@ -35,6 +35,7 @@ import {
   ExternalLink,
   CheckCircle2,
   Sparkles,
+  X,
 } from 'lucide-react';
 
 const UEAB_LOGO_URL = 'https://ueab.ac.ke/wp-content/uploads/2023/04/bara-logo-a-400x54.png';
@@ -50,6 +51,15 @@ export const HomePage: React.FC = () => {
       return false;
     }
   });
+  const [showTimetablePostedNotice, setShowTimetablePostedNotice] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kampas_timetable_upload');
+      const isPosted = Boolean(saved && (JSON.parse(saved) as { scanned?: boolean }).scanned);
+      return isPosted && sessionStorage.getItem('kampas_timetable_home_notice_seen') !== 'true';
+    } catch {
+      return false;
+    }
+  });
   const {
     user,
     notifications,
@@ -59,6 +69,13 @@ export const HomePage: React.FC = () => {
     events,
     notices,
   } = useKampasStore();
+
+  useEffect(() => {
+    if (!showTimetablePostedNotice) return;
+    sessionStorage.setItem('kampas_timetable_home_notice_seen', 'true');
+    const timeout = window.setTimeout(() => setShowTimetablePostedNotice(false), 5500);
+    return () => window.clearTimeout(timeout);
+  }, [showTimetablePostedNotice]);
 
   // Select the next scheduled class from the same data source as the timetable page.
   const now = new Date();
@@ -201,19 +218,21 @@ export const HomePage: React.FC = () => {
         </div>
       </motion.div>
 
-      {hasPostedTimetable && (
+      {showTimetablePostedNotice && (
         <motion.div
-          variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
-          className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-4 py-3 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-[#0C1D3D] dark:to-blue-950/30 dark:ring-emerald-900/30"
+          initial={{ opacity: 0, y: -14, scale: 0.96 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: -10, scale: 0.98 }}
+          className="fixed right-4 top-20 z-40 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-2xl border border-emerald-200 bg-white/95 p-3 shadow-2xl ring-1 ring-emerald-100 backdrop-blur-md dark:border-emerald-900/60 dark:bg-[#0C1D3D]/95 dark:ring-emerald-900/30"
+          role="status"
+          aria-live="polite"
         >
-          <div className="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-emerald-300/20 blur-2xl" />
-          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"><CheckCircle2 className="h-5 w-5" /></span>
-              <div><div className="flex items-center gap-2 text-xs font-black text-emerald-900 dark:text-emerald-200"><Sparkles className="h-3.5 w-3.5 text-[#F2B705]" /> Timetable posted successfully</div><p className="mt-0.5 text-[11px] text-emerald-800/80 dark:text-emerald-300/80">Your lessons are now appearing on your Home dashboard.</p></div>
-            </div>
-            <Link to="/notifications" className="flex items-center gap-1 self-start rounded-lg bg-white px-3 py-2 text-[11px] font-black text-[#0B2A6F] shadow-sm ring-1 ring-emerald-200 transition hover:bg-emerald-50 sm:self-auto dark:bg-[#102955] dark:text-blue-200 dark:ring-emerald-900/60">View notification <ArrowRight className="h-3.5 w-3.5" /></Link>
+          <div className="flex items-start gap-3">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"><CheckCircle2 className="h-5 w-5" /></span>
+            <div className="min-w-0 flex-1"><div className="flex items-center gap-2 text-xs font-black text-emerald-900 dark:text-emerald-200"><Sparkles className="h-3.5 w-3.5 text-[#F2B705]" /> Timetable posted successfully</div><p className="mt-0.5 text-[11px] text-emerald-800/80 dark:text-emerald-300/80">Your lessons are now appearing on your Home dashboard.</p><Link to="/notifications" className="mt-2 inline-flex items-center gap-1 text-[10px] font-black text-[#1769FF] hover:underline dark:text-blue-300">View notification <ArrowRight className="h-3 w-3" /></Link></div>
+            <button type="button" onClick={() => setShowTimetablePostedNotice(false)} className="rounded-lg p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Dismiss timetable notification"><X className="h-4 w-4" /></button>
           </div>
+          <div className="absolute inset-x-0 bottom-0 h-0.5 bg-emerald-500/20"><motion.div initial={{ width: '100%' }} animate={{ width: '0%' }} transition={{ duration: 5.5, ease: 'linear' }} className="h-full bg-emerald-500" /></div>
         </motion.div>
       )}
 
@@ -377,7 +396,7 @@ export const HomePage: React.FC = () => {
         className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2"
       >
         {/* Col 1: Approaching Academic Deadlines */}
-        <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-md">
+        {hasPostedTimetable && <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-md">
           <div className="space-y-3">
             <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -424,7 +443,7 @@ export const HomePage: React.FC = () => {
               Manage Academic Tasks
             </Button>
           </Link>
-        </div>
+        </div>}
 
         {/* Col 2: Off-Campus House Find */}
         <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] p-5 shadow-sm space-y-4 flex flex-col justify-between transition-all hover:-translate-y-0.5 hover:shadow-md">
