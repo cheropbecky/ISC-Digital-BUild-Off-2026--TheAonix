@@ -12,23 +12,19 @@ import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
 import {
-  UserCheck,
   Building,
-  Briefcase,
   MapPin,
-  ExternalLink,
   Send,
-  CheckCircle2,
-  Clock,
-  Sparkles,
   FileText,
   Search,
+  GraduationCap,
 } from 'lucide-react';
-import { AlumniProfile, ReferralRequest } from '../../lib/types';
-import { CommunityShell, CommunitySubNav, PageHeader } from './components/CommunityLayout';
+import { AlumniProfile } from '../../lib/types';
+import { CommunityShell, CommunitySubNav } from './components/CommunityLayout';
+import campusHero from '../../assets/images/ueab_campus_hero_1793989895358.jpg';
 
 export const AlumniDirectoryPage: React.FC = () => {
-  const { alumni, referrals, sendReferralRequest, updateReferralStatus, user, setRole } = useKampasStore();
+  const { alumni, sendReferralRequest, user } = useKampasStore();
 
   const [search, setSearch] = useState('');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('all');
@@ -64,13 +60,20 @@ export const AlumniDirectoryPage: React.FC = () => {
 
   return (
     <CommunityShell>
-      <PageHeader title="Baraton alumni directory" description="Connect with verified UEAB graduates for mentoring, guidance, and internal referrals." actions={
-        user.role === 'alumnus' ? (
-          <Button size="sm" variant="secondary" onClick={() => setRole('student')}>Switch to student view</Button>
-        ) : (
-          <Button size="sm" variant="gold" onClick={() => setRole('alumnus')}>Simulate alumnus view</Button>
-        )
-      } />
+      <header className="relative min-h-[190px] overflow-hidden rounded-[1.35rem] px-6 py-8 text-white shadow-sm sm:px-10 sm:py-10">
+        <img src={campusHero} alt="UEAB Baraton campus" className="absolute inset-0 h-full w-full object-cover" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#071B4A]/95 via-[#071B4A]/75 to-[#071B4A]/25" />
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-4">
+            <span className="mt-1 rounded-full bg-[#F2B705] p-3 text-[#071B4A] shadow-lg"><GraduationCap className="h-8 w-8" /></span>
+            <div>
+              <p className="text-sm font-extrabold text-[#F2B705] sm:text-base">UEAB Baraton Community</p>
+              <h1 className="mt-0.5 text-3xl font-black tracking-tight sm:text-4xl">Alumni</h1>
+              <p className="mt-2 max-w-2xl text-sm text-blue-50 sm:text-base">Discover alumni journeys, life after Baraton, and graduates ready to share mentorship and career guidance.</p>
+            </div>
+          </div>
+        </div>
+      </header>
       <CommunitySubNav />
       <div className="hidden">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -111,95 +114,6 @@ export const AlumniDirectoryPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Screen 3: Live Referral Tracker Strip (Always visible if student has referrals) */}
-      {referrals.length > 0 && (
-        <Card className="border-l-4 border-l-[#0B2A6F] bg-blue-50/40 dark:bg-blue-950/20">
-          <div className="flex items-center justify-between mb-3 border-b border-blue-100 dark:border-slate-800 pb-2">
-            <div className="flex items-center gap-2">
-              <Sparkles className="w-4 h-4 text-[#F2B705]" />
-              <span className="text-xs font-bold text-[#071B4A] dark:text-white uppercase tracking-wider">
-                Live Referral Request Tracker (3-Screen Progression)
-              </span>
-            </div>
-            <span className="text-[11px] text-[#5B6475] dark:text-slate-400">
-              Real-time WebSocket / Supabase sync
-            </span>
-          </div>
-
-          <div className="space-y-3">
-            {referrals.map((ref) => (
-              <div
-                key={ref.id}
-                className="p-3 bg-white dark:bg-[#0C1D3D] rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs"
-              >
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <span className="font-bold text-[#071B4A] dark:text-white">
-                      Target: {ref.targetRole} @ {ref.targetCompany}
-                    </span>
-                    <Badge
-                      variant={
-                        ref.status === 'accepted'
-                          ? 'done'
-                          : ref.status === 'declined'
-                          ? 'urgent'
-                          : 'soon'
-                      }
-                      showDot
-                    >
-                      {ref.status === 'accepted'
-                        ? 'Referral Accepted 🎉'
-                        : ref.status === 'declined'
-                        ? 'Declined'
-                        : 'Pending Alumnus Review'}
-                    </Badge>
-                  </div>
-                  <p className="text-[11px] text-[#5B6475] dark:text-slate-300">
-                    Candidate: {ref.studentName} ({ref.studentCourse}) • Alumnus: {ref.alumnusName}
-                  </p>
-                  {ref.alumnusNotes && (
-                    <div className="p-2 rounded bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium mt-1">
-                      <strong>Alumnus Feedback: </strong> {ref.alumnusNotes}
-                    </div>
-                  )}
-                </div>
-
-                {/* Alumnus Accept / Reject Actions for Screen 2 */}
-                {user.role === 'alumnus' && ref.status === 'pending' && (
-                  <div className="flex items-center gap-2 shrink-0">
-                    <Button
-                      size="sm"
-                      variant="primary"
-                      onClick={() =>
-                        updateReferralStatus(
-                          ref.id,
-                          'accepted',
-                          'Super impressive portfolio! I have submitted a warm referral directly to the M-PESA cloud talent team.'
-                        )
-                      }
-                      className="text-xs"
-                    >
-                      <CheckCircle2 className="w-3.5 h-3.5 mr-1" />
-                      Accept & Refer
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() =>
-                        updateReferralStatus(ref.id, 'declined', 'Position filled for this cohort.')
-                      }
-                      className="text-xs text-red-600"
-                    >
-                      Decline
-                    </Button>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
-        </Card>
-      )}
-
       {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div className="relative flex-1 max-w-md">
@@ -236,12 +150,22 @@ export const AlumniDirectoryPage: React.FC = () => {
           <Card key={alum.id} padding="md" hoverable className="group flex flex-col justify-between rounded-2xl">
             <div>
               <div className="flex items-start justify-between gap-2 mb-3">
-                  <div className="flex h-14 w-14 rounded-full bg-[#0B2A6F] text-sm font-black text-[#F2B705] items-center justify-center ring-2 ring-[#F2B705]/40 shadow-sm transition group-hover:scale-105">
-                  {alum.name
-                    .split(' ')
-                    .map((n) => n[0])
-                    .join('')
-                    .slice(0, 2)}
+                  <div className="relative flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#0B2A6F] text-sm font-black text-[#F2B705] ring-2 ring-[#F2B705]/40 shadow-sm transition group-hover:scale-105">
+                    {alum.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)}
+                    {alum.avatarUrl && (
+                      <img
+                        src={alum.avatarUrl}
+                        alt={`Illustrative portrait for ${alum.name}`}
+                        loading="lazy"
+                        decoding="async"
+                        className="absolute inset-0 h-full w-full object-cover"
+                        onError={(event) => { event.currentTarget.hidden = true; }}
+                      />
+                    )}
                 </div>
                 <div className="flex flex-col items-end gap-1">
                   <Badge variant="academic">Class of {alum.graduationYear}</Badge>

@@ -276,7 +276,7 @@ export const HomePage: React.FC = () => {
             </a>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-[1.55fr_0.85fr]">
-            <a href={UEAB_GALLERY_URL} target="_blank" rel="noreferrer" className="group relative min-h-[220px] overflow-hidden rounded-2xl shadow-sm sm:min-h-[280px]">
+            <a href={UEAB_GALLERY_URL} target="_blank" rel="noreferrer" className="group relative hidden min-h-[220px] overflow-hidden rounded-2xl shadow-sm sm:block sm:min-h-[280px]">
               <ImageWithFallback src={IMAGES.baratonNewSignage.url} alt={IMAGES.baratonNewSignage.alt} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
               <div className="absolute inset-0 bg-gradient-to-t from-[#06163E]/90 via-[#06163E]/15 to-transparent" />
               <span className="absolute left-3 top-3 rounded-full bg-[#1769FF] px-3 py-1 text-[10px] font-black text-white shadow-lg">Campus Life</span>

@@ -13,7 +13,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-export const PWAInstallPrompt: React.FC = () => {
+export const PWAInstallPrompt: React.FC<{ className?: string }> = ({ className = '' }) => {
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
@@ -57,25 +57,23 @@ export const PWAInstallPrompt: React.FC = () => {
         setIsInstalled(true);
         setDeferredPrompt(null);
       }
-    } else if (isIOS) {
+    } else {
       setShowIOSModal(true);
     }
   };
 
   if (isInstalled || dismissed) return null;
 
-  // Show if either installable or on iOS
-  if (!deferredPrompt && !isIOS) return null;
-
   return (
-    <>
-      <div className="flex items-center justify-between gap-2 border-b border-[#F2B705]/30 bg-[#071B4A] px-2.5 py-1.5 text-[10px] text-white sm:px-4 sm:py-2 sm:text-sm">
-        <div className="flex min-w-0 items-center gap-1.5 sm:gap-2.5">
-          <span className="shrink-0 rounded-md bg-[#F2B705] px-1.5 py-0.5 text-[9px] font-bold text-[#071B4A] sm:p-1.5 sm:text-xs">
-            PWA
+    <div className={className}>
+      <div className="relative flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-white/10 bg-[#050505] px-3 py-1.5 text-[10px] text-white shadow-lg shadow-black/15 sm:px-4 sm:py-2 sm:text-xs">
+        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-[#F2B705] via-[#FFD95B] to-[#F2B705]" />
+        <div className="flex min-w-0 items-center gap-2 pl-1 sm:gap-3">
+          <span className="shrink-0 rounded-full border border-[#F2B705]/30 bg-[#F2B705]/10 px-2 py-1 text-[8px] font-extrabold uppercase tracking-[0.16em] text-[#F2B705] sm:text-[9px]">
+            Kampas app
           </span>
-          <span className="truncate font-medium">
-            Install Kampas for instant offline access to your timetable, deadlines & student ID.
+          <span className="truncate font-medium text-white/75">
+            Your campus, ready whenever you need it.
           </span>
         </div>
         <div className="flex shrink-0 items-center gap-1 sm:gap-2">
@@ -101,11 +99,13 @@ export const PWAInstallPrompt: React.FC = () => {
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl max-w-sm w-full p-6 text-slate-900 dark:text-white shadow-2xl">
-            <h3 className="text-lg font-bold mb-2">Install Kampas on iPhone/iPad</h3>
+            <h3 className="text-lg font-bold mb-2">{isIOS ? 'Install Kampas on iPhone/iPad' : 'Install Kampas from your browser'}</h3>
             <p className="text-xs text-slate-600 dark:text-slate-300 mb-4 leading-relaxed">
-              To install Kampas on your home screen for offline timetable access:
+              {isIOS
+                ? 'To install Kampas on your home screen for offline timetable access:'
+                : 'Open your browser menu and choose Install app or Add to Home Screen. If that option is unavailable, this browser may not support installing web apps.'}
             </p>
-            <ol className="text-xs text-slate-700 dark:text-slate-200 space-y-3 mb-6">
+            {isIOS && <ol className="text-xs text-slate-700 dark:text-slate-200 space-y-3 mb-6">
               <li className="flex items-center gap-2">
                 <span className="w-5 h-5 rounded-full bg-[#0B2A6F] text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                   1
@@ -128,7 +128,7 @@ export const PWAInstallPrompt: React.FC = () => {
                 </span>
                 <span>Launch Kampas from your home screen like any native app.</span>
               </li>
-            </ol>
+            </ol>}
             <Button
               className="w-full"
               variant="primary"
@@ -139,6 +139,6 @@ export const PWAInstallPrompt: React.FC = () => {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 };

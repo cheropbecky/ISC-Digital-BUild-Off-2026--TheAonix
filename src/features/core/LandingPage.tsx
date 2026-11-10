@@ -473,7 +473,7 @@ export const LandingPage: React.FC = () => {
             {/* Kampas logo */}
         <Link to="/" className="flex items-center group shrink-0" aria-label="Kampas landing page">
           <img
-            src="/brand/kampas-header-logo.png"
+            src="/brand/kampas-logo.png"
             alt="Kampas"
             className="h-8 sm:h-9 w-auto max-w-none object-contain group-hover:scale-105 transition-transform"
           />
@@ -756,7 +756,7 @@ export const LandingPage: React.FC = () => {
               description:
                 'Centralized campus digital custody desk. Log misplaced items with photos, verify ownership with security quizzes, and safely retrieve items at Main Gate B Security Post.',
               icon: SearchCheck,
-              iconBg: 'bg-[#0B2A6F]/10 dark:bg-blue-950/50 text-[#0B2A6F] dark:text-[#93C5FD] border border-[#0B2A6F]/20 dark:border-blue-700/40',
+              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/found',
             },
             {
@@ -766,7 +766,7 @@ export const LandingPage: React.FC = () => {
               description:
                 'Audited off-campus student accommodation in Baraton Centre, Chemamul & Kaimosi Rd with verified 24/7 borehole water, perimeter security, and direct landlord contact without broker fees.',
               icon: HomeIcon,
-              iconBg: 'bg-[#F2B705]/15 dark:bg-[#F2B705]/20 text-[#071B4A] dark:text-[#F2B705] border border-[#F2B705]/40',
+              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/housing',
             },
             {
@@ -776,7 +776,7 @@ export const LandingPage: React.FC = () => {
               description:
                 'Real-time lecture schedules with walking directions, building door photos, unit clash warnings, and instant push alerts when lecturers relocate classes.',
               icon: Calendar,
-              iconBg: 'bg-[#071B4A]/10 dark:bg-slate-800 text-[#071B4A] dark:text-blue-300 border border-[#071B4A]/20',
+              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/campus/timetable',
             },
             {
@@ -786,7 +786,7 @@ export const LandingPage: React.FC = () => {
               description:
                 'Gold-verified lecture summaries, trimester continuous assessment past papers, and collaborative study groups with bookable campus venues.',
               icon: FileText,
-              iconBg: 'bg-[#F2B705]/15 dark:bg-[#F2B705]/20 text-[#071B4A] dark:text-[#F2B705] border border-[#F2B705]/40',
+              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/share',
             },
             {
@@ -796,18 +796,18 @@ export const LandingPage: React.FC = () => {
               description:
                 'Sabbath sunset vespers, student guild elections, active clubs (GDSC, AYS, Innovators), athletic derbies, and QR event entry passes.',
               icon: Users,
-              iconBg: 'bg-[#0B2A6F]/10 dark:bg-blue-950/50 text-[#0B2A6F] dark:text-[#93C5FD] border border-[#0B2A6F]/20',
+              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/community/events',
             },
           ].map((item) => (
             <Link
               key={item.id}
               to={item.to}
-              className="group min-h-[220px] bg-white dark:bg-[#0C1D3D] rounded-2xl p-5 sm:p-6 flex flex-col justify-between shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-800 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#F2B705]"
+              className="group min-h-[220px] bg-white dark:bg-[#0C1D3D] rounded-none p-5 sm:p-6 flex flex-col justify-between shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-800 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#F2B705]"
             >
               <div>
                 <div className="flex items-center justify-between mb-3.5">
-                  <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 ${item.iconBg}`}>
+                  <div className={`w-12 h-12 rounded-none flex items-center justify-center transition-transform group-hover:scale-110 ${item.iconBg}`}>
                     <item.icon className="w-6 h-6 stroke-[2]" />
                   </div>
                   <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">

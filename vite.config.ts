@@ -11,7 +11,13 @@ export default defineConfig(() => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['icon.svg', 'manifest.json'],
+        includeAssets: [
+          'icon.svg',
+          'brand/kampas-pwa-192.png',
+          'brand/kampas-pwa-512.png',
+          'brand/kampas-apple-touch-icon.png',
+        ],
+        manifestFilename: 'manifest.json',
         manifest: {
           id: '/',
           name: 'Kampas - UEAB Student Platform',
@@ -24,27 +30,27 @@ export default defineConfig(() => {
           scope: '/',
           icons: [
             {
-              src: '/icon.svg',
+              src: '/brand/kampas-pwa-192.png',
               sizes: '192x192',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon.svg',
+              src: '/brand/kampas-pwa-512.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'any',
             },
             {
-              src: '/icon.svg',
+              src: '/brand/kampas-pwa-512.png',
               sizes: '512x512',
-              type: 'image/svg+xml',
+              type: 'image/png',
               purpose: 'maskable',
             },
           ],
         },
         devOptions: {
-          enabled: false, // keep off in preview dev to avoid worker lock
+          enabled: true,
         },
       }),
     ],

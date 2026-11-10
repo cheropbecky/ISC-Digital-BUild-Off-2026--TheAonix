@@ -248,7 +248,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <a href="/" className="flex items-center group shrink-0" aria-label="Kampas home">
           <img
-            src="/brand/kampas-header-logo.png"
+            src="/brand/kampas-logo.png"
             alt="Kampas"
             className="h-8 sm:h-9 w-auto max-w-none object-contain group-hover:scale-105 transition-transform"
           />
