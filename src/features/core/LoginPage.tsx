@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   AlertCircle,
   ArrowRight,
@@ -16,10 +16,12 @@ import {
   PenLine,
   ShieldCheck,
   UserRound,
-  UserPlus,
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
-import { IMAGES } from '../../data/images';
+
+// Welcome panel image
+const loginImage =
+  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/793028073_122129524136846732_1498613680495360111_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1364&ctp=s2048x1364&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=z43NEFaHHqMQ7kNvwEfF61r&_nc_oc=AdoirRmn6PGxtfSPPlRu5R2965Z5HXu33X7unZOxsqKai0HoUnkl894hzDHxNvW_CSY&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=6l4sl033atoM1P-yb6_8iA&_nc_ss=7b2a8&oh=00_AQQx5SYdS2T5xITieyVLpjAD0zCS_S4NcOp77y5t2oK_Mg&oe=6AF7A0FD';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
@@ -81,14 +83,23 @@ export const LoginPage: React.FC = () => {
       <div className="mx-auto grid min-h-dvh w-full max-w-[1500px] overflow-hidden bg-[#071B4A] shadow-2xl lg:h-full lg:min-h-0 lg:grid-cols-[1.08fr_0.92fr] lg:rounded-[26px]">
         {/* Image-led welcome panel */}
         <section className="relative flex min-h-[285px] overflow-hidden px-5 pb-6 pt-6 text-white sm:px-8 lg:min-h-0 lg:px-9 lg:py-7">
-          <img src={IMAGES.studentLifeQuad.url} alt="UEAB Baraton student life" className="absolute inset-0 h-full w-full object-cover object-center" />
+          <img
+            src={loginImage}
+            alt="UEAB Baraton student life"
+            referrerPolicy="no-referrer"
+            className="absolute inset-0 h-full w-full object-cover object-center"
+          />
           <div className="absolute inset-0 bg-gradient-to-br from-[#041537]/95 via-[#071B4A]/75 to-[#0B2A6F]/35" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#04102D] via-transparent to-[#071B4A]/40" />
           <div className="absolute -bottom-24 -left-10 h-56 w-[120%] rotate-3 rounded-[50%] bg-[#071B4A]/90 blur-[1px]" />
           <div className="relative z-10 flex w-full flex-col">
-            <Link to="/" className="flex w-fit items-center gap-3 rounded-2xl transition hover:opacity-90" aria-label="Back to Kampas home">
-              <img src="/brand/kampas-wordmark.png" alt="Kampas student portal" className="h-auto w-52 rounded-xl shadow-lg sm:w-64" />
-            </Link>
+            <div 
+              onClick={() => { window.location.href = '/'; }} 
+              className="w-fit flex items-center gap-3 cursor-pointer transition hover:opacity-90"
+            >
+              <img src="/brand/kampas-logo.png" alt="Kampas Logo" className="h-10 w-auto sm:h-12 object-contain" />
+            
+            </div>
 
             <div className="my-auto max-w-xl py-7 lg:py-8">
               <div className="mb-4 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.22em] text-[#F2B705]">
@@ -169,7 +180,6 @@ export const LoginPage: React.FC = () => {
             <div className="my-3 flex items-center gap-3 text-[11px] font-semibold text-[#5B6475] dark:text-slate-400"><span className="h-px flex-1 bg-[#D5DEEF] dark:bg-[#2D4575]" /><span>{mode === 'signin' ? 'New to Kampas?' : 'Already have an account?'}</span><span className="h-px flex-1 bg-[#D5DEEF] dark:bg-[#2D4575]" /></div>
             <button type="button" onClick={() => switchMode(mode === 'signin' ? 'signup' : 'signin')} className="mx-auto flex items-center gap-1 text-sm font-extrabold text-[#1769FF] hover:underline">{mode === 'signin' ? 'Create an account' : 'Sign in instead'} <ArrowRight className="h-4 w-4" /></button>
 
-            <div className="mt-3 flex items-center justify-center gap-2 text-[10px] text-[#5B6475] dark:text-slate-400"><ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /><span>Secure student portal access</span></div>
           </div>
         </section>
       </div>
