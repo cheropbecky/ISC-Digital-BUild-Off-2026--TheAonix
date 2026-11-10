@@ -98,20 +98,23 @@ const buildColumns = (words: W[], scale: number) => {
     start: get('start'),
     end: get('end'),
   };
-  const missing = ['code', 'lecturer', 'room', 'days', 'start', 'end'].filter((k) => !(h as any)[k]);
+  const missing = ['code', 'days', 'start', 'end'].filter((k) => !(h as any)[k]);
   if (missing.length) return { ok: false as const, missing, cols: [] as { key: string; x: number }[] };
 
   const cols = [
     { key: 'code', x: h.code.bbox.x0 },
-    { key: 'lecturer', x: h.lecturer.bbox.x0 },
-    { key: 'room', x: h.room.bbox.x0 },
+    ...(h.lecturer ? [{ key: 'lecturer', x: h.lecturer.bbox.x0 }] : []),
+    ...(h.room ? [{ key: 'room', x: h.room.bbox.x0 }] : []),
     { key: 'days', x: h.days.bbox.x0 },
     { key: 'start', x: h.start.bbox.x0 },
     { key: 'end', x: h.end.bbox.x0 },
   ];
   if (h.credit) cols.push({ key: 'credit', x: h.credit.bbox.x0 });
   if (h.title) cols.push({ key: 'title', x: h.title.bbox.x0 });
-  else cols.push({ key: 'title', x: h.code.bbox.x0 + (h.lecturer.bbox.x0 - h.code.bbox.x0) * 0.25 });
+  else {
+    const nextColumn = h.lecturer ?? h.room ?? h.days;
+    cols.push({ key: 'title', x: h.code.bbox.x0 + (nextColumn.bbox.x0 - h.code.bbox.x0) * 0.25 });
+  }
   cols.sort((a, b) => a.x - b.x);
   return { ok: true as const, missing: [] as string[], cols };
 };

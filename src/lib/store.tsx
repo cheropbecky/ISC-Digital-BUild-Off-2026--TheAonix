@@ -23,11 +23,12 @@ import {
   AuditLogItem,
 } from './types';
 import { KampasRole } from '../styles/tokens';
+import type { TimetableEntry as ScannedTimetableEntry } from '../data/timetable';
+import { getTimetableDayIndex } from '../data/timetable';
 import {
   INITIAL_USER_PROFILE,
   INITIAL_VENUES,
   INITIAL_UNITS,
-  INITIAL_TIMETABLE,
   INITIAL_DEADLINES,
   INITIAL_DOCUMENTS,
   INITIAL_STUDY_GROUPS,
@@ -40,10 +41,10 @@ import {
   INITIAL_NOTIFICATIONS,
 } from './mockData';
 import { notify, registerNotificationListener } from './notify';
-import { timetableService } from '../services/timetableService';
 
 interface ToastMessage {
   id: string;
+  type?: NotificationItem['type'];
   title: string;
   body: string;
   priority: 'normal' | 'important' | 'urgent';
@@ -58,24 +59,64 @@ interface DemoAccount {
 
 const DEMO_ACCOUNTS_KEY = 'kampas_demo_accounts';
 const DEMO_SESSION_KEY = 'kampas_session_student_id';
+const PRESENTATION_DEMO_STUDENT_ID = 'S21/04589';
+const scannedTimetableStorageKey = (profile: UserProfile) =>
+  `kampas_scanned_timetable_v1_${encodeURIComponent(normalizeStudentId(profile.studentId || profile.id))}`;
 const normalizeStudentId = (studentId: string) => studentId.trim().toUpperCase();
+const removePresentationDemoData = () => {
+  const studentId = normalizeStudentId(PRESENTATION_DEMO_STUDENT_ID);
+  const storageId = encodeURIComponent(studentId);
+  localStorage.removeItem(`kampas_scanned_timetable_v1_${storageId}`);
+  localStorage.removeItem(`kampas_timetable_upload_v2_${storageId}`);
+  if (normalizeStudentId(localStorage.getItem(DEMO_SESSION_KEY) || '') === studentId) {
+    localStorage.removeItem(DEMO_SESSION_KEY);
+  }
+};
+
+const readScannedTimetable = (profile: UserProfile): ScannedTimetableEntry[] => {
+  try {
+    const saved = localStorage.getItem(scannedTimetableStorageKey(profile));
+    const parsed = saved ? JSON.parse(saved) : [];
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
+const toStoreTimetable = (entries: ScannedTimetableEntry[]): TimetableEntry[] => entries.map((entry) => ({
+  id: entry.id,
+  unitCode: entry.unitCode,
+  unitName: entry.unitName,
+  lecturerName: entry.lecturer,
+  venueId: entry.venueId,
+  venueName: entry.venueName,
+  dayOfWeek: getTimetableDayIndex(entry.dayOfWeek),
+  startTime: entry.startTime,
+  endTime: entry.endTime,
+  recurrence: 'weekly',
+  isVenueChanged: entry.isRelocated ?? false,
+  venueChangeNote: entry.relocationNote,
+}));
 
 const getDemoAccounts = (): DemoAccount[] => {
   try {
+    removePresentationDemoData();
     const saved = localStorage.getItem(DEMO_ACCOUNTS_KEY);
     if (saved) {
       const parsed = JSON.parse(saved) as DemoAccount[];
-      if (Array.isArray(parsed)) return parsed;
+      if (Array.isArray(parsed)) {
+        const accounts = parsed.filter(
+          (account) => normalizeStudentId(account.studentId) !== normalizeStudentId(PRESENTATION_DEMO_STUDENT_ID)
+        );
+        if (accounts.length !== parsed.length) saveDemoAccounts(accounts);
+        return accounts;
+      }
     }
   } catch {
-    // Fall through to the seeded presentation account.
+    // Invalid account data should not restore a presentation-only account.
   }
 
-  return [{
-    studentId: normalizeStudentId(INITIAL_USER_PROFILE.studentId || 'S21/04589'),
-    password: 'kampas123',
-    profile: INITIAL_USER_PROFILE,
-  }];
+  return [];
 };
 
 const saveDemoAccounts = (accounts: DemoAccount[]) => {
@@ -104,6 +145,9 @@ interface KampasContextType {
   venues: Venue[];
   units: Unit[];
   timetable: TimetableEntry[];
+  scannedTimetable: ScannedTimetableEntry[];
+  saveScannedTimetable: (entries: ScannedTimetableEntry[]) => boolean;
+  showTimetableSuccess: () => void;
   timetableLoading: boolean;
   timetableError: string | null;
   deadlines: Deadline[];
@@ -175,8 +219,9 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   // Data states
   const [venues, setVenues] = useState<Venue[]>(INITIAL_VENUES);
   const [units] = useState<Unit[]>(INITIAL_UNITS);
-  const [timetable, setTimetable] = useState<TimetableEntry[]>(INITIAL_TIMETABLE);
-  const [timetableLoading, setTimetableLoading] = useState(true);
+  const [timetable, setTimetable] = useState<TimetableEntry[]>([]);
+  const [scannedTimetable, setScannedTimetable] = useState<ScannedTimetableEntry[]>([]);
+  const [timetableLoading, setTimetableLoading] = useState(false);
   const [timetableError, setTimetableError] = useState<string | null>(null);
   const [deadlines, setDeadlines] = useState<Deadline[]>(INITIAL_DEADLINES);
   const [documents, setDocuments] = useState<DocumentItem[]>(INITIAL_DOCUMENTS);
@@ -226,29 +271,23 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [user, isAuthenticated]);
 
   useEffect(() => {
-    let active = true;
+    const entries = isAuthenticated ? readScannedTimetable(user) : [];
+    setScannedTimetable(entries);
+    setTimetable(toStoreTimetable(entries));
+    setTimetableLoading(false);
+  }, [isAuthenticated, user.id, user.studentId]);
 
-    const loadTimetable = async () => {
-      setTimetableLoading(true);
-      setTimetableError(null);
-      try {
-        const entries = await timetableService.getTimetable();
-        if (active) setTimetable(entries);
-      } catch (error) {
-        if (!active) return;
-        const message = error instanceof Error ? error.message : 'Unable to load timetable data.';
-        console.error(message, error);
-        setTimetableError(message);
-      } finally {
-        if (active) setTimetableLoading(false);
-      }
-    };
-
-    void loadTimetable();
-    return () => {
-      active = false;
-    };
-  }, []);
+  const saveScannedTimetable = (entries: ScannedTimetableEntry[]) => {
+    if (!isAuthenticated) return false;
+    try {
+      localStorage.setItem(scannedTimetableStorageKey(user), JSON.stringify(entries));
+    } catch {
+      return false;
+    }
+    setScannedTimetable(entries);
+    setTimetable(toStoreTimetable(entries));
+    return true;
+  };
 
   // Register notification listener for in-app toasts
   useEffect(() => {
@@ -258,6 +297,7 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
       setToasts((prev) => [
         {
           id: toastId,
+          type: item.type,
           title: item.title,
           body: item.body,
           priority: item.priority,
@@ -277,6 +317,19 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setToasts((prev) => prev.filter((t) => t.id !== id));
   };
 
+  const showTimetableSuccess = () => {
+    const toastId = `t-${Date.now()}`;
+    setToasts((prev) => [{
+      id: toastId,
+      type: 'timetable_scanned',
+      title: 'Classes Synched',
+      body: 'Schedule Available',
+      priority: 'normal',
+      timestamp: Date.now(),
+    }, ...prev.slice(0, 4)]);
+    window.setTimeout(() => setToasts((prev) => prev.filter((toast) => toast.id !== toastId)), 5000);
+  };
+
   const toggleDarkMode = () => setDarkMode((prev) => !prev);
 
   const signIn = (studentId: string, password: string) => {
@@ -288,6 +341,9 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     }
 
     localStorage.setItem(DEMO_SESSION_KEY, normalizedId);
+    const entries = readScannedTimetable(account.profile);
+    setScannedTimetable(entries);
+    setTimetable(toStoreTimetable(entries));
     setUser(account.profile);
     setIsAuthenticated(true);
     return { ok: true };
@@ -320,6 +376,8 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
 
     saveDemoAccounts([...accounts, { studentId: normalizedId, password, profile }]);
     localStorage.setItem(DEMO_SESSION_KEY, normalizedId);
+    setScannedTimetable([]);
+    setTimetable([]);
     setUser(profile);
     setIsAuthenticated(true);
     return { ok: true };
@@ -329,6 +387,8 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     localStorage.removeItem(DEMO_SESSION_KEY);
     localStorage.removeItem('kampas_user');
     setIsAuthenticated(false);
+    setScannedTimetable([]);
+    setTimetable([]);
     setUser(INITIAL_USER_PROFILE);
   };
 
@@ -806,6 +866,9 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
         venues,
         units,
         timetable,
+        scannedTimetable,
+        saveScannedTimetable,
+        showTimetableSuccess,
         timetableLoading,
         timetableError,
         deadlines,

@@ -21,14 +21,13 @@ import { useKampasStore } from '../../lib/store';
 import { Card } from '../../components/ui/Card';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
-import { getTimetableDayIndex, TIMETABLE_ENTRIES, TimetableEntry, detectClashes } from '../../data/timetable';
+import { getTimetableDayIndex, TimetableEntry, detectClashes } from '../../data/timetable';
 import { VENUES, VenueData } from '../../data/venues';
 import { ACADEMIC_UNITS, AcademicUnit } from '../../data/units';
 import { DEADLINES, AcademicDeadline } from '../../data/deadlines';
 import { CAMPUS_CALENDAR_EVENTS } from '../../data/events';
 import { timetableService } from '../../services/timetableService';
 import { scanTimetableImage } from '../../lib/scanTimetable';
-import { notify } from '../../lib/notify';
 import { ClassDetailDrawer } from './ClassDetailDrawer';
 import { CalendarView } from './CalendarView';
 import { formatTimeOnly } from '../../lib/utils';
@@ -82,8 +81,7 @@ const getWeekStart = (date: Date) => {
 const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
 
-const TIMETABLE_UPLOAD_KEY = 'kampas_timetable_upload';
-const SCANNED_ENTRIES_KEY = 'kampas_scanned_entries';
+const timetableUploadKey = (studentKey: string) => `kampas_timetable_upload_v2_${encodeURIComponent(studentKey.trim().toUpperCase())}`;
 const SCAN_STAGES = [
   'Uploading timetable',
   'Scanning timetable image',
@@ -99,21 +97,10 @@ interface TimetableUploadState {
   scannedAt?: string;
 }
 
-const readSavedUpload = (): TimetableUploadState | null => {
+const readSavedUpload = (studentKey: string): TimetableUploadState | null => {
   try {
-    const saved = localStorage.getItem(TIMETABLE_UPLOAD_KEY);
+    const saved = localStorage.getItem(timetableUploadKey(studentKey));
     return saved ? (JSON.parse(saved) as TimetableUploadState) : null;
-  } catch {
-    return null;
-  }
-};
-
-const readSavedEntries = (): TimetableEntry[] | null => {
-  try {
-    const saved = localStorage.getItem(SCANNED_ENTRIES_KEY);
-    if (!saved) return null;
-    const parsed = JSON.parse(saved);
-    return Array.isArray(parsed) && parsed.length > 0 ? (parsed as TimetableEntry[]) : null;
   } catch {
     return null;
   }
@@ -132,12 +119,13 @@ export const TimetablePage: React.FC = () => {
   // Timetable View Mode: 'week' | 'day' | 'list'
   const [viewMode, setViewMode] = useState<'week' | 'day' | 'list'>('week');
 
-  const { user } = useKampasStore();
+  const { user, scannedTimetable, saveScannedTimetable, showTimetableSuccess } = useKampasStore();
+  const studentKey = user.studentId || user.id;
+  const hasSavedTimetable = scannedTimetable.length > 0;
 
   // If the student already scanned a timetable, start from those entries
-  const [rawEntries, setRawEntries] = useState<TimetableEntry[]>(
-    () => readSavedEntries() ?? TIMETABLE_ENTRIES
-  );
+  const [rawEntries, setRawEntries] = useState<TimetableEntry[]>(scannedTimetable);
+  const [pendingEntries, setPendingEntries] = useState<TimetableEntry[] | null>(null);
   const [venuesList, setVenuesList] = useState<VenueData[]>(VENUES);
   const [unitsList, setUnitsList] = useState<AcademicUnit[]>(ACADEMIC_UNITS);
   const [deadlinesList, setDeadlinesList] = useState<AcademicDeadline[]>(DEADLINES);
@@ -160,7 +148,7 @@ export const TimetablePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState<string>('');
 
   // Timetable scanner state (real OCR, runs fully in the browser)
-  const [uploadState, setUploadState] = useState<TimetableUploadState | null>(readSavedUpload);
+  const [uploadState, setUploadState] = useState<TimetableUploadState | null>(() => readSavedUpload(studentKey));
   const [isScanning, setIsScanning] = useState(false);
   const [scanProgress, setScanProgress] = useState(0);
   const [scanStage, setScanStage] = useState(0);
@@ -185,22 +173,26 @@ export const TimetablePage: React.FC = () => {
   const persistUpload = (next: TimetableUploadState | null) => {
     setUploadState(next);
     if (!next) {
-      localStorage.removeItem(TIMETABLE_UPLOAD_KEY);
+      localStorage.removeItem(timetableUploadKey(studentKey));
       return;
     }
     try {
-      localStorage.setItem(TIMETABLE_UPLOAD_KEY, JSON.stringify(next));
+      localStorage.setItem(timetableUploadKey(studentKey), JSON.stringify(next));
     } catch {
       setUploadError('This image is too large to save locally. Please choose a smaller screenshot.');
     }
   };
 
   const clearScannedEntries = () => {
-    localStorage.removeItem(SCANNED_ENTRIES_KEY);
-    setRawEntries(TIMETABLE_ENTRIES);
+    setPendingEntries(null);
+    setRawEntries(scannedTimetable);
     setSelectedUnitFilter('all');
     setInspectedEntry(null);
   };
+
+  useEffect(() => {
+    if (!pendingEntries) setRawEntries(scannedTimetable);
+  }, [scannedTimetable, pendingEntries]);
 
   const handleTimetableFile = (file?: File) => {
     if (!file) return;
@@ -219,8 +211,7 @@ export const TimetablePage: React.FC = () => {
         setUploadError('We could not read that image. Please try another file.');
         return;
       }
-      // A new image invalidates any previously scanned result
-      clearScannedEntries();
+      setPendingEntries(null);
       persistUpload({ image, fileName: file.name, scanned: false });
       setScanProgress(0);
       setScanStage(0);
@@ -251,37 +242,33 @@ export const TimetablePage: React.FC = () => {
       }
 
       setScanStage(3);
+      setPendingEntries(entries);
       setRawEntries(entries);
       setSelectedUnitFilter('all');
       setSearchQuery('');
-      try {
-        localStorage.setItem(SCANNED_ENTRIES_KEY, JSON.stringify(entries));
-      } catch {
-        // Entries still show this session even if they can't be saved
-      }
-
       setScanProgress(100);
       setScanStage(4);
-      persistUpload({ ...uploadState, scanned: true, scannedAt: new Date().toISOString() });
-      notify(
-        {
-          type: 'timetable_scanned',
-          title: 'Timetable posted to your Home dashboard',
-          body: 'Your lessons are now live on Home. Tap the new timetable update to view today’s schedule.',
-          link: '/home',
-          priority: 'important',
-        },
-        user
-      );
     } catch (e: any) {
       setUploadError(
         e?.message === 'HEADER_NOT_FOUND'
-          ? 'Could not find the table headers. Please upload a screenshot that includes the full header row (Course Code, Lecturer, Room, Days, Start, End).'
+          ? 'Could not find the required timetable headers. Include course code, day, start time, and end time in the image. Lecturer and venue details are included when readable.'
           : 'Scanning failed. Please try again with a clearer image.'
       );
     } finally {
       setIsScanning(false);
     }
+  };
+
+  const handleConfirmTimetable = () => {
+    if (!pendingEntries?.length) return;
+    if (!saveScannedTimetable(pendingEntries)) {
+      setUploadError('Could not save this timetable on this device. Check available storage and try again.');
+      return;
+    }
+    const confirmedAt = new Date().toISOString();
+    persistUpload({ ...uploadState!, scanned: true, scannedAt: confirmedAt });
+    setPendingEntries(null);
+    showTimetableSuccess();
   };
 
   const handleRemoveUpload = () => {
@@ -298,7 +285,8 @@ export const TimetablePage: React.FC = () => {
     setUploadError('');
     setScanProgress(0);
     setScanStage(0);
-    clearScannedEntries();
+    setPendingEntries(null);
+    setRawEntries(scannedTimetable);
     persistUpload({ ...uploadState, scanned: false, scannedAt: undefined });
   };
 
@@ -309,21 +297,18 @@ export const TimetablePage: React.FC = () => {
     }
   }, [tabParam, mainTab]);
 
-  // Load supporting data through the service layer
+  // Load supporting reference data through the service layer.
   useEffect(() => {
     let isMounted = true;
     setLoading(true);
 
     Promise.all([
-      timetableService.getRawTimetable(),
       timetableService.getVenues(),
       timetableService.getUnits(),
       timetableService.getDeadlines(),
     ])
-      .then(([entries, venues, units, deadlines]) => {
+      .then(([venues, units, deadlines]) => {
         if (!isMounted) return;
-        // Scanned entries always win over the service's sample data
-        setRawEntries(readSavedEntries() ?? entries);
         setVenuesList(venues);
         setUnitsList(units);
         setDeadlinesList(deadlines);
@@ -816,7 +801,7 @@ export const TimetablePage: React.FC = () => {
               </div>
             )}
 
-            {uploadState && !uploadState.scanned && !isScanning && (
+            {uploadState && !uploadState.scanned && !isScanning && !pendingEntries && (
               <div className="relative mt-5 flex flex-col gap-3 rounded-2xl border border-[#BFD0F2] bg-white/80 p-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#2D4575] dark:bg-[#0C1D3D]/80">
                 <div className="flex items-center gap-2.5">
                   <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2B705]/20 text-[#0B2A6F] dark:text-[#F2B705]">
@@ -884,13 +869,25 @@ export const TimetablePage: React.FC = () => {
                 </div>
               </div>
             )}
+
+            {pendingEntries && !isScanning && (
+              <div className="relative mt-5 rounded-2xl border border-[#BFD0F2] bg-white/90 p-4 dark:border-[#2D4575] dark:bg-[#0C1D3D]/90">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <p className="text-sm font-light text-[#071B4A] dark:text-white">Review {pendingEntries.length} extracted {pendingEntries.length === 1 ? 'class' : 'classes'}</p>
+                    <p className="mt-1 text-[11px] text-[#5B6475] dark:text-slate-300">Check the schedule below, then confirm to save it to your account.</p>
+                  </div>
+                  <Button size="sm" variant="gold" onClick={handleConfirmTimetable} className="shrink-0 font-semibold">Confirm timetable</Button>
+                </div>
+              </div>
+            )}
           </section>
         ))}
 
       {/* ================= TAB 1: CLASS TIMETABLE ================= */}
       {mainTab === 'timetable' && (
         <div className="space-y-5">
-          {!uploadState?.scanned ? (
+          {!hasSavedTimetable && !pendingEntries ? (
             <Card padding="lg" className="flex min-h-[260px] flex-col items-center justify-center text-center">
               <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]">
                 <CalendarIcon className="h-7 w-7" />

@@ -12,7 +12,7 @@ export interface TimetableEntry {
   unitCode: string;
   unitName: string;
   lecturer: string;
-  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday';
+  dayOfWeek: 'Monday' | 'Tuesday' | 'Wednesday' | 'Thursday' | 'Friday' | 'Saturday';
   startTime: string; // HH:mm
   endTime: string;   // HH:mm
   timeFormatted: string;
@@ -258,6 +258,7 @@ export const getTimetableDayIndex = (day: TimetableEntry['dayOfWeek']): number =
     Wednesday: 3,
     Thursday: 4,
     Friday: 5,
+    Saturday: 6,
   };
   return dayIndexes[day];
 };
