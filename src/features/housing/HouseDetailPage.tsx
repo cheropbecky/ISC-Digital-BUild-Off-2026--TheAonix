@@ -160,11 +160,11 @@ export const HouseDetailPage: React.FC = () => {
       {/* Main Visual Gallery (3 to 5 photos) */}
       <div className="bg-white dark:bg-[#0C1D3D] rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] overflow-hidden p-3 sm:p-4 space-y-3 shadow-xs">
         {/* Main Display Image */}
-        <div className="relative aspect-[4/3] w-full rounded-xl overflow-hidden bg-slate-100 dark:bg-slate-800">
+        <div className="relative aspect-[4/3] w-full overflow-hidden rounded-xl bg-slate-100 dark:bg-slate-800 lg:h-[380px] lg:aspect-auto">
           <ImageWithFallback
             src={house.photos[selectedPhotoIdx] || house.photos[0]}
             alt={house.title}
-            className="w-full h-full object-cover object-center scale-[1.04]"
+            className="h-full w-full object-contain object-center p-4"
           />
 
           {/* Top Floating Badges */}
@@ -194,7 +194,7 @@ export const HouseDetailPage: React.FC = () => {
               <ImageWithFallback
                 src={photoUrl}
                 alt={`${house.title} photo ${idx + 1}`}
-                className="w-full h-full object-cover"
+                className="h-full w-full object-contain p-1"
               />
             </button>
           ))}

@@ -516,7 +516,7 @@ export const HouseFindPage: React.FC = () => {
                       <ImageWithFallback
                         src={house.photos[0]}
                         alt={house.title}
-                        className="w-full h-full object-cover"
+                        className="h-full w-full object-contain p-1"
                       />
                     </div>
                     <div className="min-w-0 flex-1">
@@ -558,7 +558,7 @@ export const HouseFindPage: React.FC = () => {
                           <ImageWithFallback
                             src={house.photos[0]}
                             alt={house.title}
-                            className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-300"
+                            className="h-full w-full object-contain object-center p-2"
                           />
                         </Link>
 
