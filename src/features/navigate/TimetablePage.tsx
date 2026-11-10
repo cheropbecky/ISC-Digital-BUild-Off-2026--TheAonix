@@ -27,6 +27,7 @@ import { ACADEMIC_UNITS, AcademicUnit } from '../../data/units';
 import { DEADLINES, AcademicDeadline } from '../../data/deadlines';
 import { CAMPUS_CALENDAR_EVENTS } from '../../data/events';
 import { timetableService } from '../../services/timetableService';
+import { notify } from '../../lib/notify';
 import { ClassDetailDrawer } from './ClassDetailDrawer';
 import { CalendarView } from './CalendarView';
 import { formatTimeOnly } from '../../lib/utils';
@@ -49,6 +50,13 @@ import {
   Layers,
   FileText,
   DoorOpen,
+  UploadCloud,
+  Image as ImageIcon,
+  X,
+  RotateCcw,
+  Check,
+  ScanLine,
+  WandSparkles,
 } from 'lucide-react';
 
 const DAYS = [
@@ -81,6 +89,31 @@ const getWeekStart = (date: Date) => {
 
 const formatDate = (date: Date) =>
   date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+
+const TIMETABLE_UPLOAD_KEY = 'kampas_timetable_upload';
+const SCAN_STAGES = [
+  'Uploading timetable',
+  'Scanning timetable image',
+  'Identifying course information',
+  'Organising class schedules',
+  'Finalising timetable',
+];
+
+interface TimetableUploadState {
+  image: string;
+  fileName: string;
+  scanned: boolean;
+  scannedAt?: string;
+}
+
+const readSavedUpload = (): TimetableUploadState | null => {
+  try {
+    const saved = localStorage.getItem(TIMETABLE_UPLOAD_KEY);
+    return saved ? JSON.parse(saved) as TimetableUploadState : null;
+  } catch {
+    return null;
+  }
+};
 
 export const TimetablePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -118,6 +151,16 @@ export const TimetablePage: React.FC = () => {
   const [selectedUnitFilter, setSelectedUnitFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  // Frontend-only timetable scanner state. The extracted schedule is always the
+  // fixed TIMETABLE_ENTRIES sample; the image only drives the presentation flow.
+  const [uploadState, setUploadState] = useState<TimetableUploadState | null>(readSavedUpload);
+  const [isScanning, setIsScanning] = useState(false);
+  const [scanProgress, setScanProgress] = useState(0);
+  const [scanStage, setScanStage] = useState(0);
+  const [uploadError, setUploadError] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scanTimerRef = useRef<number | null>(null);
+
   // Live "now" line time state
   const [currentNowMinutes, setCurrentNowMinutes] = useState<number>(() => {
     const d = new Date();
@@ -132,6 +175,94 @@ export const TimetablePage: React.FC = () => {
     }, 60000);
     return () => clearInterval(interval);
   }, []);
+
+  useEffect(() => () => {
+    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
+  }, []);
+
+  const persistUpload = (next: TimetableUploadState | null) => {
+    setUploadState(next);
+    if (!next) {
+      localStorage.removeItem(TIMETABLE_UPLOAD_KEY);
+      return;
+    }
+    try {
+      localStorage.setItem(TIMETABLE_UPLOAD_KEY, JSON.stringify(next));
+    } catch {
+      setUploadError('This image is too large to save locally. Please choose a smaller screenshot.');
+    }
+  };
+
+  const handleTimetableFile = (file?: File) => {
+    if (!file) return;
+    const isSupported = ['image/png', 'image/jpeg'].includes(file.type) || /\.(png|jpe?g)$/i.test(file.name);
+    if (!isSupported) {
+      setUploadError('Please upload a PNG, JPG, or JPEG image.');
+      return;
+    }
+
+    setUploadError('');
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = typeof reader.result === 'string' ? reader.result : '';
+      if (!image) {
+        setUploadError('We could not read that image. Please try another file.');
+        return;
+      }
+      persistUpload({ image, fileName: file.name, scanned: false });
+      setScanProgress(0);
+      setScanStage(0);
+    };
+    reader.onerror = () => setUploadError('We could not read that image. Please try another file.');
+    reader.readAsDataURL(file);
+  };
+
+  const handleScanTimetable = () => {
+    if (!uploadState?.image || isScanning) return;
+    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
+    setIsScanning(true);
+    setScanProgress(4);
+    setScanStage(0);
+
+    let step = 0;
+    scanTimerRef.current = window.setInterval(() => {
+      step += 1;
+      const nextProgress = Math.min(step * 20, 100);
+      setScanProgress(nextProgress);
+      setScanStage(Math.min(Math.floor(step / 1.1), SCAN_STAGES.length - 1));
+
+      if (nextProgress >= 100) {
+        if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
+        scanTimerRef.current = null;
+        setIsScanning(false);
+        persistUpload({ ...uploadState, scanned: true, scannedAt: new Date().toISOString() });
+        notify({
+          type: 'timetable_scanned',
+          title: 'Timetable posted to your Home dashboard',
+          body: 'Your lessons are now live on Home. Tap the new timetable update to view today’s schedule.',
+          link: '/home',
+          priority: 'important',
+        }, user);
+      }
+    }, 700);
+  };
+
+  const handleRemoveUpload = () => {
+    if (scanTimerRef.current) window.clearInterval(scanTimerRef.current);
+    scanTimerRef.current = null;
+    setIsScanning(false);
+    setScanProgress(0);
+    setScanStage(0);
+    persistUpload(null);
+  };
+
+  const handleRescan = () => {
+    if (!uploadState) return;
+    setUploadError('');
+    setScanProgress(0);
+    setScanStage(0);
+    persistUpload({ ...uploadState, scanned: false, scannedAt: undefined });
+  };
 
   // Sync tab with URL
   useEffect(() => {
@@ -509,9 +640,107 @@ export const TimetablePage: React.FC = () => {
         </div>
       </div>
 
+      {mainTab === 'timetable' && (
+        uploadState?.scanned && !isScanning ? (
+          <div className="flex items-center justify-end rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-[#1E3158] dark:bg-[#0C1D3D]">
+            <Button size="sm" variant="gold" onClick={handleRescan} className="font-black"><RotateCcw className="mr-1.5 h-3.5 w-3.5" />Rescan</Button>
+          </div>
+        ) : (
+        <section className="relative overflow-hidden rounded-3xl border border-[#CBD9F5] bg-gradient-to-br from-[#F5F8FF] via-white to-[#FFF9E6] p-4 shadow-sm dark:border-[#1E3158] dark:from-[#0C1D3D] dark:via-[#071B4A] dark:to-[#2A2508] sm:p-6">
+          <div className="pointer-events-none absolute -right-16 -top-20 h-44 w-44 rounded-full bg-[#1769FF]/10 blur-3xl" />
+          <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div className="max-w-xl">
+              <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-[#1769FF] dark:text-blue-300">
+                <WandSparkles className="h-3.5 w-3.5" /> Smart timetable scanner
+              </div>
+              <h2 className="text-xl font-black tracking-tight text-[#071B4A] dark:text-white sm:text-2xl">
+                Turn your timetable screenshot into a clear weekly plan
+              </h2>
+              <p className="mt-1.5 text-xs leading-relaxed text-[#5B6475] dark:text-slate-300 sm:text-sm">
+                Upload a timetable image and watch Kampas organise your classes into the campus schedule view.
+                This presentation demo uses the official sample timetable after scanning.
+              </p>
+            </div>
+
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/png,image/jpeg,.png,.jpg,.jpeg"
+              className="hidden"
+              onChange={(event) => {
+                handleTimetableFile(event.target.files?.[0]);
+                event.currentTarget.value = '';
+              }}
+            />
+
+            {!uploadState ? (
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => fileInputRef.current?.click()}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') fileInputRef.current?.click();
+                }}
+                onDragOver={(event) => event.preventDefault()}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  handleTimetableFile(event.dataTransfer.files?.[0]);
+                }}
+                className="flex min-h-[150px] w-full cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed border-[#AFC3ED] bg-white/70 px-5 py-6 text-center transition hover:border-[#1769FF] hover:bg-white dark:border-[#2D4575] dark:bg-[#0C1D3D]/70 dark:hover:border-[#F2B705] lg:max-w-sm"
+              >
+                <span className="mb-2 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]"><UploadCloud className="h-5 w-5" /></span>
+                <span className="text-sm font-extrabold text-[#071B4A] dark:text-white">Drop your timetable here</span>
+                <span className="mt-1 text-[11px] text-slate-500 dark:text-slate-400">PNG, JPG or JPEG • or click to browse</span>
+                <Button type="button" size="sm" variant="secondary" onClick={(event) => { event.stopPropagation(); fileInputRef.current?.click(); }} className="mt-3">Browse files</Button>
+              </div>
+            ) : (
+              <div className="w-full lg:max-w-sm">
+                <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-md dark:border-slate-700 dark:bg-[#0C1D3D]">
+                  <div className="relative h-36 bg-slate-100 dark:bg-slate-900">
+                    <img src={uploadState.image} alt="Uploaded timetable preview" className="h-full w-full object-contain" />
+                    <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow"><Check className="h-3 w-3" /> Image uploaded</div>
+                    <button type="button" onClick={handleRemoveUpload} className="absolute right-2 top-2 rounded-full bg-black/60 p-1.5 text-white hover:bg-red-600" aria-label="Remove timetable image"><X className="h-3.5 w-3.5" /></button>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 p-3">
+                    <div className="min-w-0"><div className="truncate text-xs font-bold text-[#071B4A] dark:text-white">{uploadState.fileName}</div><div className="text-[10px] text-slate-500">Ready for presentation scan</div></div>
+                    <button type="button" onClick={() => fileInputRef.current?.click()} className="shrink-0 text-[11px] font-bold text-[#0B2A6F] hover:underline dark:text-blue-300">Replace</button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          {uploadError && <div className="relative mt-3 rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-300">{uploadError}</div>}
+
+          {uploadState && !uploadState.scanned && !isScanning && (
+            <div className="relative mt-5 flex flex-col gap-3 rounded-2xl border border-[#BFD0F2] bg-white/80 p-3.5 sm:flex-row sm:items-center sm:justify-between dark:border-[#2D4575] dark:bg-[#0C1D3D]/80">
+              <div className="flex items-center gap-2.5"><span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#F2B705]/20 text-[#0B2A6F] dark:text-[#F2B705]"><ScanLine className="h-4 w-4" /></span><div><div className="text-xs font-black text-[#071B4A] dark:text-white">Ready to scan</div><div className="text-[11px] text-slate-500 dark:text-slate-400">Your image will be matched to the fixed UEAB sample schedule.</div></div></div>
+              <Button size="sm" variant="gold" onClick={handleScanTimetable} className="font-black"><ScanLine className="mr-1.5 h-3.5 w-3.5" />Scan My Timetable</Button>
+            </div>
+          )}
+
+          {isScanning && (
+            <div className="relative mt-5 rounded-2xl border border-[#BFD0F2] bg-white/85 p-4 dark:border-[#2D4575] dark:bg-[#0C1D3D]/85">
+              <div className="mb-3 flex items-center justify-between gap-3"><div><div className="text-xs font-black uppercase tracking-wider text-[#0B2A6F] dark:text-[#F2B705]">Kampas is arranging your timetable</div><div className="mt-1 text-sm font-bold text-[#071B4A] dark:text-white">{SCAN_STAGES[scanStage]}…</div></div><span className="font-mono text-sm font-black text-[#1769FF] dark:text-blue-300">{scanProgress}%</span></div>
+              <div className="h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-700"><motion.div className="h-full rounded-full bg-gradient-to-r from-[#1769FF] via-[#0B2A6F] to-[#F2B705]" initial={{ width: 0 }} animate={{ width: `${scanProgress}%` }} transition={{ duration: 0.35 }} /></div>
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-5">{SCAN_STAGES.map((stage, index) => <div key={stage} className={`flex items-center gap-1.5 text-[10px] font-bold ${index <= scanStage ? 'text-[#0B2A6F] dark:text-blue-200' : 'text-slate-400'}`}><span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full ${index < scanStage ? 'bg-emerald-500 text-white' : index === scanStage ? 'bg-[#F2B705] text-[#071B4A]' : 'bg-slate-200 text-slate-500 dark:bg-slate-700'}`}>{index < scanStage ? <Check className="h-3 w-3" /> : index + 1}</span><span className="leading-tight">{stage}</span></div>)}</div>
+            </div>
+          )}
+
+        </section>
+        )
+      )}
+
       {/* ================= TAB 1: CLASS TIMETABLE ================= */}
       {mainTab === 'timetable' && (
         <div className="space-y-5">
+          {!uploadState?.scanned ? (
+            <Card padding="lg" className="flex min-h-[260px] flex-col items-center justify-center text-center">
+              <span className="mb-3 flex h-14 w-14 items-center justify-center rounded-2xl bg-[#E8EEFF] text-[#0B2A6F] dark:bg-[#102B62] dark:text-[#F2B705]"><CalendarIcon className="h-7 w-7" /></span>
+              <h3 className="text-lg font-black text-[#071B4A] dark:text-white">Your organised timetable will appear here</h3>
+              <p className="mt-1 max-w-md text-xs text-slate-500 dark:text-slate-400">Upload your timetable image above, then start the scan to arrange the official sample schedule into this timetable view.</p>
+            </Card>
+          ) : <>
           {/* Controls Bar: View Switcher, Week Navigation, Filters, Export & Share */}
           <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white dark:bg-[#0C1D3D] p-4 rounded-2xl border border-[#E3E8F0] dark:border-[#1E3158] shadow-xs">
             {/* View Mode Switcher with animated pill */}
@@ -870,6 +1099,7 @@ export const TimetablePage: React.FC = () => {
               )}
             </aside>
           </div>
+          </>}
         </div>
       )}
 
@@ -899,6 +1129,7 @@ export const TimetablePage: React.FC = () => {
           null
         }
       />
+
     </div>
   );
 };

@@ -10,7 +10,7 @@
  *   - Community event RSVP
  */
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
@@ -33,6 +33,8 @@ import {
   ChevronRight,
   Sun,
   ExternalLink,
+  CheckCircle2,
+  Sparkles,
 } from 'lucide-react';
 
 const UEAB_LOGO_URL = 'https://ueab.ac.ke/wp-content/uploads/2023/04/bara-logo-a-400x54.png';
@@ -40,6 +42,14 @@ const UEAB_GALLERY_URL = 'https://ueab.ac.ke/gallery/';
 
 export const HomePage: React.FC = () => {
   const navigate = useNavigate();
+  const [hasPostedTimetable] = useState(() => {
+    try {
+      const saved = localStorage.getItem('kampas_timetable_upload');
+      return Boolean(saved && (JSON.parse(saved) as { scanned?: boolean }).scanned);
+    } catch {
+      return false;
+    }
+  });
   const {
     user,
     notifications,
@@ -52,13 +62,17 @@ export const HomePage: React.FC = () => {
 
   // Select the next scheduled class from the same data source as the timetable page.
   const now = new Date();
+  const firstName = user.fullName.trim().split(/\s+/)[0] || 'Student';
+  const greeting = now.getHours() < 12 ? 'Good Morning' : now.getHours() < 18 ? 'Good Afternoon' : 'Good Evening';
   const currentDay = now.getDay() >= 1 && now.getDay() <= 5 ? now.getDay() : 1;
   const currentMinutes = now.getHours() * 60 + now.getMinutes();
-  const nextClass = [...timetable]
-    .filter((entry) => entry.dayOfWeek === currentDay && entry.endTime > `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`)
-    .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
-    ?? [...timetable]
-      .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))[0];
+  const nextClass = hasPostedTimetable
+    ? [...timetable]
+      .filter((entry) => entry.dayOfWeek === currentDay && entry.endTime > `${String(Math.floor(currentMinutes / 60)).padStart(2, '0')}:${String(currentMinutes % 60).padStart(2, '0')}`)
+      .sort((a, b) => a.startTime.localeCompare(b.startTime))[0]
+      ?? [...timetable]
+        .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))[0]
+    : undefined;
 
   const urgentDeadlines = useMemo(
     () => deadlines
@@ -97,7 +111,7 @@ export const HomePage: React.FC = () => {
   }).format(now);
   const unreadNotifications = notifications.filter((notification) => !notification.isRead).length;
   const dashboardStats = [
-    { label: 'Classes today', value: todayClasses.length, icon: Calendar, href: '/campus/timetable' },
+    { label: 'Classes today', value: hasPostedTimetable ? todayClasses.length : 0, icon: Calendar, href: '/campus/timetable' },
     { label: 'Open tasks', value: urgentDeadlines.length, icon: AlertTriangle, href: '/campus/deadlines' },
     { label: 'Unread updates', value: unreadNotifications, icon: Bell, href: '/notifications' },
     { label: 'Campus events', value: events.filter((event) => event.isPublished).length, icon: CalendarDays, href: '/community/events' },
@@ -139,21 +153,23 @@ export const HomePage: React.FC = () => {
             {todayLabel}
           </div>
           <h1 className="text-2xl sm:text-4xl font-black tracking-tight drop-shadow-sm">
-            Welcome back, {user.fullName.split(' ')[0]}
+            {greeting}, {firstName}!
           </h1>
           <p className="text-xs sm:text-sm text-slate-200 mt-2">
             {user.course || 'BSc Software Engineering'} • Year 3, 1st Trimester 2026/27
           </p>
           <div className="relative flex items-center gap-2 mt-5">
-            <Button
-              size="sm"
-              variant="gold"
-              onClick={handleRouteToNextClass}
-              className="text-xs font-bold shadow-lg shadow-black/20"
-            >
-              <Footprints className="w-3.5 h-3.5 mr-1" />
-              Go to Next Class
-            </Button>
+            {hasPostedTimetable && nextClass && (
+              <Button
+                size="sm"
+                variant="gold"
+                onClick={handleRouteToNextClass}
+                className="text-xs font-bold shadow-lg shadow-black/20"
+              >
+                <Footprints className="w-3.5 h-3.5 mr-1" />
+                Go to Next Class
+              </Button>
+            )}
             <Link to="/campus/timetable">
               <Button
                 size="sm"
@@ -185,8 +201,24 @@ export const HomePage: React.FC = () => {
         </div>
       </motion.div>
 
+      {hasPostedTimetable && (
+        <motion.div
+          variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
+          className="relative overflow-hidden rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 via-white to-blue-50 px-4 py-3 shadow-sm ring-1 ring-emerald-100 dark:border-emerald-900/60 dark:from-emerald-950/30 dark:via-[#0C1D3D] dark:to-blue-950/30 dark:ring-emerald-900/30"
+        >
+          <div className="absolute -right-6 -top-8 h-24 w-24 rounded-full bg-emerald-300/20 blur-2xl" />
+          <div className="relative flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-emerald-600 text-white shadow-sm"><CheckCircle2 className="h-5 w-5" /></span>
+              <div><div className="flex items-center gap-2 text-xs font-black text-emerald-900 dark:text-emerald-200"><Sparkles className="h-3.5 w-3.5 text-[#F2B705]" /> Timetable posted successfully</div><p className="mt-0.5 text-[11px] text-emerald-800/80 dark:text-emerald-300/80">Your lessons are now appearing on your Home dashboard.</p></div>
+            </div>
+            <Link to="/notifications" className="flex items-center gap-1 self-start rounded-lg bg-white px-3 py-2 text-[11px] font-black text-[#0B2A6F] shadow-sm ring-1 ring-emerald-200 transition hover:bg-emerald-50 sm:self-auto dark:bg-[#102955] dark:text-blue-200 dark:ring-emerald-900/60">View notification <ArrowRight className="h-3.5 w-3.5" /></Link>
+          </div>
+        </motion.div>
+      )}
+
       {/* Compact next-class alert */}
-      {nextClass && !timetableLoading && (
+      {hasPostedTimetable && nextClass && !timetableLoading && (
         <motion.div
           variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
           role="status"
@@ -214,7 +246,7 @@ export const HomePage: React.FC = () => {
         </motion.div>
       )}
 
-      <motion.section
+      {hasPostedTimetable && <motion.section
         variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}
         className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1.55fr)_minmax(280px,0.75fr)]"
       >
@@ -278,7 +310,7 @@ export const HomePage: React.FC = () => {
             </div>
           </div>
         </div>
-      </motion.section>
+      </motion.section>}
 
       <motion.section
         variants={{ hidden: { opacity: 0, y: 12 }, visible: { opacity: 1, y: 0 } }}

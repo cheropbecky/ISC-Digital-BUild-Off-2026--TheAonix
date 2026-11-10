@@ -20,7 +20,8 @@ export interface NotifyParams {
     | 'lost_item_matched'
     | 'event_reminder'
     | 'notice_published'
-    | 'study_group_session';
+    | 'study_group_session'
+    | 'timetable_scanned';
   title: string;
   body?: string;
   link?: string;

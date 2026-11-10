@@ -13,6 +13,7 @@ import { useKampasStore } from '../../lib/store';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { HousingContactActions } from './HousingContactActions';
 import {
   Home,
   MapPin,
@@ -657,6 +658,7 @@ export const HouseFindPage: React.FC = () => {
                       </label>
 
                       <div className="flex items-center gap-1.5">
+                        <HousingContactActions phone={house.landlord.phone} listingTitle={house.title} compact />
                         <button
                           onClick={() => {
                             setContactingHouse(house);
@@ -665,7 +667,8 @@ export const HouseFindPage: React.FC = () => {
                             setInquiryMessage(`Hello, is ${house.title} available for this trimester?`);
                           }}
                           className="p-2 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-white hover:bg-slate-200 transition text-xs font-semibold flex items-center gap-1"
-                          title="Contact Landlord"
+                          title="Open portal message"
+                          aria-label={`Open portal message for ${house.title}`}
                         >
                           <Phone className="w-3.5 h-3.5" />
                         </button>

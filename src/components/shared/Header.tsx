@@ -56,6 +56,7 @@ export const Header: React.FC<HeaderProps> = ({
     toggleDarkMode,
     lowDataMode,
     setLowDataMode,
+    logout,
   } = useKampasStore();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -709,7 +710,7 @@ export const Header: React.FC<HeaderProps> = ({
                     className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
                   >
                     <User className="w-4 h-4 text-slate-400" />
-                    <span>Digital Student ID Card</span>
+                    <span>View Profile</span>
                   </Link>
 
                   <button
@@ -742,14 +743,17 @@ export const Header: React.FC<HeaderProps> = ({
                 </div>
 
                 <div className="pt-1">
-                  <Link
-                    to="/"
-                    onClick={() => setIsUserMenuOpen(false)}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsUserMenuOpen(false);
+                      navigate('/login', { replace: true });
+                    }}
                     className="flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
                   >
                     <LogOut className="w-4 h-4 text-slate-400" />
-                    <span>Exit to Landing Page</span>
-                  </Link>
+                    <span>Log out</span>
+                  </button>
                 </div>
               </motion.div>
             )}

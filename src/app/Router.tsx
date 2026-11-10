@@ -7,14 +7,16 @@
  * Includes House Find (/housing, /housing/:id) and Campus GIS Map (/campus/map).
  */
 
-import React, { lazy, Suspense } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { useKampasStore } from '../lib/store';
 import { Layout } from './Layout';
 import { LandingPage } from '../features/core/LandingPage';
 import { LoginPage } from '../features/core/LoginPage';
 import { OnboardingWizard } from '../features/core/OnboardingWizard';
 import { HomePage } from '../features/core/HomePage';
 import { TimetablePage } from '../features/navigate/TimetablePage';
+import { CampusMapPage } from '../features/navigate/CampusMapPage';
 import { VenuesDirectoryPage } from '../features/navigate/VenuesDirectoryPage';
 import { DeadlinesPage } from '../features/navigate/DeadlinesPage';
 import { UnitDetailPage } from '../features/navigate/UnitDetailPage';
@@ -33,21 +35,33 @@ import { NotificationsPage } from '../features/core/NotificationsPage';
 import { SearchResultsPage } from '../features/core/SearchResultsPage';
 import { ProfilePage } from '../features/core/ProfilePage';
 
-const CampusMapPage = lazy(() =>
-  import('../features/navigate/CampusMapPage').then(({ CampusMapPage: page }) => ({ default: page }))
-);
+const ProtectedLayout: React.FC = () => {
+  const { isAuthenticated } = useKampasStore();
+  const location = useLocation();
+
+  if (!isAuthenticated) {
+    const destination = `${location.pathname}${location.search}`;
+    return <Navigate to={`/login?redirect=${encodeURIComponent(destination)}`} replace />;
+  }
+
+  return <Layout />;
+};
+
+const ProtectedOnboarding: React.FC = () => {
+  const { isAuthenticated } = useKampasStore();
+  return isAuthenticated ? <OnboardingWizard /> : <Navigate to="/login" replace />;
+};
 
 export const AppRouter: React.FC = () => {
   return (
-    <Suspense fallback={<div className="flex min-h-[50dvh] items-center justify-center text-sm text-slate-500">Loading campus map…</div>}>
-      <Routes>
+    <Routes>
       {/* Public Institutional Landing & Auth */}
       <Route path="/" element={<LandingPage />} />
       <Route path="/login" element={<LoginPage />} />
-      <Route path="/onboarding" element={<OnboardingWizard />} />
+      <Route path="/onboarding" element={<ProtectedOnboarding />} />
 
       {/* Main Authenticated Application Shell */}
-      <Route element={<Layout />}>
+      <Route element={<ProtectedLayout />}>
         <Route path="/home" element={<HomePage />} />
 
         {/* 1. Navigate Module (GIS Map, Timetable, Deadlines, Units - NO Free Rooms) */}
@@ -87,7 +101,6 @@ export const AppRouter: React.FC = () => {
         {/* Catch-all redirect to Home */}
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Route>
-      </Routes>
-    </Suspense>
+    </Routes>
   );
 };

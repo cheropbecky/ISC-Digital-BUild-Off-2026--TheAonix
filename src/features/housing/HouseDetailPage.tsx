@@ -12,6 +12,7 @@ import { useKampasStore } from '../../lib/store';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { Badge } from '../../components/ui/Badge';
 import { Button } from '../../components/ui/Button';
+import { HousingContactActions } from './HousingContactActions';
 import {
   ArrowLeft,
   Heart,
@@ -379,6 +380,14 @@ export const HouseDetailPage: React.FC = () => {
               <MessageSquare className="w-4 h-4 mr-1.5" />
               Message Landlord
             </Button>
+
+            <div className="flex items-center justify-between gap-3 border-t border-slate-100 pt-3 dark:border-slate-800">
+              <div>
+                <div className="text-xs font-bold text-[#071B4A] dark:text-white">Contact directly</div>
+                <div className="text-[11px] text-slate-500">WhatsApp, call, or SMS</div>
+              </div>
+              <HousingContactActions phone={house.landlord.phone} listingTitle={house.title} />
+            </div>
 
             <a
               href={`tel:${house.landlord.phone}`}
