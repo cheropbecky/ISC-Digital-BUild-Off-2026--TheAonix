@@ -5,7 +5,8 @@
  */
 
 import React, { useEffect, useState } from 'react';
-import { Download, Share2, PlusSquare, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { Download, Share2, PlusSquare } from 'lucide-react';
 import { Button } from './Button';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,12 +14,13 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
 }
 
-export const PWAInstallPrompt: React.FC<{ className?: string }> = ({ className = '' }) => {
+export const PWAInstallPrompt: React.FC = () => {
+  const { pathname } = useLocation();
+  const sitsAboveMobileNavigation = !['/', '/login', '/onboarding'].includes(pathname);
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
   const [isIOS, setIsIOS] = useState(false);
   const [showIOSModal, setShowIOSModal] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
 
   useEffect(() => {
     // Check if running in standalone PWA mode
@@ -62,39 +64,20 @@ export const PWAInstallPrompt: React.FC<{ className?: string }> = ({ className =
     }
   };
 
-  if (isInstalled || dismissed) return null;
+  if (isInstalled) return null;
 
   return (
-    <div className={className}>
-      <div className="relative flex items-center justify-between gap-2 overflow-hidden rounded-xl border border-white/10 bg-[#050505] px-3 py-1.5 text-[10px] text-white shadow-lg shadow-black/15 sm:px-4 sm:py-2 sm:text-xs">
-        <span aria-hidden="true" className="absolute inset-y-0 left-0 w-0.5 bg-gradient-to-b from-[#F2B705] via-[#FFD95B] to-[#F2B705]" />
-        <div className="flex min-w-0 items-center gap-2 pl-1 sm:gap-3">
-          <span className="shrink-0 rounded-full border border-[#F2B705]/30 bg-[#F2B705]/10 px-2 py-1 text-[8px] font-extrabold uppercase tracking-[0.16em] text-[#F2B705] sm:text-[9px]">
-            Kampas app
-          </span>
-          <span className="truncate font-medium text-white/75">
-            Your campus, ready whenever you need it.
-          </span>
-        </div>
-        <div className="flex shrink-0 items-center gap-1 sm:gap-2">
-          <Button
-            size="sm"
-            variant="gold"
-            onClick={handleInstallClick}
-            className="h-7 px-2 text-[10px] sm:h-8 sm:px-3 sm:text-xs"
-          >
-            <Download className="mr-1 h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            Install App
-          </Button>
-          <button
-            onClick={() => setDismissed(true)}
-            className="p-0.5 text-slate-400 hover:text-white sm:p-1"
-            title="Dismiss"
-          >
-            <X className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
+    <>
+      <button
+        type="button"
+        onClick={handleInstallClick}
+        aria-label="Install Kampas app"
+        title="Install Kampas app"
+        className={`fixed right-4 z-[45] flex h-12 w-12 items-center justify-center rounded-full border border-[#F2B705]/70 bg-[#050505] text-[#F2B705] shadow-[0_8px_28px_rgba(0,0,0,0.35)] ring-4 ring-[#F2B705]/10 transition hover:scale-105 hover:bg-[#111111] focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#F2B705]/40 motion-safe:animate-bounce motion-reduce:animate-none ${sitsAboveMobileNavigation ? 'bottom-20 md:bottom-6' : 'bottom-6'}`}
+      >
+        <Download className="h-5 w-5" strokeWidth={2.5} />
+        <span className="sr-only">Install App</span>
+      </button>
 
       {showIOSModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
@@ -139,6 +122,6 @@ export const PWAInstallPrompt: React.FC<{ className?: string }> = ({ className =
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 };
