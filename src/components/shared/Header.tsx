@@ -2,7 +2,7 @@
  * @license
  * SPDX-License-Identifier: Apache-2.0
  * Kampas Main App Top Bar
- * - UEAB Logo + Kampas wordmark
+ * - Kampas logo (single transparent PNG: symbol + wordmark)
  * - Debounced global search bar with grouped suggestions dropdown & thumbnails:
  *   Venues (building photo), Houses (house photo), Events, Units, Documents, Clubs, People, Lost items
  * - Keyboard navigation (Arrow keys, Enter, Escape)
@@ -11,7 +11,7 @@
  * - Profile avatar menu (Profile, Dark Mode, Low-Data Mode, Sign Out)
  */
 
-import React, { useState, useEffect, useRef, useTransition } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
@@ -33,7 +33,6 @@ import {
   Users,
   Compass,
   SearchCheck,
-  Check,
   Clock,
   ArrowRight,
   Sparkles,
@@ -247,24 +246,13 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <Link to="/home" className="flex items-center gap-2.5 group">
-            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-[#0B2A6F] flex items-center justify-center shadow-lg shadow-black/20 group-hover:scale-105 transition-transform">
-              <img src="/brand/kampas-favicon.png" alt="Kampas logo" className="h-full w-full rounded-xl object-cover" />
-            </div>
-            <div>
-              <div className="flex items-center gap-1.5 leading-none">
-                <span className="text-lg sm:text-xl font-black tracking-tight text-white">
-                  Kampas
-                </span>
-                <span className="text-[10px] font-extrabold px-1.5 py-0.5 rounded bg-[#F2B705] text-[#071B4A]">
-                  UEAB
-                </span>
-              </div>
-              <span className="hidden sm:block text-[10px] font-semibold text-blue-100/65 tracking-wider uppercase">
-                The campus, in one place
-              </span>
-            </div>
-          </Link>
+          <a href="/" className="flex items-center group shrink-0" aria-label="Kampas home">
+          <img
+            src="/brand/kampas-header-logo.png"
+            alt="Kampas"
+            className="h-8 sm:h-9 w-auto max-w-none object-contain group-hover:scale-105 transition-transform"
+          />
+          </a>
         </div>
 
         {/* Center: Global Working Search Bar with Debounce & Grouped Suggestions */}
@@ -637,7 +625,7 @@ export const Header: React.FC<HeaderProps> = ({
             title="Toggle Low-Data Mode for Slow Network"
           >
             <WifiOff className="w-4 h-4" />
-            <span className="text-[11px]">{lowDataMode ? 'Low-Data' : 'Low-Data'}</span>
+            <span className="text-[11px]">Low-Data</span>
           </button>
 
           {/* Dark Mode Toggle */}

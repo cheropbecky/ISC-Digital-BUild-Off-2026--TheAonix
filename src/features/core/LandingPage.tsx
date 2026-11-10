@@ -470,23 +470,15 @@ export const LandingPage: React.FC = () => {
         <div className="w-full px-4 sm:px-8 lg:px-12 h-18 flex items-center justify-between gap-4">
           <div className="flex items-center gap-3 shrink-0">
             {/* Official Logo matching favicon */}
-            <Link to="/" className="flex items-center gap-3 group">
-              <img
-                src="/brand/kampas-wordmark.png"
-                alt="Kampas UEAB Logo"
-                className="h-10 w-auto max-w-[190px] object-contain rounded-xl shadow-md group-hover:scale-105 transition-transform"
-              />
-              <div>
-                <div className="text-xl font-black tracking-tight text-white flex items-center gap-1.5">
-                  <span>KAMPAS</span>
-                  <span className="text-xs font-bold px-1.5 py-0.5 rounded bg-[#F2B705] text-[#071B4A]">UEAB</span>
-                </div>
-                <p className="text-[10px] text-slate-300 font-semibold tracking-wide hidden sm:block">
-                  Univ. of Eastern Africa, Baraton
-                </p>
-              </div>
-            </Link>
-          </div>
+            {/* Kampas logo */}
+        <Link to="/" className="flex items-center group shrink-0" aria-label="Kampas landing page">
+          <img
+            src="/brand/kampas-header-logo.png"
+            alt="Kampas"
+            className="h-8 sm:h-9 w-auto max-w-none object-contain group-hover:scale-105 transition-transform"
+          />
+        </Link>
+                  </div>
 
           {/* Desktop Creative Navigation with Creative Modules Dropdown */}
           <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-sm font-semibold text-slate-200">
