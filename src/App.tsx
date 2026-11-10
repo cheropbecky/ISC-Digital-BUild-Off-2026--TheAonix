@@ -10,12 +10,14 @@ import React from 'react';
 import { HashRouter } from 'react-router-dom';
 import { KampasProvider } from './lib/store';
 import { AppRouter } from './app/Router';
+import { PWAInstallPrompt } from './components/ui/PWAInstallPrompt';
 
 export default function App() {
   return (
     <KampasProvider>
       <HashRouter>
         <AppRouter />
+        <PWAInstallPrompt />
       </HashRouter>
     </KampasProvider>
   );

@@ -15,7 +15,6 @@ import { Sidebar } from '../components/shared/Sidebar';
 import { MobileTabBar } from '../components/shared/MobileTabBar';
 import { DemoControls } from '../components/shared/DemoControls';
 import { ToastContainer } from '../components/ui/ToastContainer';
-import { PWAInstallPrompt } from '../components/ui/PWAInstallPrompt';
 import { WifiOff } from 'lucide-react';
 
 export const Layout: React.FC = () => {
@@ -60,11 +59,7 @@ export const Layout: React.FC = () => {
         isMobileMenuOpen={isMobileMenuOpen}
       />
 
-      {location.pathname === '/home' && (
-        <div className="pt-14 sm:pt-[68px]">
-          <PWAInstallPrompt className={`mx-auto max-w-5xl transition-[margin] duration-300 ${isSidebarCollapsed ? 'lg:ml-20' : 'lg:ml-56'}`} />
-        </div>
-      )}
+      <div aria-hidden="true" className="h-14 shrink-0 sm:h-[68px]" />
 
       <div className="flex-1 flex w-full relative">
         {/* Persistent FIXED Left Sidebar on Desktop (1024px+): does NOT scroll with page */}
