@@ -1,11 +1,12 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
- * Kampas Fixed Desktop Sidebar
- * - Fixed left sidebar (1024px and up) that never scrolls with the page
- * - Items: Home, Campus (Map, Timetable, Deadlines), House Find, Share Hub, Community, Lost & Found
- * - Highlight active item in UEAB Gold (#F2B705)
- * - Collapsible to compact icons rail
+- 
+@license
+- SPDX-License-Identifier: Apache-2.0
+- Kampas Fixed Desktop Sidebar
+- Fixed left sidebar (1024px and up) that never scrolls with the page
+- Items: Home, Campus (Map, Timetable, Deadlines), House Find, Share Hub, Community, Lost & Found, Feedback
+- Highlight active item in UEAB Gold (#F2B705)
+- Collapsible to compact icons rail
  */
 
 import React, { useState } from 'react';
@@ -22,8 +23,8 @@ import {
   FileText,
   Users,
   GraduationCap,
-  Compass,
   SearchCheck,
+  MessageSquarePlus,
   ChevronLeft,
   ChevronRight,
 } from 'lucide-react';
@@ -63,6 +64,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
         { to: '/share', label: 'Share Hub (Notes)', icon: FileText },
         { to: '/community', label: 'Community & Events', icon: Users },
         { to: '/found', label: 'Lost & Found Desk', icon: SearchCheck },
+        { to: '/feedback', label: 'Feedback & Support', icon: MessageSquarePlus },
       ],
     },
   ];
