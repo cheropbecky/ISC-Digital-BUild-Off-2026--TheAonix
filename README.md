@@ -147,7 +147,7 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 
 ### ERD
 
-![ERD](database/erd.png)
+![ERD](docs/Untitled(1).png)
 
 ### EER
 
@@ -155,11 +155,11 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 
 ### Data Flow Diagrams
 
-![DFD](docs/dfd.png)
+![DFD](docs/KampasDFD.png)
 
 ### Use case diagram
 
-![Use case diagram](docs/use-case.png)
+![Use case diagram](docs/Kampas-UseCaseDiagram.png)
 
 ### Wireframes
 
