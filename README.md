@@ -70,7 +70,7 @@ Student life at UEAB is split across physical notice boards, WhatsApp groups, PD
 
 ### Who it affects
 
-Students (especially freshmen and off-campus residents), lecturers, class representatives, club officers, alumni, employers and university staff. Landlords are affected too, as the people students rent from.
+Students , lecturers, class representatives, club officers, alumni, employers and university staff. Landlords are affected too, as the people students rent from.
 
 ### Interview summary
 
@@ -134,8 +134,6 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 | Employer | Post internships, attachments and trainee openings |
 | Staff Member | Issue clearance notices, verify claims |
 | Super Admin | Full control, audit logs, approvals |
-
-> Landlords are **not** a login role. They appear as contact details on listings.
 
 ---
 
@@ -226,7 +224,7 @@ House listings and roommate posts are currently client-side data (`src/data/hous
 
 ---
 
-## Screenshots / Demo
+## Demo
 
 🎥 **Demo video:** https://youtu.be/QgE6Do-PmOw
 
@@ -257,8 +255,6 @@ npm run dev
 
 Open **http://localhost:3000**. Routes use hashes, for example `http://localhost:3000/#/home`.
 
-> If the final code is not on `main` yet, run `git checkout Becky` after cloning.
-
 ### Try the demo
 
 1. Click **Enter Kampas**, then **Create Account** and use any student ID, for example `S21/04589`, with any password.
@@ -283,7 +279,6 @@ npm run preview   # preview the build
 | `VITE_DEV_ROLE_SWITCHER` | No | Set to `false` to hide the role switcher in production |
 | `VITE_DEV_TOOLS` | No | Enables the map coordinate picker |
 
-> Never commit real keys. Only `.env.example` belongs in the repository.
 
 ### Connect Supabase (optional)
 
