@@ -45,14 +45,12 @@ A responsive, offline-first student platform and Progressive Web App (PWA) for t
 | **Team leader** | Jacob Sihul|
 | **Repository** | https://github.com/cheropbecky/ISC-Digital-BUild-Off-2026--TheAonix |
 
-| Name | Registration No. | Role | Team Leader |
-| --- | --- | --- | :---: |
-
-| Jacob Sihul | SSIHOT2511 | Backend and API Developer | |
-| Becky Cherop | SKIPCH2511 | Frontend Developer and UI Specialist |  |
-| Nathan Kimutai | SKIMNA2511 | Database Engineer | |
-| Thabita Jeptoo | STHAJE2511 | DevOps and QA Specialist | |
-
+| Name | Registration No. | Role |
+| --- | --- | --- |
+| Jacob Sihul | SSIHOT2511 | Backend and API Developer |
+| Becky Cherop | SKIPCH2511 | Frontend Developer and UI Specialist |
+| Nathan Kimutai | SKIMNA2511 | Database Engineer |
+| Thabita Jeptoo | STHAJE2511 | DevOps and QA Specialist |
 ---
 
 ## Problem Statement and Research
