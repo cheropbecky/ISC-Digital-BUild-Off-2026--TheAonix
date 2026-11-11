@@ -224,7 +224,7 @@ House listings and roommate posts are currently client-side data (`src/data/hous
 
 ---
 
-## Demo
+## Screenshots / Demo
 
 🎥 **Demo video:** https://youtu.be/QgE6Do-PmOw
 
