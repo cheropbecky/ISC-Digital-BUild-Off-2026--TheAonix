@@ -24,6 +24,10 @@ import calculatorPhoto from '../assets/images/calc.png';
 import lenovoChargerPhoto from '../assets/images/Lenovocharger.png';
 import scientificPhoto from '../assets/images/scientific.jpg';
 import studentIdPhoto from '../assets/images/pastedimage.png';
+import scienceComplexPhoto from '../assets/images/ueab_science_complex_1793989896519.jpg';
+import campusHeroPhoto from '../assets/images/ueab_campus_hero_1793989895358.jpg';
+import studentLifePhoto from '../assets/images/ueab_student_life_1793989896360.jpg';
+import libraryHallPhoto from '../assets/images/ueab_library_hall_1793989894699.jpg';
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'usr_student_demo',
@@ -826,7 +830,7 @@ export const INITIAL_EVENTS: CampusEvent[] = [
     endTime: new Date(Date.now() + 1000 * 60 * 60 * 28).toISOString(),
     category: 'academic',
     description: 'Build IoT or AI tools for smallholder tea & maize farmers in the Rift Valley. Prizes sponsored by Safaricom & Microsoft ADC.',
-    posterUrl: '/src/assets/images/ueab_science_complex_1793989896519.jpg',
+    posterUrl: scienceComplexPhoto,
     maxCapacity: 120,
     currentRsvps: 74,
     isPublished: true,
@@ -844,7 +848,7 @@ export const INITIAL_EVENTS: CampusEvent[] = [
     endTime: new Date(Date.now() + 1000 * 60 * 60 * 40).toISOString(),
     category: 'chapel',
     description: 'Inspiring choral anthems, brass ensembles, and spiritual sunset fellowship at the University Sanctuary.',
-    posterUrl: '/src/assets/images/ueab_campus_hero_1793989895358.jpg',
+    posterUrl: campusHeroPhoto,
     maxCapacity: 600,
     currentRsvps: 310,
     isPublished: true,
@@ -861,7 +865,7 @@ export const INITIAL_EVENTS: CampusEvent[] = [
     endTime: new Date(Date.now() + 1000 * 60 * 60 * 78).toISOString(),
     category: 'sports',
     description: 'Science & Tech vs School of Business grand finals. 100m sprint relays and volleyball exhibition.',
-    posterUrl: '/src/assets/images/ueab_student_life_1793989896360.jpg',
+    posterUrl: studentLifePhoto,
     maxCapacity: 400,
     currentRsvps: 180,
     isPublished: true,
@@ -879,7 +883,7 @@ export const INITIAL_EVENTS: CampusEvent[] = [
     endTime: new Date(Date.now() + 1000 * 60 * 60 * 126).toISOString(),
     category: 'career',
     description: 'Meet recruiters and UEAB alumni working at Safaricom, Equity Bank, Google, and Cellulant.',
-    posterUrl: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    posterUrl: libraryHallPhoto,
     maxCapacity: 200,
     currentRsvps: 125,
     isPublished: true,
