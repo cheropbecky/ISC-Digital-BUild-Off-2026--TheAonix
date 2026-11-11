@@ -21,10 +21,12 @@ import {
 } from 'lucide-react';
 import { AlumniProfile } from '../../lib/types';
 import { CommunityShell, CommunitySubNav } from './components/CommunityLayout';
-import campusHero from '../../assets/images/ueab_campus_hero_1793989895358.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const campusHero = HERO_IMAGE_URLS.campusHero;
 
 export const AlumniDirectoryPage: React.FC = () => {
-  const { alumni, sendReferralRequest, user } = useKampasStore();
+  const { alumni, sendReferralRequest, setRole, user } = useKampasStore();
 
   const [search, setSearch] = useState('');
   const [selectedCompanyFilter, setSelectedCompanyFilter] = useState('all');

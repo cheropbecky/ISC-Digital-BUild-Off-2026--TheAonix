@@ -58,45 +58,34 @@ export const Footer: React.FC = () => {
     <footer className="bg-[#071B4A] text-slate-300 pt-12 pb-8 border-t border-blue-950 w-full overflow-hidden">
       <div className="w-full px-4 sm:px-8 lg:px-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 pb-10 border-b border-slate-800">
-          {/* Col 1: University Identity */}
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#0B2A6F] border border-[#F2B705]/60 flex items-center justify-center shadow-md">
-                <svg viewBox="0 0 100 100" className="w-7 h-7" fill="none">
-                  <path d="M50 12 L82 30 L82 70 L50 88 L18 70 L18 30 Z" fill="#F2B705" />
-                  <path d="M50 22 L72 34 L72 66 L50 78 L28 66 L28 34 Z" fill="#071B4A" />
-                  <text x="50" y="59" textAnchor="middle" fill="#FFFFFF" fontSize="24" fontWeight="900" fontFamily="Inter">
-                    U
-                  </text>
-                </svg>
+          {/* Col 1: Kampas Brand & University Identity */}
+          <div className="space-y-5">
+            <div className="relative overflow-hidden rounded-2xl border border-white/10 bg-gradient-to-br from-[#0B2A6F] via-[#0A245F] to-[#051336] p-5 shadow-[0_12px_28px_rgba(0,0,0,0.16)]">
+              <div className="pointer-events-none absolute -right-10 -top-10 h-28 w-28 rounded-full border-[14px] border-[#F2B705]/10" />
+              <div className="pointer-events-none absolute -bottom-12 -left-8 h-24 w-24 rounded-full bg-[#1769FF]/20 blur-2xl" />
+              <div className="relative flex items-center gap-3">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#F2B705]/50 bg-[#071B4A] p-2 shadow-lg">
+                  <img src="/brand/kampas-mark.png" alt="" className="h-full w-full object-contain" />
+                </div>
+                <div>
+                  <span className="block text-2xl font-black tracking-[0.18em] text-white">KAMPAS</span>
+                  <span className="mt-0.5 block text-[10px] font-bold uppercase tracking-[0.16em] text-[#F2B705]">UEAB student platform</span>
+                </div>
               </div>
-              <div>
-                <span className="text-base font-extrabold text-white block leading-tight">
-                  Kampas • UEAB
-                </span>
-                <span className="text-xs text-[#F2B705] font-semibold">
-                  The campus, in one place.
-                </span>
+              <div className="relative mt-5 flex items-center gap-2 border-t border-white/10 pt-3 text-xs font-semibold text-blue-100">
+                <BookOpen className="h-4 w-4 text-[#F2B705]" />
+                <span>The campus, in one place.</span>
               </div>
             </div>
 
-            <p className="text-xs text-slate-400 leading-relaxed">
+            <p className="text-xs leading-relaxed text-slate-400">
               University of Eastern Africa, Baraton is an accredited Christian university situated in the serene highlands of Nandi County, Kenya.
             </p>
 
-            <div className="text-xs space-y-1.5 text-slate-400">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-3.5 h-3.5 text-[#F2B705]" />
-                <span>P.O. Box 2500 - 30100 Eldoret, Kenya</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Phone className="w-3.5 h-3.5 text-[#F2B705]" />
-                <span>+254 722 000 000 / +254 733 000 000</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Mail className="w-3.5 h-3.5 text-[#F2B705]" />
-                <span>info@ueab.ac.ke</span>
-              </div>
+            <div className="space-y-2 text-xs text-slate-400">
+              <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5 shrink-0 text-[#F2B705]" /><span>P.O. Box 2500 - 30100 Eldoret, Kenya</span></div>
+              <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5 shrink-0 text-[#F2B705]" /><span>+254 722 000 000 / +254 733 000 000</span></div>
+              <div className="flex items-center gap-2"><Mail className="h-3.5 w-3.5 shrink-0 text-[#F2B705]" /><span>info@ueab.ac.ke</span></div>
             </div>
           </div>
 

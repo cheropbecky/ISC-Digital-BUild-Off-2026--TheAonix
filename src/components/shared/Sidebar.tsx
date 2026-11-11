@@ -9,8 +9,8 @@
 - Collapsible to compact icons rail
  */
 
-import React, { useState } from 'react';
-import { NavLink } from 'react-router-dom';
+import React, { useEffect, useRef, useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useKampasStore } from '../../lib/store';
 import {
@@ -40,6 +40,18 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
   const isCollapsed = controlledCollapsed ?? internalCollapsed;
   const { user } = useKampasStore();
   const shouldReduceMotion = useReducedMotion();
+  const location = useLocation();
+  const initialPathRef = useRef(location.pathname);
+  const [hasUnreadDeadlines, setHasUnreadDeadlines] = useState(true);
+
+  // This is intentionally session-only: a full refresh restores the dot.
+  useEffect(() => {
+    if (initialPathRef.current === location.pathname) return;
+    initialPathRef.current = location.pathname;
+    if (location.pathname.startsWith('/campus/deadlines')) {
+      setHasUnreadDeadlines(false);
+    }
+  }, [location.pathname]);
 
   const navSections = [
     {
@@ -135,6 +147,13 @@ export const Sidebar: React.FC<SidebarProps> = ({ isMobileDrawer = false, onClos
                       >
                         <Icon className={`w-5 h-5 ${isActive ? 'text-white' : 'text-blue-200/70 group-hover:text-[#F2B705]'}`} />
                       </motion.span>
+                      {to === '/campus/deadlines' && hasUnreadDeadlines && (
+                        <span
+                          aria-label="Unread deadlines and CATs"
+                          title="Unread deadlines and CATs"
+                          className={`absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-[#06163E] ${isCollapsed && !isMobileDrawer ? 'right-2' : ''}`}
+                        />
+                      )}
                       <AnimatePresence initial={false} mode="popLayout">
                         {(!isCollapsed || isMobileDrawer) && (
                           <motion.span

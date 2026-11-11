@@ -10,7 +10,7 @@ export const UEAB_SCHOOLS = [
 
 export type UeabSchool = (typeof UEAB_SCHOOLS)[number];
 export type EventCategory = 'academic' | 'chapel' | 'sports' | 'social' | 'career';
-export type CommunityCategory = 'Clubs' | 'Alumni' | 'Mentorship' | 'Opportunities';
+export type CommunityCategory = 'Clubs' | 'Opportunities';
 export type EventStatus = 'upcoming' | 'ongoing' | 'past';
 
 export interface CommunityEvent {
@@ -120,14 +120,6 @@ const communitySeeds: Array<[CommunityCategory, UeabSchool, string, string, stri
   ['Clubs', UEAB_SCHOOLS[0], 'Baraton Innovators and Entrepreneurs Forum', 'Student founders preparing pitches and building sustainable ventures.', '115 members · Tuesdays at 4:30 PM', 'Join club', '/community/clubs'],
   ['Clubs', UEAB_SCHOOLS[4], 'Adventist Youth Society Baraton', 'Faith, outreach, music ministry, and student fellowship.', '410 members · Sabbath at 3:00 PM', 'Join club', '/community/clubs'],
   ['Clubs', UEAB_SCHOOLS[1], 'UEAB Creative Arts Society', 'A home for poetry, theatre, visual arts, and cultural expression.', '85 members · Mondays at 5:30 PM', 'Join club', '/community/clubs'],
-  ['Alumni', UEAB_SCHOOLS[3], 'Sylvia Chepkemoi', 'Software Engineer II at Microsoft Africa Development Centre.', 'Class of 2020 · Open to mentoring and referrals', 'View profile', '/community/alumni'],
-  ['Alumni', UEAB_SCHOOLS[3], 'Brian Kiprop', 'Senior Cloud Backend Engineer at Safaricom PLC.', 'Class of 2022 · Open to referrals', 'View profile', '/community/alumni'],
-  ['Alumni', UEAB_SCHOOLS[0], 'Edwin Koech', 'Fintech Product Manager at Equity Group Holdings.', 'Class of 2021 · Open to mentoring', 'View profile', '/community/alumni'],
-  ['Alumni', UEAB_SCHOOLS[2], 'Grace Kemboi', 'Clinical research coordinator supporting rural health programs.', 'Class of 2019 · Open to mentoring', 'View profile', '/community/alumni'],
-  ['Mentorship', UEAB_SCHOOLS[2], 'Health sciences mentorship circle', 'Monthly sessions on clinical placements, research, and career planning.', 'English and Kiswahili · Monthly sessions', 'Find a mentor', '/community/alumni'],
-  ['Mentorship', UEAB_SCHOOLS[3], 'Software engineering interview lab', 'Practice technical interviews, portfolios, and system design with alumni.', 'Online and in-person · Biweekly', 'Find a mentor', '/community/alumni'],
-  ['Mentorship', UEAB_SCHOOLS[0], 'Business leadership circle', 'Peer coaching for entrepreneurship, finance, and professional confidence.', 'English and Kiswahili · Monthly sessions', 'Find a mentor', '/community/alumni'],
-  ['Mentorship', UEAB_SCHOOLS[1], 'Education placement support group', 'Guidance on teaching practice, applications, and classroom leadership.', 'Peer-led · First Saturday monthly', 'Find a mentor', '/community/alumni'],
   ['Opportunities', UEAB_SCHOOLS[3], 'Cloud Infrastructure and DevOps Internship', 'Attachment opportunity with hands-on Linux, Docker, and Kubernetes work.', 'Safaricom PLC · Apply by 30 Nov 2026', 'View opportunity', '/community/opportunities'],
   ['Opportunities', UEAB_SCHOOLS[2], 'Community Health Research Attachment', 'Support field research, data collection, and rural health reporting.', 'UEAB Health Centre · Apply by 5 Dec 2026', 'View opportunity', '/community/opportunities'],
   ['Opportunities', UEAB_SCHOOLS[0], 'Graduate Business Analyst Trainee', 'Join a structured graduate program in operations and product analysis.', 'Equity Group · Apply by 15 Dec 2026', 'View opportunity', '/community/opportunities'],
@@ -140,17 +132,13 @@ export const COMMUNITY_ITEMS: CommunityItem[] = communitySeeds.map(([category, s
   category,
   school,
   description,
-  details: `${description} Explore this ${category.toLowerCase()} opportunity through the UEAB Baraton community hub and connect with students and alumni in the same field.`,
+  details: `${description} Explore this ${category.toLowerCase()} opportunity through the UEAB Baraton community hub and connect with students and campus partners in the same field.`,
   meta,
   actionLabel,
   href,
   imageUrl: category === 'Clubs'
     ? [IMAGES.studentLifeQuad.url, IMAGES.baratonAuditorium.url, IMAGES.baratonResearchConference.url, IMAGES.studentLifeQuad.url][index % 4]
-    : category === 'Alumni'
-      ? IMAGES.baratonGraduation.url
-      : category === 'Mentorship'
-        ? IMAGES.baratonResearchConference.url
-        : IMAGES.baratonAuditorium.url,
+    : IMAGES.baratonAuditorium.url,
   imageAlt: `${category} at University of Eastern Africa, Baraton`,
 }));
 

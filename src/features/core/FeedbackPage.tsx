@@ -17,7 +17,9 @@ import {
   Sparkles,
   HelpCircle,
 } from 'lucide-react';
-import feedbackHeroImage from '../../assets/images/ueab_campus_hero_1794150142310.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const feedbackHeroImage = HERO_IMAGE_URLS.campusHero;
 
 export const FeedbackPage: React.FC = () => {
   const navigate = useNavigate();

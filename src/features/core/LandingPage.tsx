@@ -36,12 +36,12 @@ import {
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
 import { searchService, SearchResultItem } from '../../services/searchService';
-import campusHeroImage from '../../assets/images/ueab_campus_hero_1794150142310.jpg';
-import housingImage from '../../assets/images/ueab_student_housing_1794150143766.jpg';
-import libraryImage from '../../assets/images/ueab_library_students_1794150143182.jpg';
-import studentLifeImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
-import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
-import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const campusHeroImage = HERO_IMAGE_URLS.campusHero;
+const housingImage = HERO_IMAGE_URLS.housing;
+const libraryImage = HERO_IMAGE_URLS.library;
+const studentLifeImage = HERO_IMAGE_URLS.studentLife;
 const scienceComplexImage = libraryImage;
 const venueEntranceImage = studentLifeImage;
 
@@ -479,7 +479,7 @@ export const LandingPage: React.FC = () => {
                   </div>
 
           {/* Desktop Creative Navigation with Creative Modules Dropdown */}
-          <nav className="hidden lg:flex items-center gap-5 xl:gap-6 text-sm font-semibold text-slate-200">
+          <nav className="hidden lg:flex items-center gap-1 xl:gap-2 text-sm font-semibold text-slate-200">
             {/* Creative Modules Popover */}
             <div
               className="relative"
@@ -532,20 +532,20 @@ export const LandingPage: React.FC = () => {
             </div>
 
             {/* Direct Quick Module Links */}
-            <Link to="/housing" className="hover:text-[#F2B705] transition-colors flex items-center gap-1">
+            <Link to="/housing" className="hover:text-[#F2B705] transition-colors flex items-center justify-center gap-1 px-3 xl:px-4">
               <span>Housing</span>
             </Link>
-            <Link to="/campus/timetable" className="hover:text-[#F2B705] transition-colors flex items-center gap-1">
+            <Link to="/campus/timetable" className="hover:text-[#F2B705] transition-colors flex items-center justify-center gap-1 px-3 xl:px-4">
               <span>Timetable</span>
             </Link>
-            <Link to="/share" className="hover:text-[#F2B705] transition-colors flex items-center gap-1">
+            <Link to="/share" className="hover:text-[#F2B705] transition-colors flex items-center justify-center gap-1 px-3 xl:px-4">
               <span>Share Hub</span>
             </Link>
-            <Link to="/found" className="hover:text-[#F2B705] transition-colors flex items-center gap-1">
+            <Link to="/found" className="hover:text-[#F2B705] transition-colors flex items-center justify-center gap-1 px-3 xl:px-4">
               <span>Lost & Found</span>
             </Link>
-            <a href="#section-about" className="hover:text-[#F2B705] transition-colors">About</a>
-            <a href="#section-faq" className="hover:text-[#F2B705] transition-colors">FAQ</a>
+            <a href="#section-about" className="hover:text-[#F2B705] transition-colors px-3 xl:px-4">About</a>
+            <a href="#section-faq" className="hover:text-[#F2B705] transition-colors px-3 xl:px-4">FAQ</a>
           </nav>
 
           {/* Right CTAs: Creative Search Button + Theme Toggle + Enter Kampas */}
