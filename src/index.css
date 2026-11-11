@@ -110,3 +110,24 @@
   from { transform: translateX(0); }
   to { transform: translateX(-50%); }
 }
+
+@keyframes timetable-scan-down {
+  from { transform: translateY(0); }
+  to { transform: translateY(9rem); }
+}
+
+.animate-timetable-scan {
+  animation: timetable-scan-down 1.8s linear infinite;
+}
+
+.animate-timetable-scan-trail {
+  animation: timetable-scan-down 1.8s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-timetable-scan,
+  .animate-timetable-scan-trail {
+    animation: none;
+    transform: translateY(4.5rem);
+  }
+}

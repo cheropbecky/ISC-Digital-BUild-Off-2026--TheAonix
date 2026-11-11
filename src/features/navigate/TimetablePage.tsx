@@ -230,7 +230,10 @@ export const TimetablePage: React.FC = () => {
     try {
       setScanStage(1);
       const entries = await scanTimetableImage(uploadState.image, venuesList, (p) => {
-        setScanProgress(Math.max(4, Math.round(p * 90)));
+        const reportedProgress = Math.max(4, Math.min(90, Math.round(p * 90)));
+        // OCR can report progress per phase, which may restart at a lower value.
+        // Keep the visible progress bar moving forward for the whole scan.
+        setScanProgress((currentProgress) => Math.max(currentProgress, reportedProgress));
         setScanStage(p < 0.9 ? 1 : 2);
       });
 
@@ -761,6 +764,12 @@ export const TimetablePage: React.FC = () => {
                         alt="Uploaded timetable preview"
                         className="h-full w-full object-contain"
                       />
+                      {isScanning && (
+                        <div className="pointer-events-none absolute inset-0 overflow-hidden bg-[#071B4A]/10">
+                          <div className="absolute inset-x-0 top-0 h-px animate-timetable-scan bg-[#F2B705] shadow-[0_0_12px_3px_rgba(242,183,5,0.8)]" />
+                          <div className="absolute inset-x-0 top-0 h-10 animate-timetable-scan-trail bg-gradient-to-b from-[#F2B705]/25 to-transparent" />
+                        </div>
+                      )}
                       <div className="absolute left-2 top-2 flex items-center gap-1 rounded-full bg-emerald-600 px-2 py-1 text-[10px] font-bold text-white shadow">
                         <Check className="h-3 w-3" /> Image uploaded
                       </div>
