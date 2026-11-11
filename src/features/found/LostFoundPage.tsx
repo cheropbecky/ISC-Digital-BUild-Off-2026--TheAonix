@@ -33,7 +33,9 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { LostFoundItem } from '../../lib/types';
-import libraryHallPhoto from '../../assets/images/ueab_library_hall_1793989894699.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const libraryHallPhoto = HERO_IMAGE_URLS.library;
 
 const HANDOVER_POINTS = [
   'Main Security Gate A Desk',

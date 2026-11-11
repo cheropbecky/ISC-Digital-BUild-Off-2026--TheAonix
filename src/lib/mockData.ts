@@ -25,9 +25,10 @@ import lenovoChargerPhoto from '../assets/images/Lenovocharger.png';
 import scientificPhoto from '../assets/images/scientific.jpg';
 import studentIdPhoto from '../assets/images/pastedimage.png';
 import scienceComplexPhoto from '../assets/images/ueab_science_complex_1793989896519.jpg';
-import campusHeroPhoto from '../assets/images/ueab_campus_hero_1793989895358.jpg';
-import studentLifePhoto from '../assets/images/ueab_student_life_1793989896360.jpg';
-import libraryHallPhoto from '../assets/images/ueab_library_hall_1793989894699.jpg';
+import { HERO_IMAGE_URLS } from '../data/imageUrls';
+const campusHeroPhoto = HERO_IMAGE_URLS.campusHero;
+const studentLifePhoto = HERO_IMAGE_URLS.studentLife;
+const libraryHallPhoto = HERO_IMAGE_URLS.library;
 
 export const INITIAL_USER_PROFILE: UserProfile = {
   id: 'usr_student_demo',

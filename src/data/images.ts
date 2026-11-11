@@ -6,23 +6,19 @@
  * and graceful fallback containers so real UEAB photos can be swapped in seamlessly.
  */
 
-import campusHero from '../assets/images/ueab_campus_hero_1793989895358.jpg';
-import libraryHall from '../assets/images/ueab_library_hall_1793989894699.jpg';
-import scienceComplex from '../assets/images/ueab_science_complex_1793989896519.jpg';
-import studentLife from '../assets/images/ueab_student_life_1793989896360.jpg';
-import modernHousing from '../assets/images/ueab_house_modern_1794079506521.jpg';
+import { HERO_IMAGE_URLS, UEAB_IMAGE_URLS } from './imageUrls';
 import bedsitterRoom from '../assets/images/ueab_bedsitter_room_1794079508675.jpg';
-import officialSignage from '../assets/images/ueab_baraton_new_signage.jpg';
-import graduationPhoto from '../assets/images/ueab_baraton_graduation.jpg';
-import researchConference from '../assets/images/ueab_baraton_research_conference.jpg';
-import roadRace from '../assets/images/ueab_baraton_road_race.jpg';
-import auditoriumPhoto from '../assets/images/ueab_baraton_auditorium.jpg';
 
-const UEAB_SIGNAGE_IMAGE = officialSignage;
-const UEAB_GRADUATION_IMAGE = graduationPhoto;
-const UEAB_RESEARCH_IMAGE = researchConference;
-const UEAB_ROAD_RACE_IMAGE = roadRace;
-const UEAB_AUDITORIUM_IMAGE = auditoriumPhoto;
+const campusHero = HERO_IMAGE_URLS.campusHero;
+const libraryHall = HERO_IMAGE_URLS.library;
+const scienceComplex = HERO_IMAGE_URLS.library;
+const studentLife = HERO_IMAGE_URLS.studentLife;
+const modernHousingImage = HERO_IMAGE_URLS.housing;
+const UEAB_SIGNAGE_IMAGE = UEAB_IMAGE_URLS.signage;
+const UEAB_GRADUATION_IMAGE = UEAB_IMAGE_URLS.graduation;
+const UEAB_RESEARCH_IMAGE = UEAB_IMAGE_URLS.research;
+const UEAB_ROAD_RACE_IMAGE = UEAB_IMAGE_URLS.roadRace;
+const UEAB_AUDITORIUM_IMAGE = UEAB_IMAGE_URLS.auditorium;
 
 export interface RegisteredImage {
   id: string;
@@ -118,7 +114,7 @@ export const IMAGES = {
   // Housing Rentals & Student Rooms
   housingApartmentsModern: {
     id: 'house-modern-ext',
-    url: modernHousing,
+    url: modernHousingImage,
     alt: 'Modern two-story student rental apartments with private balconies, gated security wall, and paved parking in Baraton Centre',
     category: 'housing',
   },

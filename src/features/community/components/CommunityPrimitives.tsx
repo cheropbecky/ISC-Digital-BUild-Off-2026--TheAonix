@@ -11,7 +11,6 @@ export const CommunitySubNav: React.FC = () => (
       ['Hub', '/community'],
       ['Events', '/community/events'],
       ['Clubs', '/community/clubs'],
-      ['Alumni', '/community/alumni'],
       ['Opportunities', '/community/opportunities'],
     ].map(([label, href]) => (
       <a key={href} href={href} className={`min-h-10 shrink-0 rounded-lg px-3 py-2 text-xs font-bold transition hover:bg-[#0B2A6F]/10 ${href === '/community' ? 'bg-[#0B2A6F] text-white' : 'text-slate-600 dark:text-slate-300'}`}>
@@ -97,7 +96,7 @@ export const CommunityCard: React.FC<{ item: CommunityItem; onAction: () => void
         <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-slate-500 dark:text-slate-400">{item.description}</p>
       </div>
       <p className="flex items-center gap-1.5 text-[11px] font-semibold text-slate-500"><Users className="h-3.5 w-3.5" />{item.meta}</p>
-      <Button size="sm" variant={item.category === 'Alumni' || item.category === 'Mentorship' ? 'primary' : 'secondary'} onClick={onAction} className="mt-auto w-full">{item.actionLabel}</Button>
+      <Button size="sm" variant="secondary" onClick={onAction} className="mt-auto w-full">{item.actionLabel}</Button>
     </div>
   </article>
 );

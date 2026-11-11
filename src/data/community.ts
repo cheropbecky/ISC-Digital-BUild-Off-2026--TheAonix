@@ -4,10 +4,11 @@
  * UEAB Community Mock Data: Events with QR passes, Student Clubs, Alumni Mentorship & Referral, and Opportunities
  */
 
-import campusHero from '../assets/images/ueab_campus_hero_1793989895358.jpg';
+import { HERO_IMAGE_URLS } from './imageUrls';
 import scienceComplex from '../assets/images/ueab_science_complex_1793989896519.jpg';
-import studentLife from '../assets/images/ueab_student_life_1793989896360.jpg';
-import libraryHall from '../assets/images/ueab_library_hall_1793989894699.jpg';
+const campusHero = HERO_IMAGE_URLS.campusHero;
+const studentLife = HERO_IMAGE_URLS.studentLife;
+const libraryHall = HERO_IMAGE_URLS.library;
 
 export interface CampusEvent {
   id: string;

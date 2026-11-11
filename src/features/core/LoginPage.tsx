@@ -18,7 +18,9 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
-import loginImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const loginImage = HERO_IMAGE_URLS.studentLife;
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();

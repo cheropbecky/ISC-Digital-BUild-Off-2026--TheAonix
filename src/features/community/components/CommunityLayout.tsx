@@ -27,7 +27,6 @@ export const CommunitySubNav: React.FC = () => {
     ['Hub', '/community'],
     ['Events', '/community/events'],
     ['Clubs', '/community/clubs'],
-    ['Alumni', '/community/alumni'],
     ['Opportunities', '/community/opportunities'],
   ];
   return (

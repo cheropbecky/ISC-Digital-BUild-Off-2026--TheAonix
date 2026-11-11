@@ -4,7 +4,9 @@ import { CampusMap, MapLayerFilter } from '../../components/map/CampusMap';
 import { VENUES, VENUE_CATEGORY_LABELS, VenueCategory, VenueData } from '../../data/venues';
 import { ImageWithFallback } from '../../components/ui/ImageWithFallback';
 import { ArrowLeft, ArrowRight, Bed, Building2, Church, GraduationCap, Hospital, MapPin, Search, Trophy, Utensils, ChevronDown, Filter, Map } from 'lucide-react';
-import campusHero from '../../assets/images/ueab_campus_hero_1793989895358.jpg';
+import { HERO_IMAGE_URLS } from '../../data/imageUrls';
+
+const campusHero = HERO_IMAGE_URLS.campusHero;
 
 const categoryIcon: Record<VenueCategory, React.ElementType> = {
   academic: GraduationCap, administration: Building2, worship: Church,
