@@ -14,8 +14,6 @@ A responsive, offline-first student platform and Progressive Web App (PWA) for t
 ![Supabase](https://img.shields.io/badge/Supabase-schema_ready-3ECF8E?logo=supabase&logoColor=white)
 ![Licence](https://img.shields.io/badge/Licence-MIT-green)
 
-[🎥 Demo video](https://youtu.be/oVPTXHhnves) · [🌐 Live app](#screenshots--demo) · [📐 System design](#system-design) · [🚀 Run it](#how-to-run-the-project) · [📄 Business model](docs/Business_Model.pdf)
-
 </div>
 
 ---
@@ -30,11 +28,9 @@ A responsive, offline-first student platform and Progressive Web App (PWA) for t
 6. [Screenshots / Demo](#screenshots--demo)
 7. [How to Run the Project](#how-to-run-the-project)
 8. [Business Model Summary](#business-model-summary)
-9. [Testing and User Feedback](#testing-and-user-feedback)
-10. [Contributions](#contributions)
-11. [Future Improvements and Conclusion](#future-improvements-and-conclusion)
-12. [Honest Status: What Is Real and What Is Simulated](#honest-status-what-is-real-and-what-is-simulated)
-13. [Credits and Licence](#credits-and-licence)
+9. [Contributions](#contributions)
+10. [Future Improvements and Conclusion](#future-improvements-and-conclusion)
+11. [Credits and Licence](#credits-and-licence)
 
 ---
 
@@ -46,13 +42,14 @@ A responsive, offline-first student platform and Progressive Web App (PWA) for t
 | **Hackathon** | ISC Digital Build-Off Hackathon 2026, Department of Information Systems and Computing, UEAB |
 | **Theme** | Campus Problems |
 | **Team name** | TheAonix |
-| **Team leader** | Becky Cherop ⭐ |
+| **Team leader** | Jacob Sihul|
 | **Repository** | https://github.com/cheropbecky/ISC-Digital-BUild-Off-2026--TheAonix |
 
 | Name | Registration No. | Role | Team Leader |
 | --- | --- | --- | :---: |
-| Becky Cherop | SKIPCH2511 | Frontend Developer and UI Specialist | ⭐ |
+
 | Jacob Sihul | SSIHOT2511 | Backend and API Developer | |
+| Becky Cherop | SKIPCH2511 | Frontend Developer and UI Specialist |  |
 | Nathan Kimutai | SKIMNA2511 | Database Engineer | |
 | Thabita Jeptoo | STHAJE2511 | DevOps and QA Specialist | |
 
@@ -68,7 +65,7 @@ Student life at UEAB is split across physical notice boards, WhatsApp groups, PD
 | --- | --- | --- |
 | 1 | **Timetables and venues** change at short notice and are announced in scattered places | Missed lectures, CATs and exam clashes |
 | 2 | **Navigation** across the large, rural Baraton campus has no digital map or indoor signage | New students get lost finding halls, labs and offices |
-| 3 | **Off-campus housing** around Baraton Centre, Chemamul, Kaimosi Road, Koitalel and Cheterit is found through brokers who charge fees for unverified listings | Fees, fraud risk, rooms without reliable water or security |
+| 3 | **Off-campus housing** around Baraton Centre, Chemundu, Jacaranda, Kimondi and  Tilalwa is found through brokers who charge fees for unverified listings | Fees, fraud risk, rooms without reliable water or security |
 | 4 | **Study resources** (past papers, notes) sit in personal drives and printouts | Unequal access to revision material |
 | 5 | **Lost items, unclear notices and weak mentorship links** | Items never recovered, missed notices, few alumni connections |
 | 6 | **Weak campus bandwidth** makes heavy web portals fail at peak hours | Students cannot rely on online tools |
@@ -79,13 +76,22 @@ Students (especially freshmen and off-campus residents), lecturers, class repres
 
 ### Interview summary
 
-> ⚠️ **TODO (required by the hackathon guide: at least 3 real users).** Replace this block with your real findings before submitting.
+We interviewed three people from the UEAB community to understand the problems Kampas should solve.
 
 | # | Interviewee (role) | How they cope today | What they would value |
 | --- | --- | --- | --- |
-| 1 | TODO | TODO | TODO |
-| 2 | TODO | TODO | TODO |
-| 3 | TODO | TODO | TODO |
+| 1 | Continuing student (Year 3, Software Engineering) | Keeps the timetable as a phone screenshot and checks WhatsApp class groups for venue changes. Tracks deadlines and CATs in notes or from memory. Asks classmates for past papers and notes. Finds housing through word of mouth. | One timetable that warns about clashes and venue changes. Deadline reminders before CATs and assignments. A single place for verified notes and past papers. Verified rentals with price and distance to campus. |
+| 2 | Freshman (Year 1) | Gets lost finding lecture halls and offices, so asks seniors or walks around. Relies on the posted timetable and misses updates. Doesn't know which clubs, events or services exist. | A searchable campus map with walking directions and photos of venues. A clear "next class" view with the hall. A simple way to see clubs and events. A lost-and-found desk they can trust. |
+| 3 | Lecturer | Announces venue changes in class or on WhatsApp, and some students never see them. Shares notes by email or the learning portal. Has no quick way to notify a whole class about a room change. | A way to publish venue changes and notices to every enrolled student instantly. Fewer missed classes and repeat questions. A central place for approved resources. |
+
+**Key findings**
+
+- Information is scattered across screenshots, WhatsApp groups, notice boards and word of mouth.
+- Venue and timetable changes often do not reach every student.
+- New students struggle to find their way around campus.
+- Students lack a trusted place for notes, housing and lost items.
+
+These findings shaped the timetable alerts, campus map, House Find, Share Hub and Lost and Found modules.
 
 ---
 
@@ -139,7 +145,7 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 
 | Diagram | File |
 | --- | --- |
-| ERD | [database/erd.png](database/erd.png) |
+| ERD | [docs/erd.png](docs/erd.png) |
 | EER | [docs/eer.png](docs/eer.png) |
 | Data Flow Diagrams (DFD) | [docs/dfd.png](docs/dfd.png) |
 | Use case diagram | [docs/use-case.png](docs/use-case.png) |
@@ -147,7 +153,7 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 
 ### ERD
 
-![ERD](docs/Untitled(1).png)
+![ERD](docs/erd.png)
 
 ### EER
 
@@ -155,11 +161,11 @@ Kampas puts navigation, planning, housing, study, community and lost-and-found i
 
 ### Data Flow Diagrams
 
-![DFD](docs/KampasDFD.png)
+![DFD](docs/dfd.png)
 
 ### Use case diagram
 
-![Use case diagram](docs/Kampas-UseCaseDiagram.png)
+![Use case diagram](docs/use-case.png)
 
 ### Wireframes
 
@@ -181,8 +187,7 @@ Browser (React 19 PWA, HashRouter)
 
 ### Data model
 
-Main tables in [`database/schema.sql`](database/schema.sql): `profiles`, `units`, `registrations`, `venues`, `timetable_entries`, `deadlines`, `user_deadlines`, `documents`, `study_groups`, `clubs`, `events`, `alumni_profiles`, `referral_requests`, `lost_found_items`, `notices`, `push_subscriptions`.
-Row Level Security rules are in `database/policies.sql` and sample data in `database/seed.sql`.
+The database schema, Row Level Security policies and seed data are in the [`supabase/`](supabase/) folder. Main tables: `profiles`, `units`, `registrations`, `venues`, `timetable_entries`, `deadlines`, `user_deadlines`, `documents`, `study_groups`, `clubs`, `events`, `alumni_profiles`, `referral_requests`, `lost_found_items`, `notices`, `push_subscriptions`.
 House listings and roommate posts are currently client-side data (`src/data/houses.ts`).
 
 ### Project structure
@@ -199,9 +204,8 @@ House listings and roommate posts are currently client-side data (`src/data/hous
 │   ├── services/     # timetable and search services
 │   └── styles/       # design tokens and role definitions
 ├── public/           # brand assets, PWA icons, sample study documents
-├── database/         # schema.sql, policies.sql, seed.sql, ERD
-├── docs/             # Business_Model.pdf, Pitch_Slides.pdf, diagrams, research notes
-├── screenshots/      # images used in this README
+├── supabase/         # database schema, policies and seed data
+├── docs/             # business-model.pdf, ERD, EER, DFD, use case, wireframes
 ├── .env.example
 └── LICENSE
 ```
@@ -226,19 +230,11 @@ House listings and roommate posts are currently client-side data (`src/data/hous
 
 ## Screenshots / Demo
 
-🎥 **Demo video:** https://youtu.be/oVPTXHhnves
+🎥 **Demo video:** https://youtu.be/QgE6Do-PmOw
 
-[![Kampas demo video](https://img.youtube.com/vi/oVPTXHhnves/maxresdefault.jpg)](https://youtu.be/oVPTXHhnves)
+[![Kampas demo video](https://img.youtube.com/vi/QgE6Do-PmOw/maxresdefault.jpg)](https://youtu.be/QgE6Do-PmOw)
 
 🌐 **Live app:** TODO: add your Vercel URL
-
-| Home | Timetable | Campus Map |
-| :---: | :---: | :---: |
-| ![Home](screenshots/home.png) | ![Timetable](screenshots/timetable.png) | ![Campus map](screenshots/map.png) |
-| **House Find** | **Share Hub** | **Lost and Found** |
-| ![House Find](screenshots/housing.png) | ![Share Hub](screenshots/share-hub.png) | ![Lost and Found](screenshots/lost-found.png) |
-
-> Add these six images to `screenshots/` (see the checklist at the end of this file).
 
 ---
 
@@ -294,7 +290,7 @@ npm run preview   # preview the build
 ### Connect Supabase (optional)
 
 1. Create a Supabase project.
-2. Run `database/schema.sql`, then `database/policies.sql`, then `database/seed.sql` in the SQL editor.
+2. In the SQL editor, run the schema file first, then the policies file, then the seed file from the `supabase/` folder.
 3. Put the project URL and anon key in `.env`.
 
 ### Install as an app
@@ -305,7 +301,7 @@ Android Chrome: menu, **Install app**. iPhone Safari: **Share**, **Add to Home S
 
 ## Business Model Summary
 
-📄 **One-page business model:** [docs/Business_Model.pdf](docs/Business_Model.pdf)
+ **One-page business model:** [docs/business-model.pdf](docs/business-model.pdf)
 
 | | |
 | --- | --- |
@@ -318,29 +314,14 @@ Android Chrome: menu, **Install app**. iPhone Safari: **Share**, **Add to Home S
 
 ---
 
-## Testing and User Feedback
-
-Kampas was tested with two UEAB student groups.
-
-| Feedback | What we changed |
-| --- | --- |
-| Finding off-campus housing took too many steps on mobile | Added quick filter pills for water, Wi-Fi and distance, plus direct landlord call buttons |
-| Weekly schedules ignored the Adventist calendar | Added Friday evening vespers and Saturday services to the timetable |
-
-> ⚠️ **TODO:** add tester names or groups, dates, and a second round of feedback if you have it.
-
----
-
 ## Contributions
 
 | Member | Contribution |
 | --- | --- |
-| **Becky Cherop** (Team Leader) | Interface design and implementation: home dashboard, timetable and OCR scan, campus map and routing, house finder, share hub, lost and found, feedback portal, design tokens, repository lead |
 | **Jacob Sihul** | Application logic: roles and permissions model, authentication flow, service layer, Supabase client setup |
+| **Becky Cherop** (Team Leader) | Interface design and implementation: home dashboard, timetable and OCR scan, campus map and routing, house finder, share hub, lost and found, feedback portal, design tokens, repository lead |
 | **Nathan Kimutai** | Database design: Supabase schema, Row Level Security policies, seed data, ERD |
 | **Thabita Jeptoo** | DevOps and quality: GitHub branch workflow, Vercel deployment, cross-device testing, documentation |
-
-> ⚠️ **TODO:** confirm each line with the member, because judges may ask any member to explain any part of the project.
 
 ---
 
@@ -354,10 +335,7 @@ Kampas was tested with two UEAB student groups.
 4. Connect real push notifications for venue changes and lost-item matches.
 5. Integrate the real timetable from the registrar.
 6. Move housing listings into the database.
-
-### What we learned
-
-> ⚠️ **TODO:** write 2 to 3 sentences about teamwork, user research and the technical lessons.
+7. Add cool campus hangout spots
 
 ### Conclusion
 
@@ -365,21 +343,6 @@ Kampas turns scattered campus information into one tool that works on weak data.
 
 ---
 
-## Honest Status: What Is Real and What Is Simulated
-
-| Area | Status |
-| --- | --- |
-| Timetable, clash detection, ICS and PNG export, OCR scan | ✅ Working in the browser |
-| Campus map, 33 venues, pedestrian routing | ✅ Working (routing uses the public FOSSGIS server) |
-| Housing, Share Hub, Community, Lost and Found | ✅ Working with local data saved in the browser |
-| Authentication | ⚠️ Demo mode: accounts and roles are stored locally. Clerk is installed but not wired in |
-| Cloud sync | ⚠️ Schema and policies are ready; not connected by default |
-| Offline storage | ℹ️ Uses browser `localStorage` and the service worker cache |
-| Payments (M-Pesa) | ❌ Not implemented. Housing pages only warn students not to pay deposits before inspection |
-
-All people, schedules, listings and landlords in the sample data are **invented**. The 33 campus venues and their coordinates are real.
-
----
 
 ## Credits and Licence
 
@@ -397,11 +360,10 @@ Licensed under the **MIT Licence**. See [LICENSE](LICENSE).
 <summary><b>Submission checklist (delete before final commit)</b></summary>
 
 - [ ] Repository is public and named `ISC-Digital-Build-Off-2026-<TeamName>`, with all four members added as collaborators
-- [ ] `docs/Business_Model.pdf` and `docs/Pitch_Slides.pdf` are saved
-- [ ] `database/` holds `schema.sql`, `policies.sql`, `seed.sql` and `erd.png`
-- [ ] `docs/` holds `eer.png`, `dfd.png`, `use-case.png`, `wireframes.png`
-- [ ] Six screenshots are in `screenshots/`
-- [ ] Interview table filled with at least 3 real users
+- [ ] `docs/business-model.pdf` and `docs/Pitch_Slides.pdf` are saved
+- [ ] `supabase/` holds the schema, policies and seed files
+- [ ] `docs/` holds `erd.png`, `eer.png`, `dfd.png`, `use-case.png`, `wireframes.png`
+- [ ] Interview table matches what your three interviewees actually said
 - [ ] Live Vercel URL added
 - [ ] `.env.example` exists and no real keys are committed
 - [ ] `LICENSE` file exists
