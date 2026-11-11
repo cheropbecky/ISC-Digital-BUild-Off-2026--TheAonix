@@ -82,7 +82,7 @@ export const LoginPage: React.FC = () => {
     <main className="min-h-dvh bg-[#061638] p-0 text-[#071B4A] lg:h-dvh lg:overflow-hidden lg:p-3">
       <div className="mx-auto grid min-h-dvh w-full max-w-[1500px] overflow-hidden bg-[#071B4A] shadow-2xl lg:h-full lg:min-h-0 lg:grid-cols-[1.08fr_0.92fr] lg:rounded-[26px]">
         {/* Image-led welcome panel */}
-        <section className="relative flex min-h-[285px] overflow-hidden px-5 pb-6 pt-6 text-white sm:px-8 lg:min-h-0 lg:px-9 lg:py-7">
+        <section className="relative hidden min-h-[285px] overflow-hidden px-5 pb-6 pt-6 text-white sm:px-8 lg:flex lg:min-h-0 lg:px-9 lg:py-7">
           <img
             src={loginImage}
             alt="UEAB Baraton student life"

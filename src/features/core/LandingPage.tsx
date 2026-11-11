@@ -306,6 +306,7 @@ export const LandingPage: React.FC = () => {
   const { darkMode, toggleDarkMode } = useKampasStore();
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [expandedQuickActionDescriptions, setExpandedQuickActionDescriptions] = useState<Set<string>>(() => new Set());
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [modulesDropdownOpen, setModulesDropdownOpen] = useState(false);
   const [infoModalData, setInfoModalData] = useState<{ title: string; content: string } | null>(null);
@@ -747,88 +748,114 @@ export const LandingPage: React.FC = () => {
 
       {/* 3. QUICK CAMPUS ACTIONS (NO RAINBOW COLORS, DETAILED DESCRIPTIVE TEXT) */}
       <section id="quick-actions" className="relative z-20 mx-auto -mt-14 w-full px-4 sm:px-8 lg:px-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
           {[
             {
               id: 'lost',
               title: 'Lost & Found Desk',
-              badge: 'Security Custody',
+              action: 'Log misplaced items.',
               description:
                 'Centralized campus digital custody desk. Log misplaced items with photos, verify ownership with security quizzes, and safely retrieve items at Main Gate B Security Post.',
               icon: SearchCheck,
-              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/found',
             },
             {
               id: 'housing',
               title: 'House Find',
-              badge: 'Audited Rentals',
+              action: 'Find more',
               description:
                 'Audited off-campus student accommodation in Baraton Centre, Chemamul & Kaimosi Rd with verified 24/7 borehole water, perimeter security, and direct landlord contact without broker fees.',
               icon: HomeIcon,
-              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/housing',
             },
             {
               id: 'timetable',
               title: 'Class Timetable',
-              badge: 'Live Schedules',
+              action: 'View Timetable',
               description:
                 'Real-time lecture schedules with walking directions, building door photos, unit clash warnings, and instant push alerts when lecturers relocate classes.',
               icon: Calendar,
-              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/campus/timetable',
             },
             {
               id: 'share',
               title: 'Academic Share Hub',
-              badge: 'Peer Verified',
+              action: 'Explore Resources',
               description:
                 'Gold-verified lecture summaries, trimester continuous assessment past papers, and collaborative study groups with bookable campus venues.',
               icon: FileText,
-              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/share',
             },
             {
               id: 'events',
-              title: 'Campus Life & Events',
-              badge: 'Fellowship & Clubs',
+              title: 'Fellowship & Clubs',
+              action: 'Join the community',
               description:
-                'Sabbath sunset vespers, student guild elections, active clubs (GDSC, AYS, Innovators), athletic derbies, and QR event entry passes.',
+                'Join clubs, find mentors, and be part of the community.',
               icon: Users,
-              iconBg: 'text-[#0B2A6F] dark:text-[#F2B705]',
               to: '/community/events',
             },
-          ].map((item) => (
-            <Link
+          ].map((item) => {
+            const isDescriptionExpanded = expandedQuickActionDescriptions.has(item.id);
+
+            return (
+            <article
               key={item.id}
-              to={item.to}
-              className="group min-h-[220px] bg-white dark:bg-[#0C1D3D] rounded-none p-5 sm:p-6 flex flex-col justify-between shadow-xl hover:shadow-2xl border border-slate-200 dark:border-slate-800 transition-all duration-300 hover:-translate-y-1.5 hover:border-[#F2B705]"
+              className={`group relative flex min-h-[194px] flex-col overflow-hidden rounded-[1.2rem] border border-[#E2E9F8] bg-gradient-to-br from-white via-white to-[#F0F4FF] p-4 shadow-[0_8px_20px_rgba(31,55,110,0.10)] transition-all duration-300 hover:-translate-y-1 hover:shadow-[0_12px_26px_rgba(31,55,110,0.16)] dark:border-slate-700 dark:from-[#10244A] dark:via-[#0C1D3D] dark:to-[#10244A] sm:p-5 ${item.id === 'events' ? 'max-sm:col-span-2 max-sm:min-h-[118px] max-sm:flex-row max-sm:items-center max-sm:gap-3' : ''}`}
             >
-              <div>
-                <div className="flex items-center justify-between mb-3.5">
-                  <div className={`w-12 h-12 rounded-none flex items-center justify-center transition-transform group-hover:scale-110 ${item.iconBg}`}>
-                    <item.icon className="w-6 h-6 stroke-[2]" />
-                  </div>
-                  <span className="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-                    {item.badge}
+              <div className="pointer-events-none absolute -right-7 -top-8 h-20 w-20 rounded-full bg-[#E8EEFC] dark:bg-[#193467]/70" />
+              <Link to={item.to} className={`relative z-10 flex-1 ${item.id === 'events' ? 'max-sm:flex max-sm:items-center max-sm:gap-3' : ''}`}>
+                <div className={`relative mb-3.5 flex h-12 w-12 shrink-0 items-center justify-center ${item.id === 'events' ? 'max-sm:mb-0' : ''}`}>
+                  <span className="absolute right-0 top-0 h-10 w-10 rounded-2xl bg-[#F2B705]" />
+                  <span className="relative flex h-12 w-12 items-center justify-center rounded-2xl bg-[#071B4A] text-white shadow-md">
+                    <item.icon className="h-5 w-5 stroke-[2]" />
                   </span>
                 </div>
-                <h3 className="text-base sm:text-lg font-black text-slate-900 dark:text-white leading-tight">
-                  {item.title}
-                </h3>
-                <p className="text-xs text-[#5B6475] dark:text-slate-300 leading-relaxed mt-2.5">
-                  {item.description}
-                </p>
-              </div>
+                <div className={item.id === 'events' ? 'max-sm:min-w-0' : ''}>
+                  <h3 className="text-[15px] font-extrabold leading-tight text-[#101B36] dark:text-white sm:text-base">
+                    {item.title}
+                  </h3>
+                  <p className={`mt-2 text-xs leading-[1.35] text-[#4E5D7A] dark:text-slate-300 ${isDescriptionExpanded ? 'line-clamp-none' : 'line-clamp-3'} sm:line-clamp-none`}>
+                    {item.description}
+                  </p>
+                </div>
+              </Link>
 
-              <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                <span className="text-xs font-black text-[#0B2A6F] dark:text-[#F2B705] group-hover:underline inline-flex items-center gap-1">
-                  Open Service <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
-                </span>
+              {item.id !== 'events' && !isDescriptionExpanded && (
+                <button
+                  type="button"
+                  onClick={() => setExpandedQuickActionDescriptions((current) => new Set(current).add(item.id))}
+                  className="relative z-10 mt-1 w-fit text-[11px] font-semibold text-[#173A88] hover:underline dark:text-[#F2B705] sm:hidden"
+                  aria-label={`Read more about ${item.title}`}
+                >
+                  ...Read more
+                </button>
+              )}
+
+              <div className={`relative z-10 mt-3 flex items-center justify-between border-t border-[#E4EAF6] pt-2.5 dark:border-slate-700 ${item.id === 'events' ? 'max-sm:mt-0 max-sm:w-8 max-sm:shrink-0 max-sm:border-0 max-sm:p-0' : ''}`}>
+                <Link to={item.to} className={`inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#102653] hover:underline dark:text-blue-100 ${item.id === 'events' ? 'max-sm:hidden' : ''}`}>
+                  {item.action}
+                </Link>
+                <Link to={item.to} aria-label={`Open ${item.title}`} className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#071B4A] text-white shadow-sm transition group-hover:bg-[#0B2A6F]">
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </Link>
+                {item.id !== 'events' && isDescriptionExpanded && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedQuickActionDescriptions((current) => {
+                      const next = new Set(current);
+                      next.delete(item.id);
+                      return next;
+                    })}
+                    className="text-[11px] font-semibold text-[#173A88] hover:underline dark:text-[#F2B705] sm:hidden"
+                    aria-label={`Show less about ${item.title}`}
+                  >
+                    Read less
+                  </button>
+                )}
               </div>
-            </Link>
-          ))}
+            </article>
+          );})}
         </div>
       </section>
 
