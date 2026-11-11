@@ -21,7 +21,8 @@ export interface NotifyParams {
     | 'event_reminder'
     | 'notice_published'
     | 'study_group_session'
-    | 'timetable_scanned';
+    | 'timetable_scanned'
+    | 'class_reminder';
   title: string;
   body?: string;
   link?: string;
@@ -69,7 +70,7 @@ export function shouldDeliverNotification(
   }
 
   // 3. Category preference check
-  if (params.type === 'venue_change' && !profile.notificationPreferences.timetable) {
+  if ((params.type === 'venue_change' || params.type === 'class_reminder') && !profile.notificationPreferences.timetable) {
     return { deliver: false, reason: 'Suppressed: Timetable notifications disabled' };
   }
   if (params.type === 'deadline_approaching' && !profile.notificationPreferences.deadlines) {
