@@ -42,8 +42,6 @@ import libraryImage from '../../assets/images/ueab_library_students_179415014318
 import studentLifeImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
 import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
 import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
-const scienceComplexImage = libraryImage;
-const venueEntranceImage = studentLifeImage;
 
 interface HeroSlide {
   id: number;
