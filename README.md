@@ -356,17 +356,4 @@ Licensed under the **MIT Licence**. See [LICENSE](LICENSE).
 
 ---
 
-<details>
-<summary><b>Submission checklist (delete before final commit)</b></summary>
 
-- [ ] Repository is public and named `ISC-Digital-Build-Off-2026-<TeamName>`, with all four members added as collaborators
-- [ ] `docs/business-model.pdf` and `docs/Pitch_Slides.pdf` are saved
-- [ ] `supabase/` holds the schema, policies and seed files
-- [ ] `docs/` holds `erd.png`, `eer.png`, `dfd.png`, `use-case.png`, `wireframes.png`
-- [ ] Interview table matches what your three interviewees actually said
-- [ ] Live Vercel URL added
-- [ ] `.env.example` exists and no real keys are committed
-- [ ] `LICENSE` file exists
-- [ ] No commits after the 11 November 2026 deadline
-
-</details>
