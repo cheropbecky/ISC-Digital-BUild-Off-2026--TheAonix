@@ -230,7 +230,7 @@ House listings and roommate posts are currently client-side data (`src/data/hous
 
 [![Kampas demo video](https://img.youtube.com/vi/QgE6Do-PmOw/maxresdefault.jpg)](https://youtu.be/QgE6Do-PmOw)
 
-🌐 **Live app:** TODO: add your Vercel URL
+🌐 **Live app:** : https://isc-digital-b-uild-off-2026-the-aon.vercel.app/
 
 ---
 
