@@ -60,9 +60,38 @@ interface DemoAccount {
 const DEMO_ACCOUNTS_KEY = 'kampas_demo_accounts';
 const DEMO_SESSION_KEY = 'kampas_session_student_id';
 const PRESENTATION_DEMO_STUDENT_ID = 'S21/04589';
+const CLASS_REMINDER_LEAD_MS = 15 * 60 * 1000;
 const scannedTimetableStorageKey = (profile: UserProfile) =>
   `kampas_scanned_timetable_v1_${encodeURIComponent(normalizeStudentId(profile.studentId || profile.id))}`;
+const classReminderStorageKey = (userId: string) => `kampas_class_reminders_${encodeURIComponent(userId)}`;
 const normalizeStudentId = (studentId: string) => studentId.trim().toUpperCase();
+
+const findNextClass = (entries: ScannedTimetableEntry[], now: Date) => {
+  const dayIndexes: Record<ScannedTimetableEntry['dayOfWeek'], number> = {
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+
+  for (let dayOffset = 0; dayOffset <= 7; dayOffset += 1) {
+    const classDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() + dayOffset);
+    const dayClasses = entries
+      .filter((entry) => dayIndexes[entry.dayOfWeek] === classDate.getDay())
+      .sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+    for (const entry of dayClasses) {
+      const [hours, minutes] = entry.startTime.split(':').map(Number);
+      const startsAt = new Date(classDate);
+      startsAt.setHours(hours, minutes, 0, 0);
+      if (startsAt > now) return { entry, startsAt };
+    }
+  }
+
+  return null;
+};
 const removePresentationDemoData = () => {
   const studentId = normalizeStudentId(PRESENTATION_DEMO_STUDENT_ID);
   const storageId = encodeURIComponent(studentId);
@@ -277,6 +306,24 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     setTimetableLoading(false);
   }, [isAuthenticated, user.id, user.studentId]);
 
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setNotifications((previous) => previous.filter((item) => item.type !== 'class_reminder'));
+      return;
+    }
+
+    try {
+      const saved = localStorage.getItem(classReminderStorageKey(user.id));
+      const reminders = saved ? JSON.parse(saved) as NotificationItem[] : [];
+      setNotifications((previous) => [
+        ...reminders.filter((item) => item.type === 'class_reminder'),
+        ...previous.filter((item) => item.type !== 'class_reminder'),
+      ]);
+    } catch {
+      setNotifications((previous) => previous.filter((item) => item.type !== 'class_reminder'));
+    }
+  }, [isAuthenticated, user.id]);
+
   const saveScannedTimetable = (entries: ScannedTimetableEntry[]) => {
     if (!isAuthenticated) return false;
     try {
@@ -293,6 +340,16 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   useEffect(() => {
     const unregister = registerNotificationListener((item) => {
       setNotifications((prev) => [item, ...prev]);
+      if (item.type === 'class_reminder') {
+        try {
+          const key = classReminderStorageKey(item.userId);
+          const saved = localStorage.getItem(key);
+          const reminders = saved ? JSON.parse(saved) as NotificationItem[] : [];
+          localStorage.setItem(key, JSON.stringify([item, ...reminders.filter((reminder) => reminder.id !== item.id)].slice(0, 50)));
+        } catch {
+          // The reminder remains available in the current session if storage is unavailable.
+        }
+      }
       const toastId = `t-${Date.now()}`;
       setToasts((prev) => [
         {
@@ -312,6 +369,51 @@ export const KampasProvider: React.FC<{ children: React.ReactNode }> = ({ childr
     });
     return unregister;
   }, []);
+
+  // Add one personal inbox reminder shortly before the next scanned class.
+  useEffect(() => {
+    if (!isAuthenticated || !user.notificationPreferences.timetable || scannedTimetable.length === 0) return;
+
+    const sendUpcomingClassReminder = () => {
+      const now = new Date();
+      const upcoming = findNextClass(scannedTimetable, now);
+      if (!upcoming) return;
+
+      const timeUntilClass = upcoming.startsAt.getTime() - now.getTime();
+      if (timeUntilClass <= 0 || timeUntilClass > CLASS_REMINDER_LEAD_MS) return;
+
+      const dateKey = `${upcoming.startsAt.getFullYear()}-${String(upcoming.startsAt.getMonth() + 1).padStart(2, '0')}-${String(upcoming.startsAt.getDate()).padStart(2, '0')}`;
+      const occurrenceKey = `${upcoming.entry.id}:${upcoming.entry.unitCode}:${upcoming.entry.startTime}:${dateKey}`;
+      const sentKey = `${classReminderStorageKey(user.id)}_sent`;
+      let sentOccurrences: string[] = [];
+      try {
+        const saved = localStorage.getItem(sentKey);
+        sentOccurrences = saved ? JSON.parse(saved) as string[] : [];
+      } catch {
+        sentOccurrences = [];
+      }
+      if (sentOccurrences.includes(occurrenceKey)) return;
+
+      try {
+        localStorage.setItem(sentKey, JSON.stringify([...sentOccurrences.slice(-99), occurrenceKey]));
+      } catch {
+        // In-memory notification delivery still works if local storage is full.
+      }
+
+      const minutesUntilClass = Math.max(1, Math.ceil(timeUntilClass / 60_000));
+      notify({
+        type: 'class_reminder',
+        title: 'Your next class is coming up',
+        body: `${upcoming.entry.unitCode} · ${upcoming.entry.unitName} starts in ${minutesUntilClass} minute${minutesUntilClass === 1 ? '' : 's'} at ${upcoming.entry.venueName || 'your scheduled venue'}.`,
+        link: '/campus/timetable',
+        priority: 'important',
+      }, user);
+    };
+
+    sendUpcomingClassReminder();
+    const intervalId = window.setInterval(sendUpcomingClassReminder, 60_000);
+    return () => window.clearInterval(intervalId);
+  }, [isAuthenticated, scannedTimetable, user]);
 
   const dismissToast = (id: string) => {
     setToasts((prev) => prev.filter((t) => t.id !== id));
