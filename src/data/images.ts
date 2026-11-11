@@ -6,16 +6,23 @@
  * and graceful fallback containers so real UEAB photos can be swapped in seamlessly.
  */
 
-const UEAB_SIGNAGE_IMAGE =
-  'https://ueab.ac.ke/wp-content/uploads/2023/08/2I1A6908-scaled-800x533.jpg';
-const UEAB_GRADUATION_IMAGE =
-  'https://ueab.ac.ke/wp-content/uploads/2023/08/WhatsApp-Image-2023-08-14-at-05.10.57.jpg';
-const UEAB_RESEARCH_IMAGE =
-  'https://ueab.ac.ke/wp-content/uploads/2026/09/0V5A0237-scaled-800x533.jpg';
-const UEAB_ROAD_RACE_IMAGE =
-  'https://ueab.ac.ke/wp-content/uploads/2026/09/0V5A0145-scaled-800x533.jpg';
-const UEAB_AUDITORIUM_IMAGE =
-  'https://ueab.ac.ke/wp-content/uploads/2026/11/V5A9754-300x226.jpg';
+import campusHero from '../assets/images/ueab_campus_hero_1793989895358.jpg';
+import libraryHall from '../assets/images/ueab_library_hall_1793989894699.jpg';
+import scienceComplex from '../assets/images/ueab_science_complex_1793989896519.jpg';
+import studentLife from '../assets/images/ueab_student_life_1793989896360.jpg';
+import modernHousing from '../assets/images/ueab_house_modern_1794079506521.jpg';
+import bedsitterRoom from '../assets/images/ueab_bedsitter_room_1794079508675.jpg';
+import officialSignage from '../assets/images/ueab_baraton_new_signage.jpg';
+import graduationPhoto from '../assets/images/ueab_baraton_graduation.jpg';
+import researchConference from '../assets/images/ueab_baraton_research_conference.jpg';
+import roadRace from '../assets/images/ueab_baraton_road_race.jpg';
+import auditoriumPhoto from '../assets/images/ueab_baraton_auditorium.jpg';
+
+const UEAB_SIGNAGE_IMAGE = officialSignage;
+const UEAB_GRADUATION_IMAGE = graduationPhoto;
+const UEAB_RESEARCH_IMAGE = researchConference;
+const UEAB_ROAD_RACE_IMAGE = roadRace;
+const UEAB_AUDITORIUM_IMAGE = auditoriumPhoto;
 
 export interface RegisteredImage {
   id: string;
@@ -29,25 +36,25 @@ export const IMAGES = {
   // Campus Hero & Banners
   campusHero: {
     id: 'campus-hero',
-    url: '/src/assets/images/ueab_campus_hero_1793989895358.jpg',
+    url: campusHero,
     alt: 'University of Eastern Africa, Baraton administration complex and clock tower amidst lush green lawns in Nandi Hills',
     category: 'campus',
   },
   libraryExterior: {
     id: 'library-ext',
-    url: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    url: libraryHall,
     alt: 'UEAB University Library and Learning Commons with sunlit paved student walkway and landscaped gardens',
     category: 'campus',
   },
   scienceComplexExterior: {
     id: 'science-ext',
-    url: '/src/assets/images/ueab_science_complex_1793989896519.jpg',
+    url: scienceComplex,
     alt: 'Faculty of Science and Technology modern academic building with brick facade and glass laboratories',
     category: 'campus',
   },
   studentLifeQuad: {
     id: 'student-quad',
-    url: '/src/assets/images/ueab_student_life_1793989896360.jpg',
+    url: studentLife,
     alt: 'Vibrant student centre courtyard and collegiate plaza under flowering pergola at Baraton',
     category: 'campus',
   },
@@ -103,7 +110,7 @@ export const IMAGES = {
   },
   venueInteriorLab: {
     id: 'venue-int-lab',
-    url: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    url: libraryHall,
     alt: 'Computing laboratory workstations with high-speed internet and presentation displays',
     category: 'venue_interior',
   },
@@ -111,19 +118,19 @@ export const IMAGES = {
   // Housing Rentals & Student Rooms
   housingApartmentsModern: {
     id: 'house-modern-ext',
-    url: '/src/assets/images/ueab_house_modern_1794079506521.jpg',
+    url: modernHousing,
     alt: 'Modern two-story student rental apartments with private balconies, gated security wall, and paved parking in Baraton Centre',
     category: 'housing',
   },
   housingRoomBedsitter: {
     id: 'house-room-interior',
-    url: '/src/assets/images/ueab_bedsitter_room_1794079508675.jpg',
+    url: bedsitterRoom,
     alt: 'Cozy student bedsitter room interior with wooden study desk, laptop, single bed, bookshelf, and bright window',
     category: 'housing',
   },
   housingRoomShared: {
     id: 'house-room-shared',
-    url: '/src/assets/images/ueab_bedsitter_room_1794079508675.jpg',
+    url: bedsitterRoom,
     alt: 'Spacious shared student bedroom with twin beds and dedicated study stations',
     category: 'housing',
   },

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { LostFoundItem } from '../../lib/types';
+import libraryHallPhoto from '../../assets/images/ueab_library_hall_1793989894699.jpg';
 
 const HANDOVER_POINTS = [
   'Main Security Gate A Desk',
@@ -360,7 +361,7 @@ export const LostFoundPage: React.FC = () => {
       handoverPoint,
       reportedByUserId: user.id,
       reporterName: reporterNameInput.trim(),
-      photoUrl: photoPreview || '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+      photoUrl: photoPreview || libraryHallPhoto,
     });
 
     setToast(`Report published: ${itemTitle.trim()}`);

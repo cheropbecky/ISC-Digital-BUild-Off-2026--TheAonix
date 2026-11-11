@@ -4,6 +4,11 @@
  * UEAB Community Mock Data: Events with QR passes, Student Clubs, Alumni Mentorship & Referral, and Opportunities
  */
 
+import campusHero from '../assets/images/ueab_campus_hero_1793989895358.jpg';
+import scienceComplex from '../assets/images/ueab_science_complex_1793989896519.jpg';
+import studentLife from '../assets/images/ueab_student_life_1793989896360.jpg';
+import libraryHall from '../assets/images/ueab_library_hall_1793989894699.jpg';
+
 export interface CampusEvent {
   id: string;
   title: string;
@@ -82,7 +87,7 @@ export const CAMPUS_EVENTS: CampusEvent[] = [
     maxCapacity: 900,
     isRsvp: true,
     ticketQrCode: 'UEAB-TICKET-VESPERS-2026-BC4921',
-    bannerPhoto: '/src/assets/images/ueab_campus_hero_1793989895358.jpg',
+    bannerPhoto: campusHero,
     description: 'An uplifting university-wide Sabbath opening vespers service featuring inspirational testimony, student orchestral music, and guest sermon.',
     speakers: [{ name: 'Pr. Dr. Paul Lagat', title: 'Director of Chaplaincy Services' }],
   },
@@ -99,7 +104,7 @@ export const CAMPUS_EVENTS: CampusEvent[] = [
     maxCapacity: 150,
     isRsvp: false,
     ticketQrCode: 'UEAB-TICKET-HACKATHON-2026-BC4921',
-    bannerPhoto: '/src/assets/images/ueab_science_complex_1793989896519.jpg',
+    bannerPhoto: scienceComplex,
     description: 'Build predictive crop diagnostics, livestock health monitors, and farmer cooperative marketplaces using Google Gemini and modern web stacks. Cash prizes and mentor sponsorships.',
     speakers: [
       { name: 'Dr. Evans Kiprop', title: 'Head of Computing' },
@@ -118,7 +123,7 @@ export const CAMPUS_EVENTS: CampusEvent[] = [
     attendeesCount: 280,
     isRsvp: false,
     ticketQrCode: 'UEAB-TICKET-DERBY-2026-BC4921',
-    bannerPhoto: '/src/assets/images/ueab_student_life_1793989896360.jpg',
+    bannerPhoto: studentLife,
     description: 'Cheer on Faculty of Science & Tech vs School of Business in the 2026 Trimester Finals. Free entry for all students with student ID.',
   },
   {
@@ -134,7 +139,7 @@ export const CAMPUS_EVENTS: CampusEvent[] = [
     maxCapacity: 240,
     isRsvp: false,
     ticketQrCode: 'UEAB-TICKET-HEALTH-2026-BC4921',
-    bannerPhoto: '/src/assets/images/ueab_library_hall_1793989894699.jpg',
+    bannerPhoto: libraryHall,
     description: 'Exploring low-latency rural diagnostic tele-clinics across Nandi, Uasin Gishu, and Kakamega counties.',
   },
 ];

@@ -18,10 +18,7 @@ import {
   UserRound,
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
-
-// Welcome panel image
-const loginImage =
-  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/793028073_122129524136846732_1498613680495360111_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1364&ctp=s2048x1364&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=z43NEFaHHqMQ7kNvwEfF61r&_nc_oc=AdoirRmn6PGxtfSPPlRu5R2965Z5HXu33X7unZOxsqKai0HoUnkl894hzDHxNvW_CSY&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=6l4sl033atoM1P-yb6_8iA&_nc_ss=7b2a8&oh=00_AQQx5SYdS2T5xITieyVLpjAD0zCS_S4NcOp77y5t2oK_Mg&oe=6AF7A0FD';
+import loginImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
 
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();

@@ -36,15 +36,12 @@ import {
 } from 'lucide-react';
 import { useKampasStore } from '../../lib/store';
 import { searchService, SearchResultItem } from '../../services/searchService';
-
-const campusHeroImage =
-  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/710079021_4634835960079023_5382080630327967758_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1152&ctp=p720x720&_nc_cat=111&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=127cfc&_nc_ohc=9gMXD-rMdb4Q7kNvwFs7ipY&_nc_oc=AdoJn37T_WJ0A9mMfv6RgTwslceOjXTBoWL4M-k7NlgBNKrKv8hfFa6mVE2OevUooD4&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=g1yS8SK-hv87kJ_y9RjZ7Q&_nc_ss=7b2a8&oh=00_AQT477CJQHd3JLWOdzIYFvlf-5DomH6DiKd8cq6FrAjDFQ&oe=6AF79210';
-const housingImage =
-  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/735067882_122109136923316648_1042423582806146663_n.jpg?stp=dst-jpg_tt6&cstp=mx720x480&ctp=s720x480&_nc_cat=105&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=GAsvv2PgnBMQ7kNvwH7Xi3g&_nc_oc=AdpwGGyNu_XQ7TigTDK1w52kbSpitMiOljeP3oGqiDM3yJO2RjP8N0BO9kXklK6FvuI&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQTZac7ONUtzaZgvUELsHoeAMUon8VXw6BoMAL4FQxLWeA&oe=6AF773E5';
-const libraryImage =
-  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/842311859_122135662940846732_6867406674687758303_n.jpg?stp=dst-jpg_tt6&cstp=mx715x476&ctp=s715x476&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=dZ8fZaHj_xcQ7kNvwG1F8ns&_nc_oc=Adqkn0rfUSt8qmlBjNKtQQ3NRgf-8zztzL8rGA9i5f4lygt6J5JG94-jnbanohBhGXk&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=EcR_PLkrYyBU-mIQz6Rn3Q&_nc_ss=7b2a8&oh=00_AQQ5dhxlm5mJgN_YbnYL5F-4dKVGxFC2iVMiapUjpOunPQ&oe=6AF7A455';
-const studentLifeImage =
-  'https://scontent.fnbo8-1.fna.fbcdn.net/v/t39.30808-6/793028073_122129524136846732_1498613680495360111_n.jpg?stp=dst-jpg_tt6&cstp=mx2048x1364&ctp=s2048x1364&_nc_cat=107&_nc_map=urlgen_bucketless&ccb=1-7&_nc_sid=833d8c&_nc_ohc=z43NEFaHHqMQ7kNvwEfF61r&_nc_oc=AdoirRmn6PGxtfSPPlRu5R2965Z5HXu33X7unZOxsqKai0HoUnkl894hzDHxNvW_CSY&_nc_zt=23&_nc_ht=scontent.fnbo8-1.fna&_nc_gid=6l4sl033atoM1P-yb6_8iA&_nc_ss=7b2a8&oh=00_AQQx5SYdS2T5xITieyVLpjAD0zCS_S4NcOp77y5t2oK_Mg&oe=6AF7A0FD';
+import campusHeroImage from '../../assets/images/ueab_campus_hero_1794150142310.jpg';
+import housingImage from '../../assets/images/ueab_student_housing_1794150143766.jpg';
+import libraryImage from '../../assets/images/ueab_library_students_1794150143182.jpg';
+import studentLifeImage from '../../assets/images/ueab_student_life_1794150144449.jpg';
+import scienceComplexImage from '../../assets/images/ueab_science_complex_1793989896519.jpg';
+import venueEntranceImage from '../../assets/images/ueab_venue_entrance_1794079506481.jpg';
 const scienceComplexImage = libraryImage;
 const venueEntranceImage = studentLifeImage;
 
