@@ -1162,7 +1162,7 @@ export const INITIAL_LOST_ITEMS: LostFoundItem[] = [
     title: 'Brass Key Ring with Blue Library Tag',
     category: 'keys',
     description: 'Small brass key ring with three keys, a blue library tag, and a plain black rubber fob.',
-    photoUrl: 'https://images.unsplash.com/photo-1582139329536-e7284fece509?auto=format&fit=crop&w=900&q=80',
+    photoUrl: 'https://images.unsplash.com/photo-1714631281605-a849ba8e90b5?auto=format&fit=crop&w=900&q=80',
     locationFound: 'Student Centre Cafeteria, table beside the charging station',
     venueId: 'venue-student-centre',
     venueName: 'Student Centre',

@@ -69,6 +69,7 @@ const MAX_BOUNDS: L.LatLngBoundsExpression = [
   [0.2450, 35.0700],
   [0.2720, 35.1020],
 ];
+const VENUE_FOCUS_ZOOM = 19;
 
 // Existing OSM campus perimeter retained as map context; it is not a location record.
 export const UEAB_CAMPUS_BOUNDARY: [number, number][] = [
@@ -413,11 +414,11 @@ export const CampusMap: React.FC<CampusMapProps> = ({
 
       if (mapInstanceRef.current && venue.lat !== undefined && venue.lng !== undefined) {
         if (animate) {
-          mapInstanceRef.current.flyTo([venue.lat, venue.lng], 18, {
+          mapInstanceRef.current.flyTo([venue.lat, venue.lng], VENUE_FOCUS_ZOOM, {
             duration: 1.1,
           });
         } else {
-          mapInstanceRef.current.setView([venue.lat, venue.lng], 18);
+          mapInstanceRef.current.setView([venue.lat, venue.lng], VENUE_FOCUS_ZOOM);
         }
       }
       triggerInvalidateSize();
