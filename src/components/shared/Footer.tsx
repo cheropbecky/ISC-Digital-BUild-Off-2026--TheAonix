@@ -65,7 +65,7 @@ export const Footer: React.FC = () => {
               <div className="pointer-events-none absolute -bottom-12 -left-8 h-24 w-24 rounded-full bg-[#1769FF]/20 blur-2xl" />
               <div className="relative flex items-center gap-3">
                 <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#F2B705]/50 bg-[#071B4A] p-2 shadow-lg">
-                  <img src="/brand/kampas-mark.png" alt="" className="h-full w-full object-contain" />
+                  <img src={`${import.meta.env.BASE_URL}brand/kampas-mark.png`} alt="" className="h-full w-full object-contain" />
                 </div>
                 <div>
                   <span className="block text-2xl font-black tracking-[0.18em] text-white">KAMPAS</span>

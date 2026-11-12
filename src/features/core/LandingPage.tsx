@@ -1351,7 +1351,7 @@ export const LandingPage: React.FC = () => {
           <div className="space-y-5">
             <div className="flex items-center gap-2.5">
               <img
-                src="/brand/kampas-wordmark.png"
+                src={`${import.meta.env.BASE_URL}brand/kampas-logo.png`}
                 alt="Kampas UEAB Logo"
                 className="h-10 w-auto max-w-[190px] object-contain rounded-xl shadow-lg ring-1 ring-white/15"
               />
